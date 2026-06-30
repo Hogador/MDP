@@ -36,7 +36,7 @@ coroutines = "1.9.0"
 
 # Security
 biometric = "1.1.0"
-credentials = "1.5.0"
+credentials = "1.6.0"
 credentialsPlayServices = "1.5.0"
 googleid = "1.1.1"
 
