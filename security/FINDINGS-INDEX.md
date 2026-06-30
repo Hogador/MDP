@@ -1,12 +1,12 @@
 # Findings Index
 > Read this first. For full details: security/findings/F-XXX.md
-> Last updated: 2026-06-30 (update: status changes for F-062, F-102, F-130, F-131, F-133)
+> Last updated: 2026-06-30 (update: status changes for F-062, F-102, F-129, F-130, F-131, F-133)
 
 ## Dashboard
 | Status | Count |
 |--------|-------|
-| OPEN | 30 |
-| CLAIMED_FIXED | 57 |
+| OPEN | 29 |
+| CLAIMED_FIXED | 58 |
 | VERIFIED | 8 |
 | REGRESSED | 4 |
 | CONFLICT | 1 |
@@ -25,7 +25,7 @@
 | F-036 | CLAIMED_FIXED | OnChainRegistryClient computes wrong identityHash | backend/.../OnChainRegistryClient.kt |
 | F-100 | CLAIMED_FIXED | Paymaster не используется в send-флоу | SendRepository.kt |
 | F-108 | VERIFIED | P-256 Precompile (RIP-7212) на BSC Testnet | SocialRecoveryModule.sol |
-| F-129 | NEW | KMS для paymaster ключа не реализован | backend/.../PaymasterSigner |
+| F-129 | CLAIMED_FIXED | KMS для paymaster ключа не реализован | backend/.../PaymasterSigner |
 | F-130 | CLAIMED_FIXED | PaymasterClient API не соответствует SignRequest | app/.../PaymasterClient.kt |
 
 ### HIGH (30)
