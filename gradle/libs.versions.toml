@@ -54,7 +54,7 @@ zxingAndroid = "4.3.0"
 firebaseBom = "32.7.2"
 
 # WorkManager
-work = "2.10.0"
+work = "2.11.2"
 
 # Play Integrity
 playIntegrity = "1.4.0"
