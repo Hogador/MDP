@@ -98,3 +98,16 @@ ci.yml.additions
 .opencode/
 .hive/
 ponytail/
+
+# ——— Root misc (не часть проекта) ———
+.editorconfig
+.gitleaksignore
+.pre-commit-config.yaml
+18913.png
+AGENTS.md
+Makefile
+Makefile.audit
+README.md
+backup-restore.sh
+docker-compose.yml
+gradlew.bat
