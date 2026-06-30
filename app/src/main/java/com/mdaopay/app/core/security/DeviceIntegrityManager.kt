@@ -53,16 +53,17 @@ class DeviceIntegrityManager @Inject constructor(
     }
 
     suspend fun checkIntegrity(operation: WalletOperation): IntegrityResult {
+        // ponytail: low-risk first — per TDD §2.3.8 table, APP_OPEN etc should never be blocked
+        if (operation.riskLevel == RiskLevel.LOW) {
+            return IntegrityResult(IntegrityLevel.TRUSTED, emptyList())
+        }
+
         if (isRooted()) {
             return IntegrityResult(IntegrityLevel.BLOCKED, listOf("Rooted device"))
         }
 
         if (isEmulator()) {
             return IntegrityResult(IntegrityLevel.BLOCKED, listOf("Emulator"))
-        }
-
-        if (operation.riskLevel == RiskLevel.LOW) {
-            return IntegrityResult(IntegrityLevel.TRUSTED, emptyList())
         }
 
         return checkPlayIntegrity(operation)

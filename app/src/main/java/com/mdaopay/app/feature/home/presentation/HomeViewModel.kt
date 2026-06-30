@@ -6,6 +6,7 @@ import android.webkit.WebView
 import com.mdaopay.app.core.blockchain.EthereumProviderInjector
 import com.mdaopay.app.core.blockchain.BlockchainRepository
 import com.mdaopay.app.core.blockchain.EtherscanRepository
+import com.mdaopay.app.core.blockchain.NetworkConfig
 import com.mdaopay.app.core.blockchain.WalletManager
 import com.mdaopay.app.core.blockchain.WalletResult
 import com.mdaopay.app.core.datastore.Contact
@@ -79,6 +80,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadWalletInternal() {
+        if (!NetworkConfig.isConfigured()) {
+            _uiState.value = HomeUiState.Error(
+                "Contracts not deployed. Set MDAO_CONTRACT and SOCIAL_RECOVERY_MODULE in NetworkConfig."
+            )
+            return
+        }
+
         val walletResult = walletManager.loadWallet()
         if (walletResult is WalletResult.Error) {
             _uiState.value = HomeUiState.Error(walletResult.message)

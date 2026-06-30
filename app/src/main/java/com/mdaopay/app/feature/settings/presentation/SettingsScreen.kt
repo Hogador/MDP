@@ -184,7 +184,7 @@ fun SettingsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(java.lang.Float.valueOf(MDARadius.xxl.value).let { androidx.compose.foundation.shape.RoundedCornerShape(it.dp) })
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(MDARadius.xxl))
                         .background(d.card)
                         .shadow(elevation = 4.dp, shape = androidx.compose.foundation.shape.RoundedCornerShape(MDARadius.xxl), clip = false)
                         .clickable { onProfileClick() }

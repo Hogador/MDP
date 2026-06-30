@@ -228,7 +228,11 @@ private fun ContactCard(
                 .size(44.dp)
                 .clip(CircleShape)
                 .drawBehind {
-                    drawCircle(colorPair[0])
+                    drawCircle(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(colorPair[0], colorPair[1])
+                        )
+                    )
                 }
                 .shadow(4.dp, CircleShape),
             contentAlignment = Alignment.Center

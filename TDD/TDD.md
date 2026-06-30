@@ -785,9 +785,9 @@ data class DexPrices(
 |-----------|-----------|-------------|---------|
 | AppDatabase | Room | `pending_transactions`, `contacts` | Persistent local cache |
 | UserPreferences | DataStore | `theme`, `lock_enabled`, `onboarded` | User settings |
-| TxQueue | Room (encrypted) | `id, chainId, from, to, value, data, gasLimit, maxFeePerGas, maxPriorityFeePerGas, nonce, createdAt, status, signedRawTx_enc` | Offline transaction queue |
+| TxQueue | Room | `idempotencyKey, recipientAddress, weiAmount, nickname, displayAmount, createdAt, retryCount, lastError` | Offline transaction queue (intent model) |
 
-> **Security:** `signedRawTx` contains a fully signed, broadcast-ready transaction. It MUST be encrypted at rest. Use SQLCipher for Room or encrypt the `signedRawTx` field with a Keystore-bound AES-256-GCM key (`txqueue_key`) before writing to the database. The encryption key is derived from the wallet key and never stored separately.
+> **Note:** The actual implementation uses an *intent queue* — only the recipient, amount, and metadata are stored. No signed transaction data is persisted. On retry (`OfflineSyncWorker`), `sendRepository.sendUsdt()` rebuilds and signs the UserOp fresh. This is safer than storing broadcast-ready signed txs (no risk of replay from DB leak). The tradeoff: requires network+backend on retry for signing. If pre-signed queue is needed later, add `signedRawTx_enc` + SQLCipher.
 | KeystoreCrypto | Android Keystore | Key aliases: `mdaopay_wallet_key`, `mdaopay_share{1-4}_key` | Encrypted mnemonic + shares |
 | PasskeyManager | Credential Manager | Passkey (WebAuthn) | PRF key derivation |
 | GuardianStorage | DataStore | Guardians, invites, pending recoveries | Guardian state |

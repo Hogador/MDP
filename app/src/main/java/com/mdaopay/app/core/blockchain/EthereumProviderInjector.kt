@@ -206,7 +206,8 @@ class EthereumProviderInjector @Inject constructor(
                 return """{"jsonrpc":"2.0","id":"1","error":{"code":-32000,"message":"User rejected transaction"}}"""
             }
 
-            return """{"jsonrpc":"2.0","id":"1","result":"0x0000000000000000000000000000000000000000000000000000000000000000"}"""
+            // ponytail: eth_sendTransaction not yet supported — return error instead of fake hash
+            return """{"jsonrpc":"2.0","id":"1","error":{"code":-32000,"message":"eth_sendTransaction not available — use native send flow"}}"""
         }
 
         /**
@@ -236,7 +237,7 @@ class EthereumProviderInjector @Inject constructor(
                     .show()
             }
 
-            latch.await()
+            latch.await(10, java.util.concurrent.TimeUnit.SECONDS)
             return allowed[0]
         }
 

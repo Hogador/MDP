@@ -30,9 +30,9 @@ android {
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT") ?: "0x0000000000000000000000000000000000000000"}\"")
             // F-023: RPC URLs — override with private RPC URLs via project properties
-            buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_DEV") ?: "https://ethereum-sepolia.publicnode.com"}\"")
-            buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_DEV") ?: "https://rpc.ankr.com/eth_sepolia"}\"")
-            buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_DEV") ?: "https://ethereum-sepolia-rpc.com"}\"")
+            buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_DEV") ?: "https://bsc-testnet-rpc.publicnode.com"}\"")
+            buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_DEV") ?: "https://data-seed-prebsc-1-s1.binance.org:8545"}\"")
+            buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_DEV") ?: "https://data-seed-prebsc-2-s1.binance.org:8545"}\"")
             // F-063: Passkey RP ID
             buildConfigField("String", "PASSKEY_RP_ID", "\"${project.findProperty("PASSKEY_RP_ID_DEV") ?: "mdaopay.app"}\"")
             // F-104: Relay URL
@@ -46,9 +46,9 @@ android {
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_STAGING") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT_STAGING") ?: "0x0000000000000000000000000000000000000000"}\"")
-            buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_STAGING") ?: "https://ethereum-sepolia.publicnode.com"}\"")
-            buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_STAGING") ?: "https://rpc.ankr.com/eth_sepolia"}\"")
-            buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_STAGING") ?: "https://ethereum-sepolia-rpc.com"}\"")
+            buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_STAGING") ?: "https://bsc-testnet-rpc.publicnode.com"}\"")
+            buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_STAGING") ?: "https://data-seed-prebsc-1-s1.binance.org:8545"}\"")
+            buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_STAGING") ?: "https://data-seed-prebsc-2-s1.binance.org:8545"}\"")
             buildConfigField("String", "PASSKEY_RP_ID", "\"${project.findProperty("PASSKEY_RP_ID_STAGING") ?: "mdaopay.app"}\"")
             buildConfigField("String", "RELAY_URL", "\"https://mdaopay-relay-staging.ekzent.workers.dev\"")
         }

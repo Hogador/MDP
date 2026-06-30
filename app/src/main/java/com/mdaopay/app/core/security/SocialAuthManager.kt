@@ -142,6 +142,7 @@ class SocialAuthManager @Inject constructor(
 
     companion object {
         private const val TAG = "SocialAuth"
+        // ponytail: extract to BuildConfig per-flavor (dev/staging/prod — different OAuth consent screens)
         const val WEB_CLIENT_ID = "925151210559-01ge4gml47c0u6pnpu88ebf6hbfntmu2.apps.googleusercontent.com"
     }
 }

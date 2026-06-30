@@ -592,8 +592,10 @@ private data class TokenInfo(
 )
 
 private fun walletToTokens(wallet: WalletState): List<TokenInfo> = buildList {
-    add(TokenInfo("MDAO", wallet.balanceMdao, MDAOPurple))
-    add(TokenInfo("USDT", wallet.balanceUsdt, SuccessGreen))
+    if (wallet.balanceMdao > java.math.BigDecimal.ZERO)
+        add(TokenInfo("MDAO", wallet.balanceMdao, MDAOPurple))
+    if (wallet.balanceUsdt > java.math.BigDecimal.ZERO)
+        add(TokenInfo("USDT", wallet.balanceUsdt, SuccessGreen))
     if (wallet.balanceEth > java.math.BigDecimal.ZERO)
         add(TokenInfo("Sepolia ETH", wallet.balanceEth, androidx.compose.ui.graphics.Color(0xFF627EEA)))
 }

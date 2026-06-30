@@ -71,6 +71,9 @@ class WalletManager @Inject constructor(
     fun hasWallet(): Boolean = prefs.contains(KEY_MNEMONIC)
 
     fun saveMnemonic(mnemonic: String): Boolean {
+        // ponytail: encrypt uses biometric-bound key (setUserAuthenticationRequired=true).
+        // Must be preceded by BiometricPrompt within 300s auth window (set by getOrCreateBiometricKey).
+        // Called from OnboardingNicknameViewModel.confirmNickname — right after biometric screen.
         return try {
             val encrypted = KeystoreCrypto.encrypt(KEY_ALIAS, mnemonic.encodeToByteArray())
             prefs.edit().putString(KEY_MNEMONIC, encrypted.toHexString()).commit()

@@ -1,7 +1,6 @@
 package com.mdaopay.app
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
@@ -38,7 +37,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        // ponytail: FLAG_SECURE handled per-screen by SecureScreen composable — not global
 
         HapticManager.init(this)
         SoundManager.init(this)
