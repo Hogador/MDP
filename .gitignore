@@ -21,6 +21,7 @@ captures/
 *.ap_
 *.dex
 local.properties
+.kotlin/
 *.kotlin_module
 
 # ——— Backend (Kotlin/Gradle) ———
@@ -80,7 +81,8 @@ backups/
 # ——— OpenCode (AI config) ———
 .config/opencode/
 .opencode/opencode-swarm.json
-.opencode/*.bak
+.opencode/*.bak*
+.opencode/*.save
 
 # ——— Misc ———
 out/
@@ -89,3 +91,10 @@ cache/
 *.tfstate
 *.tfstate.backup
 .history/
+ci.yml.additions
+
+# ——— Agent config (не часть проекта) ———
+.agents/
+.opencode/
+.hive/
+ponytail/
