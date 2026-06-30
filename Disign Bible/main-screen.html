@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Главный экран</title>
+<style>
+  /* ============ RESET ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    background: #ECECEE;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  * { user-select: none; -webkit-user-select: none; }
+
+  /* ============ THEME TOKENS — soft neomorphic shadows ============ */
+  /* Light theme = #FAFAFA bg, white cards, gray tiles. Each surface gets:
+     --shadow-raise  = outer drop shadow (lifted look)
+     --shadow-inset  = inner bottom shadow (soft depth)
+     --shadow-press  = pressed/active look (inset heavier)
+     --shadow-glow   = subtle top highlight
+  */
+  .theme-dark   {
+    --bg:#0A0A0F; --card:#1A1A22; --surface:#121218; --tile:#23232C;
+    --text:#FFFFFF; --text2:#7E8089; --text3:#4D4F58; --border:#26262F; --soft-border:rgba(255,255,255,0.04);
+    --shadow-raise: 0 18px 40px -10px rgba(0,0,0,0.7), 0 6px 14px -4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    --shadow-soft: 0 10px 22px -6px rgba(0,0,0,0.6), 0 3px 8px -2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    --shadow-inset: inset 0 -4px 10px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.06);
+    --shadow-press: inset 0 5px 12px rgba(0,0,0,0.7), inset 0 -1px 1px rgba(255,255,255,0.04);
+    --shadow-glow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .theme-light  {
+    --bg:#E8EBF1; --card:#FBFCFE; --surface:#FFFFFF; --tile:#E4E8EE;
+    --text:#0A0A0F; --text2:#6B7280; --text3:#9CA3AF; --border:#DCE0E8; --soft-border:#D6DAE2;
+    --shadow-raise: 0 20px 40px -12px rgba(28,32,52,0.28), 0 6px 14px -4px rgba(28,32,52,0.16), inset 0 1px 0 rgba(255,255,255,0.95);
+    --shadow-soft: 0 10px 22px -8px rgba(28,32,52,0.22), 0 3px 6px -2px rgba(28,32,52,0.14), inset 0 1px 0 rgba(255,255,255,0.9);
+    --shadow-inset: inset 0 -4px 10px rgba(28,32,52,0.10), inset 0 1px 1px rgba(255,255,255,0.95);
+    --shadow-press: inset 0 5px 12px rgba(28,32,52,0.18), inset 0 -1px 1px rgba(255,255,255,0.7);
+    --shadow-glow: inset 0 1px 0 rgba(255,255,255,1);
+  }
+  .theme-amoled {
+    --bg:#000000; --card:#0B0B0D; --surface:#050505; --tile:#151518;
+    --text:#FFFFFF; --text2:#5A5A60; --text3:#3A3A40; --border:#1C1C1C; --soft-border:#161616;
+    --shadow-raise: 0 18px 40px -10px rgba(0,0,0,0.95), 0 6px 14px -4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+    --shadow-soft: 0 10px 22px -6px rgba(0,0,0,0.85), 0 3px 8px -2px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+    --shadow-inset: inset 0 -4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.04);
+    --shadow-press: inset 0 5px 12px rgba(0,0,0,0.9), inset 0 -1px 1px rgba(255,255,255,0.03);
+    --shadow-glow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  :root {
+    --accent: #FF6B00;
+    --accent-press: #E55F00;
+    --accent-soft: rgba(255,107,0,0.10);
+    --success: #00D68F;
+    --danger: #FF4D6D;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --mono: 'SF Mono', 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+  }
+
+  /* ============ PHONE FRAME ============ */
+  .phone {
+    width: 390px; height: 844px;
+    max-width: 100vw; max-height: 100vh;
+    background: var(--bg); color: var(--text);
+    border-radius: 44px; overflow: hidden;
+    position: relative;
+    display: flex; flex-direction: column;
+    padding: 14px 18px 6px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 0 0 11px #0a0a0a, 0 0 0 13px #2a2a2a;
+    transition: background 0.35s var(--ease-out), color 0.35s var(--ease-out);
+  }
+  @media (max-width: 420px) {
+    .phone { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; padding: 12px 16px 4px; }
+  }
+
+  /* ============ HEADER ============ */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 2px 2px 10px; flex-shrink: 0;
+  }
+  .greeting { cursor: pointer; line-height: 1.15; transition: opacity 0.15s; }
+  .greeting:active { opacity: 0.6; }
+  .greeting .hello { font-size: 12px; color: var(--text2); font-weight: 500; letter-spacing: 0.1px; }
+  .greeting .name {
+    font-size: 24px; font-weight: 700; color: var(--text);
+    margin-top: 2px; letter-spacing: -0.5px;
+    display: block;
+  }
+  .greeting .nick {
+    font-size: 13px; font-weight: 500; color: var(--accent);
+    letter-spacing: -0.1px;
+    margin-top: 2px;
+    display: block;
+    font-family: var(--mono);
+  }
+  .header-right { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 42px; height: 42px;
+    background: var(--tile); border: none;
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px; position: relative;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s, color 0.15s;
+  }
+  .icon-btn:active { transform: scale(0.94); box-shadow: var(--shadow-press); }
+  .icon-btn svg { stroke: var(--text2); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
+  .icon-btn:hover svg { stroke: var(--text); }
+  .icon-btn .badge {
+    position: absolute; top: 8px; right: 8px;
+    width: 9px; height: 9px; background: var(--accent);
+    border-radius: 50%; border: 2px solid var(--tile);
+    box-shadow: 0 0 6px rgba(255,107,0,0.5);
+  }
+
+  /* ============ PULL INDICATOR ============ */
+  .pull-indicator {
+    text-align: center; font-size: 11px; color: var(--text2);
+    padding: 4px 0; opacity: 0; transition: opacity 0.25s;
+    flex-shrink: 0; height: 22px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .pull-indicator.show { opacity: 1; }
+  .pull-indicator .spinner {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ============ CARDS STACK — big rounded, minimalist ============ */
+  .cards-wrapper {
+    position: relative; flex-shrink: 0;
+    height: 220px; margin: 0 0 10px;
+    touch-action: none;
+    z-index: 50;
+  }
+  .cards-container {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.5s var(--spring);
+  }
+  .card {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--card);
+    border-radius: 28px;
+    box-shadow: var(--shadow-raise), var(--shadow-glow);
+    border: 1px solid var(--soft-border);
+    padding: 20px 22px;
+    display: flex; flex-direction: column;
+    transition: transform 2.4s var(--spring), opacity 1.8s var(--ease-out), box-shadow 0.18s;
+    will-change: transform, opacity;
+    cursor: grab;
+    overflow: hidden;
+  }
+  .card:active { cursor: grabbing; box-shadow: var(--shadow-soft), var(--shadow-glow); }
+  /* Subtle top sheen for depth */
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%);
+    pointer-events: none; border-radius: 28px;
+  }
+  .theme-light .card::before { background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent 25%); }
+  .theme-amoled .card::before { background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent 30%); }
+
+  /* Top row: token icon + name + network (hidden per MDAO spec) + trend */
+  .card .top-row {
+    display: flex; align-items: center; gap: 12px;
+    position: relative; z-index: 1;
+  }
+  /* When expanded, the balance chip takes the trend's spot on the right */
+  .cards-container.expanded .card.pos-0 .top-row { gap: 10px; }
+  .card .token-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 19px; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 8px 18px -4px rgba(0,0,0,0.45), 0 2px 6px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.25);
+    transition: width 0.4s var(--spring), height 0.4s var(--spring), font-size 0.4s var(--spring);
+  }
+  .card .token-meta { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+  .card .token-name {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.1px;
+    transition: font-size 0.4s var(--spring);
+  }
+  .card .token-sub {
+    font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: 0.1px;
+    transition: font-size 0.4s var(--spring);
+  }
+  .card .token-trend {
+    font-size: 12px; font-weight: 600; color: var(--success);
+    padding: 5px 10px; border-radius: 10px;
+    background: rgba(0,214,143,0.12);
+    font-family: var(--mono);
+    letter-spacing: -0.3px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.12), inset 0 -1px 2px rgba(0,0,0,0.08);
+    transition: opacity 0.25s var(--ease-out), transform 0.35s var(--spring);
+  }
+  .card .token-trend.down { color: var(--danger); background: rgba(255,77,109,0.12); }
+
+  /* Balance chip — small inline balance shown in the top-row when the card
+     is in "summary" mode (expanded). Hidden in normal mode. Sits on the right
+     where the trend badge used to be. */
+  .card .balance-chip {
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 700; color: var(--text);
+    padding: 4px 10px; border-radius: 10px;
+    background: var(--tile);
+    letter-spacing: -0.3px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.06), inset 0 -1px 2px rgba(0,0,0,0.18);
+    display: none;
+    flex-shrink: 0;
+    transition: opacity 0.3s var(--ease-out), transform 0.35s var(--spring);
+  }
+  .card .balance-chip .unit {
+    font-size: 10px; color: var(--text2); font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin-left: 2px;
+  }
+
+  /* Balance block: BIG monospace number */
+  .card .balance-block {
+    margin: 18px 0 14px; position: relative; z-index: 1;
+    transition: margin 0.4s var(--spring), transform 0.4s var(--spring);
+  }
+  .card .balance {
+    font-family: var(--mono);
+    font-size: 36px; font-weight: 700; color: var(--text);
+    letter-spacing: -1.2px; line-height: 1.05;
+    display: flex; align-items: baseline; gap: 6px;
+    transition: font-size 0.4s var(--spring), letter-spacing 0.4s var(--spring);
+  }
+  .card .balance .unit {
+    font-size: 14px; font-weight: 500; color: var(--text2);
+    letter-spacing: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: font-size 0.4s var(--spring);
+  }
+  .card .balance-fiat {
+    font-size: 12px; color: var(--text2); font-weight: 500;
+    margin-top: 6px; letter-spacing: 0.1px;
+    transition: font-size 0.4s var(--spring), opacity 0.3s var(--ease-out);
+  }
+
+  /* Tile-style actions — neomorphic pressed buttons */
+  .card .card-actions {
+    display: flex; gap: 10px; margin-top: auto;
+    position: relative; z-index: 1;
+    transition: opacity 0.25s var(--ease-out), transform 0.35s var(--spring);
+  }
+  .card .tile {
+    flex: 1; height: 56px; border-radius: 16px; border: none;
+    background: var(--tile); color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s, background 0.15s;
+    font-family: inherit;
+  }
+  .card .tile:active { transform: scale(0.96); box-shadow: var(--shadow-press); }
+  .card .tile svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px;
+  }
+  .card .tile .lbl { font-size: 10px; font-weight: 600; color: var(--text); letter-spacing: 0.2px; }
+  .card .tile.primary {
+    background: var(--accent-soft);
+    box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(255,107,0,0.18), var(--shadow-glow);
+  }
+  .card .tile.primary svg { stroke: var(--accent); }
+  .card .tile.primary .lbl { color: var(--accent); }
+  .card .tile.primary:active {
+    background: var(--accent);
+    box-shadow: var(--shadow-press), inset 0 0 0 1px rgba(255,107,0,0.4);
+  }
+  .card .tile.primary:active svg, .card .tile.primary:active .lbl { stroke: #fff; color: #fff; }
+
+  /* Stack positions */
+  .card.pos-0 { transform: translateY(0) scale(1); opacity: 1; z-index: 4; }
+  .card.pos-1 { transform: translateY(14px) scale(0.94); opacity: 0.55; z-index: 3; }
+  .card.pos-2 { transform: translateY(26px) scale(0.88); opacity: 0.30; z-index: 2; }
+  .card.pos-3 { transform: translateY(36px) scale(0.84); opacity: 0.15; z-index: 1; }
+
+  /* Expanded — cards FAN UPWARD with the SAME size, just offset relative to
+     each other so the top header (icon + name + balance chip) of each card
+     peeks out above pos-0. No scale shrink. The whole stack shifts down
+     more than before to make room for the upward fan. */
+  .cards-container.expanded { transform: translateY(60px); }
+  .cards-container.expanded .card {
+    transform-origin: top center;
+    transition: transform 0.5s var(--spring), opacity 0.4s var(--ease-out), box-shadow 0.3s;
+  }
+  .cards-container.expanded .card.pos-0 {
+    transform: translateY(0);
+    opacity: 1; z-index: 10;
+    box-shadow: var(--shadow-raise);
+  }
+  .cards-container.expanded .card.pos-1 {
+    transform: translateY(-46px);
+    opacity: 1; z-index: 9;
+    box-shadow: var(--shadow-soft);
+  }
+  .cards-container.expanded .card.pos-2 {
+    transform: translateY(-92px);
+    opacity: 1; z-index: 8;
+    box-shadow: var(--shadow-soft);
+  }
+  .cards-container.expanded .card.pos-3 {
+    transform: translateY(-138px);
+    opacity: 1; z-index: 7;
+    box-shadow: var(--shadow-soft);
+  }
+  /* When expanded, hide the actions of pos-1/2/3 (only top card is fully interactive) */
+  .cards-container.expanded .card:not(.pos-0) .card-actions { opacity: 0; pointer-events: none; }
+  .cards-container.expanded .card:not(.pos-0) .balance-fiat { opacity: 0; }
+
+  /* ============ COMPACT mode for ALL cards when expanded ============
+     Every fanned card becomes a "summary": big balance block hides, a small
+     balance chip slides into the top-row next to the token icon (replacing
+     the trend badge). Card actions also fade away. The whole top-row stays
+     at the top-left of each card, so all cards in the fanned stack show the
+     same compact header (icon + name + balance chip). */
+  .cards-container.expanded .card {
+    padding: 14px 18px;
+    align-items: flex-start;
+  }
+  /* Top row shrinks: icon smaller */
+  .cards-container.expanded .card .token-icon {
+    width: 30px; height: 30px; font-size: 13px;
+    transition: width 0.4s var(--spring), height 0.4s var(--spring), font-size 0.4s var(--spring);
+  }
+  .cards-container.expanded .card .token-name { font-size: 13px; }
+  .cards-container.expanded .card .token-sub { font-size: 10px; }
+  /* Trend badge hidden, balance chip shown in its place */
+  .cards-container.expanded .card .token-trend {
+    opacity: 0; transform: scale(0.5);
+    pointer-events: none;
+    position: absolute; right: 18px;
+    transition: opacity 0.25s var(--ease-out), transform 0.35s var(--spring);
+  }
+  .cards-container.expanded .card .balance-chip {
+    display: block;
+    opacity: 0;
+    transform: scale(0.6);
+    animation: chipIn 0.4s var(--spring) 0.15s forwards;
+  }
+  @keyframes chipIn {
+    0%   { opacity: 0; transform: scale(0.6) translateX(8px); }
+    100% { opacity: 1; transform: scale(1) translateX(0); }
+  }
+
+  /* Big balance block fades out — its job is done by the chip now */
+  .cards-container.expanded .card .balance-block {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.85);
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease-out), transform 0.4s var(--spring), margin 0.4s var(--spring);
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+
+  /* Card actions fade out when expanded (cards are in "summary mode") */
+  .cards-container.expanded .card .card-actions {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease-out), transform 0.35s var(--spring);
+  }
+
+  /* Overlay (when cards expanded) — soft dim only, NO blur.
+     The fanned cards themselves are the focus; the background just dims. */
+  .cards-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s var(--ease-out);
+    z-index: 40;
+    border-radius: 44px;
+  }
+  .cards-overlay.active {
+    opacity: 1; pointer-events: auto;
+    background: rgba(0,0,0,0.4);
+  }
+  .theme-light .cards-overlay.active { background: rgba(20,22,32,0.32); }
+  .theme-amoled .cards-overlay.active { background: rgba(0,0,0,0.55); }
+
+  /* ============ BLOCKS (Contacts / Services) — minimalist neomorphic cards ============ */
+  .block {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 10px 14px 10px;
+    margin-top: 8px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 1px solid var(--soft-border);
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    transition: transform 0.15s, box-shadow 0.18s, border-color 0.15s;
+  }
+  .block:active { transform: scale(0.985); box-shadow: var(--shadow-press); border-color: var(--border); }
+  .block-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; padding: 0 2px;
+  }
+  .block-header .title {
+    font-size: 12px; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .block-header .action {
+    font-size: 11px; color: var(--text); font-weight: 600;
+    background: var(--tile); padding: 5px 12px; border-radius: 10px;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: background 0.15s, box-shadow 0.18s;
+  }
+  .block-header .action:active { box-shadow: var(--shadow-press); }
+
+  /* Contacts row — circular neomorphic avatars */
+  .contacts-row {
+    display: flex; justify-content: space-between; gap: 10px; padding: 0;
+  }
+  .contact-item {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    flex: 1; cursor: pointer; transition: transform 0.12s;
+  }
+  .contact-item:active { transform: scale(0.93); }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--tile); border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; color: var(--text);
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: box-shadow 0.18s;
+  }
+  .contact-item:active .avatar { box-shadow: var(--shadow-press); }
+  .contact-item .name { font-size: 10px; color: var(--text2); font-weight: 500; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar.plus {
+    background: var(--tile);
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    color: var(--text2); font-size: 20px;
+  }
+
+  /* Services row — neomorphic icon tiles */
+  .services-row {
+    display: flex; gap: 10px; padding: 0;
+  }
+  .service-icon {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; transition: transform 0.12s;
+    flex: 1;
+  }
+  .service-icon:active { transform: scale(0.94); }
+  .service-icon .icon-box {
+    width: 100%; aspect-ratio: 1.4 / 1; max-height: 50px;
+    border-radius: 14px;
+    background: var(--tile); border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: background 0.15s, box-shadow 0.18s;
+  }
+  .service-icon:active .icon-box { box-shadow: var(--shadow-press); }
+  .service-icon .icon-box svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 22px; height: 22px;
+  }
+  .service-icon .label { font-size: 11px; color: var(--text2); text-align: center; font-weight: 600; letter-spacing: 0.1px; }
+
+  /* ============ NOTIFICATION ZONE — single unified system ============ */
+  /* The notification is ONE entity: it starts as a dot, drops from above,
+     morphs into a card. No separate ripple/capsule/result-overlay. */
+  .notif-zone {
+    flex: 1; min-height: 40px;
+    position: relative;
+    pointer-events: none;
+  }
+
+  /* Unified notification card. Drops as a dot, expands into a card.
+     Spacious layout: generous padding, large readable type, comfortable gaps.
+     Full width matches other content blocks on the screen. */
+  .notif {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    /* Initial: tiny dot, above final position */
+    transform: translateX(-50%) translateY(-110px) scale(0.05);
+    transform-origin: center bottom;
+    background: var(--text);
+    border-radius: 999px;
+    padding: 22px 24px 22px;
+    display: flex; flex-direction: column; gap: 18px;
+    border: none;
+    box-shadow: 0 28px 60px -12px rgba(0,0,0,0.6), 0 10px 24px -6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.22);
+    color: var(--bg);
+    opacity: 0;
+    pointer-events: none;
+    width: calc(100% - 4px);
+    z-index: 80;
+    cursor: pointer;
+  }
+  .notif.show {
+    animation: notifDropMorph 0.75s var(--ease-out) forwards;
+    pointer-events: auto;
+    opacity: 1;
+  }
+  .notif.hide {
+    animation: notifCollapse 0.4s var(--ease-out) forwards;
+    pointer-events: none;
+  }
+  /* Drop + morph: dot falls, lands, morphs into a card (single entity) */
+  @keyframes notifDropMorph {
+    0%   { transform: translateX(-50%) translateY(-110px) scale(0.05); border-radius: 50%; }
+    35%  { transform: translateX(-50%) translateY(0)      scale(0.05); border-radius: 50%; }
+    55%  { transform: translateX(-50%) translateY(0)      scale(0.4, 0.06); border-radius: 50%; }
+    100% { transform: translateX(-50%) translateY(0)      scale(1); border-radius: 28px; }
+  }
+  @keyframes notifCollapse {
+    0%   { transform: translateX(-50%) translateY(0) scale(1); border-radius: 28px; opacity: 1; }
+    100% { transform: translateX(-50%) translateY(0) scale(0.05); border-radius: 50%; opacity: 0; }
+  }
+
+  /* ============ PILL MODE (info / simple service notifications) ============
+     Low capsule-style notification — icon + title + optional sub on a single
+     horizontal row. Used for transient info notifications (nav clicks, contact
+     taps, theme switches, pull-to-refresh). No details block, no action button. */
+  .notif.pill {
+    padding: 12px 18px;
+    gap: 0;
+    width: max-content;
+    max-width: calc(100% - 4px);
+    min-width: 0;
+  }
+  .notif.pill .notif-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .notif.pill .notif-icon {
+    width: 28px; height: 28px;
+    box-shadow: 0 3px 8px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.18);
+  }
+  .notif.pill .notif-icon svg { width: 16px; height: 16px; stroke-width: 3.2; }
+  .notif.pill .notif-body {
+    flex: 1; min-width: 0;
+    padding-top: 0;
+    gap: 0;
+    flex-direction: row;
+    align-items: center;
+  }
+  .notif.pill .notif-title {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.15px;
+    line-height: 1.2;
+    margin-right: 8px;
+    display: flex; align-items: center;
+  }
+  .notif.pill .notif-sub {
+    font-size: 12px; font-weight: 500;
+    line-height: 1.2;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex; align-items: center;
+  }
+  /* Pill morph: lands as a dot then expands into a low capsule (not a tall card) */
+  .notif.pill.show { animation: pillDropMorph 0.65s var(--ease-out) forwards; }
+  .notif.pill.hide { animation: pillCollapse 0.35s var(--ease-out) forwards; }
+  /* In pill mode, hide details + action entirely (they're for card mode only) */
+  .notif.pill .notif-details,
+  .notif.pill .notif-action { display: none !important; }
+  @keyframes pillDropMorph {
+    0%   { transform: translateX(-50%) translateY(-90px) scale(0.05); border-radius: 50%; }
+    35%  { transform: translateX(-50%) translateY(0)      scale(0.05); border-radius: 50%; }
+    55%  { transform: translateX(-50%) translateY(0)      scale(0.3, 0.08); border-radius: 50%; }
+    100% { transform: translateX(-50%) translateY(0)      scale(1); border-radius: 999px; }
+  }
+  @keyframes pillCollapse {
+    0%   { transform: translateX(-50%) translateY(0) scale(1); border-radius: 999px; opacity: 1; }
+    100% { transform: translateX(-50%) translateY(0) scale(0.05); border-radius: 50%; opacity: 0; }
+  }
+
+  /* Wave: separate sibling element so it isn't clipped by the card.
+     Expands outward from the landing point. */
+  .notif-wave {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    width: 22px; height: 22px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, 50%) scale(0);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 79;
+  }
+  .notif-wave.show {
+    animation: notifWaveExpand 0.9s var(--ease-out) 0.28s forwards;
+  }
+  @keyframes notifWaveExpand {
+    0%   { transform: translate(-50%, 50%) scale(0.6); opacity: 0.75; }
+    100% { transform: translate(-50%, 50%) scale(9); opacity: 0; }
+  }
+
+  /* Content fades in AFTER the drop+expand */
+  .notif-content {
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out) 0.45s;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .notif.show .notif-content { opacity: 1; }
+
+  /* Top row: icon + title + sub */
+  .notif-row {
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .notif-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 6px 14px -3px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.2);
+  }
+  .notif-icon svg {
+    stroke: #fff;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    width: 24px; height: 24px;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    transition: stroke-dashoffset 0.45s var(--ease-out) 0.55s;
+  }
+  .notif.show .notif-icon svg { stroke-dashoffset: 0; }
+  .notif-icon.success { background: var(--success); }
+  .notif-icon.error   { background: var(--danger); }
+  .notif-icon.info    { background: var(--accent); }
+  .notif.show .notif-icon.error { animation: errorShake 0.45s var(--ease-out) 0.55s; }
+  @keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px) rotate(-3deg); }
+    50% { transform: translateX(6px) rotate(3deg); }
+    75% { transform: translateX(-3px) rotate(-1deg); }
+  }
+
+  .notif-body {
+    flex: 1; display: flex; flex-direction: column; gap: 6px;
+    min-width: 0;
+    padding-top: 2px;
+  }
+  .notif-title {
+    font-size: 18px; font-weight: 700; color: var(--bg);
+    letter-spacing: -0.3px; line-height: 1.25;
+  }
+  .notif-sub {
+    font-size: 13px; color: var(--text2);
+    line-height: 1.5; font-weight: 500;
+  }
+
+  /* Details block: amount + commission (only shown when has-details class present) */
+  .notif-details {
+    display: none;
+    flex-direction: column; gap: 10px;
+    padding-left: 60px;  /* align with title (icon 44 + gap 16) */
+    border-top: 1px solid rgba(0,0,0,0.1);
+    margin-top: 4px;
+    padding-top: 14px;
+  }
+  .notif.has-details .notif-details { display: flex; }
+  .notif-amount {
+    font-family: var(--mono);
+    font-size: 22px; font-weight: 700; color: var(--bg);
+    letter-spacing: -0.5px;
+    display: flex; align-items: baseline; gap: 10px;
+    line-height: 1.15;
+  }
+  .notif-amount .lbl {
+    font-size: 10px; color: var(--text2); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .notif-commission {
+    font-size: 13px; color: var(--text2); font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    line-height: 1.4;
+  }
+  .notif-commission .lbl {
+    font-size: 10px; color: var(--text3); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .notif-commission .val {
+    font-family: var(--mono); color: var(--text2); font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* Action button (only shown when has-action class present) */
+  .notif-action {
+    display: none;
+    background: var(--tile); color: var(--text);
+    border: none; cursor: pointer;
+    padding: 14px 22px; border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    margin-top: 4px;
+    align-self: stretch;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s;
+    font-family: inherit;
+    letter-spacing: -0.1px;
+  }
+  .notif.has-action .notif-action { display: block; }
+  .notif-action:active { transform: scale(0.96); box-shadow: var(--shadow-press); }
+  .notif-action.primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 8px 18px -3px rgba(255,107,0,0.45), inset 0 1px 1px rgba(255,255,255,0.25), inset 0 -2px 3px rgba(0,0,0,0.15);
+  }
+
+  /* Theme overrides — notif always uses inverted contrast (dark card on dark theme,
+     light text overlay; the notif itself stays light-on-dark for consistency) */
+  .theme-light .notif,
+  .theme-light .notif .notif-title,
+  .theme-light .notif .notif-amount { color: #FFFFFF; }
+  .theme-light .notif .notif-sub { color: rgba(255,255,255,0.7); }
+  .theme-light .notif .notif-commission .lbl { color: rgba(255,255,255,0.5); }
+  .theme-light .notif .notif-commission .val { color: rgba(255,255,255,0.85); }
+  .theme-light .notif .notif-details { border-top-color: rgba(255,255,255,0.12); }
+  .theme-amoled .notif,
+  .theme-amoled .notif .notif-title,
+  .theme-amoled .notif .notif-amount { color: #FFFFFF; }
+  .theme-amoled .notif .notif-sub { color: rgba(255,255,255,0.6); }
+  .theme-amoled .notif .notif-commission .lbl { color: rgba(255,255,255,0.4); }
+  .theme-amoled .notif .notif-commission .val { color: rgba(255,255,255,0.8); }
+  .theme-amoled .notif .notif-details { border-top-color: rgba(255,255,255,0.1); }
+
+
+  /* ============ BOTTOM SHEET (error / profile) ============ */
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-radius: 28px 28px 0 0;
+    transform: translateY(110%);
+    transition: transform 0.55s var(--spring);
+    padding: 14px 22px calc(28px + env(safe-area-inset-bottom));
+    z-index: 60;
+    box-shadow: 0 -8px 50px rgba(0,0,0,0.20);
+    border-top: 1px solid var(--soft-border);
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet .handle {
+    width: 38px; height: 4px; background: var(--border);
+    border-radius: 4px; margin: 0 auto 18px;
+  }
+  .sheet .close-row {
+    display: flex; justify-content: flex-end; margin-bottom: 8px;
+  }
+  .sheet .close-btn {
+    background: var(--tile); border: none;
+    width: 34px; height: 34px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s;
+  }
+  .sheet .close-btn:active { transform: scale(0.9); box-shadow: var(--shadow-press); }
+  .sheet .close-btn svg { stroke: var(--text2); stroke-width: 2.2; fill: none; stroke-linecap: round; }
+  .sheet h3 {
+    font-size: 24px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px; letter-spacing: -0.5px;
+  }
+  .sheet .desc { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
+  .sheet .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .sheet .row:last-child { border-bottom: none; }
+  .sheet .label { color: var(--text2); font-size: 13px; }
+  .sheet .value { color: var(--text); font-size: 15px; font-weight: 600; }
+  .sheet .nick-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
+  .sheet .nick-row .nick {
+    font-size: 24px; font-weight: 700; color: var(--accent);
+    flex: 1; cursor: pointer; letter-spacing: -0.5px;
+    transition: opacity 0.15s;
+    font-family: var(--mono);
+  }
+  .sheet .nick-row .nick:active { opacity: 0.6; }
+  .sheet .nick-row .copy-btn {
+    background: var(--tile); border: none;
+    width: 42px; height: 42px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s;
+  }
+  .sheet .nick-row .copy-btn:active { transform: scale(0.9); box-shadow: var(--shadow-press); }
+  .sheet .nick-row .copy-btn svg { stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .sheet .address-row {
+    background: var(--tile); border-radius: 14px;
+    padding: 14px 16px; margin-top: 4px;
+    font-size: 12px; color: var(--text2);
+    display: none;
+    font-family: var(--mono);
+    word-break: break-all;
+    letter-spacing: -0.2px;
+  }
+  .sheet .address-row.show { display: block; animation: fadeUp 0.3s var(--ease-out); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .sheet .discriminator {
+    font-size: 11px; color: var(--text2); margin-top: 12px;
+    text-align: center;
+  }
+  .sheet .discriminator b { color: var(--accent); font-weight: 700; font-family: var(--mono); }
+  .sheet .qr {
+    width: 120px; height: 120px;
+    background: var(--tile);
+    border-radius: 18px;
+    margin: 18px auto 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2); font-size: 11px;
+    border: 1px solid var(--soft-border);
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    background-image:
+      linear-gradient(45deg, var(--text) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--text) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--text) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--text) 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  }
+
+  /* Sheet overlay */
+  .sheet-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s var(--ease-out);
+    z-index: 50;
+    backdrop-filter: blur(0px);
+  }
+  .sheet-overlay.active {
+    opacity: 1; pointer-events: auto;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(3px);
+  }
+  .theme-light .sheet-overlay.active { background: rgba(15,15,20,0.42); }
+
+  /* Content wrap shift (when notification appears) */
+  .content-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    transition: transform 0.5s var(--spring), filter 0.5s var(--ease-out);
+    min-height: 0;
+  }
+  .content-wrap.shift {
+    transform: translateY(8px) scale(0.985);
+    filter: brightness(0.88);
+  }
+  .theme-light .content-wrap.shift { filter: brightness(0.96); }
+
+  /* ============ BOTTOM NAV — floating neomorphic pill style ============ */
+  .bottom-nav {
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 8px 10px 6px; margin-top: 6px;
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--text2);
+    cursor: pointer;
+    background: var(--bg); border: none;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    flex: 1;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    transition: transform 0.12s, box-shadow 0.18s, color 0.15s;
+  }
+  .nav-item:active { transform: scale(0.94); box-shadow: var(--shadow-press); }
+  .nav-item svg { stroke: var(--text3); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; width: 22px; height: 22px; }
+  .nav-item.active {
+    color: var(--text);
+    background: var(--tile);
+    box-shadow: var(--shadow-press), inset 0 0 0 1px var(--soft-border);
+  }
+  .nav-item.active svg { stroke: var(--accent); }
+
+  /* ============ HINT (removed — all messages live in the bottom notif zone) ============ */
+</style>
+</head>
+<body>
+<div class="phone theme-dark" id="phone">
+  <!-- Overlays (above content, below sheets) -->
+  <div class="cards-overlay" id="cardsOverlay"></div>
+  <div class="sheet-overlay" id="sheetOverlay"></div>
+
+  <!-- Profile sheet -->
+  <div class="sheet" id="profileSheet">
+    <div class="handle"></div>
+    <div class="close-row">
+      <button class="close-btn" id="closeProfileBtn" aria-label="Закрыть">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <h3>Профиль</h3>
+    <div class="desc">Ваш ник — это адрес кошелька. Поделитесь им, чтобы получать переводы.</div>
+
+    <div class="nick-row">
+      <div class="nick" id="profileNick">@crazy-cherry</div>
+      <button class="copy-btn" id="copyNickBtn" aria-label="Копировать">
+        <svg width="18" height="18" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+    <div class="address-row" id="addressRow">
+      0x8A9B3F2C7E4D1A6B5C8E9F0A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2
+    </div>
+    <div class="discriminator">Дискриминатор: <b>#2215</b> <span style="opacity:0.5">(6 цифр, нули скрыты)</span></div>
+    <div class="qr">QR</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-wrap" id="contentWrap">
+    <!-- Header -->
+    <div class="header">
+      <div class="greeting" id="profileBtn">
+        <div class="hello">Привет,</div>
+        <div class="name">Антон</div>
+        <div class="nick">@crazy-cherry</div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="notifBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge"></span>
+        </button>
+        <button class="icon-btn" id="settingsBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pull-to-refresh -->
+    <div class="pull-indicator" id="pullIndicator">
+      <div class="spinner"></div>
+      <span>Обновляем балансы…</span>
+    </div>
+
+    <!-- Cards stack -->
+    <div class="cards-wrapper" id="cardsWrapper">
+      <div class="cards-container" id="cardsContainer"></div>
+    </div>
+
+    <!-- Contacts block -->
+    <div class="block" id="contactsBlock">
+      <div class="block-header">
+        <span class="title">Контакты</span>
+        <span class="action">Все</span>
+      </div>
+      <div class="contacts-row" id="contactsRow"></div>
+    </div>
+
+    <!-- Services block -->
+    <div class="block" id="servicesBlock">
+      <div class="block-header">
+        <span class="title">Сервисы</span>
+        <span class="action">Все</span>
+      </div>
+      <div class="services-row" id="servicesRow"></div>
+    </div>
+
+    <!-- Unified notification zone (dot drops + morphs into card) -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details" id="notifDetails">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <button class="nav-item active" data-tab="wallet">
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 14h2"/></svg>
+      <span>Кошелёк</span>
+    </button>
+    <button class="nav-item" data-tab="fiat">
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
+      <span>Фиат</span>
+    </button>
+    <button class="nav-item" data-tab="services">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Сервисы</span>
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============ DATA ============
+  const tokens = [
+    { id:'usdt', name:'USDT', balance:'1 250.50', fiat:'≈ $1 250.50', trend:'+2.4%', trendDir:'up', color:'#26A17B', icon:'₮', commission:'0.1 USDT', sendAmount:'25.00' },
+    { id:'mdao', name:'MDAO', balance:'12 345.67', fiat:'≈ $4 521.30', trend:'+5.1%',  trendDir:'up', color:'#6D4AFF', icon:'◈', commission:'0.5 MDAO', sendAmount:'25.00' },
+    { id:'bnb',  name:'BNB',  balance:'45.23',     fiat:'≈ $26 890.45', trend:'-1.2%', trendDir:'down', color:'#F0B90B', icon:'◆', commission:'0.0005 BNB', sendAmount:'0.05' },
+    { id:'usdc', name:'USDC', balance:'890.12',    fiat:'≈ $890.12', trend:'+0.1%',   trendDir:'up', color:'#2775CA', icon:'●', commission:'0.1 USDC', sendAmount:'25.00' }
+  ];
+  const contacts = [
+    { name:'Алиса', initial:'А' },
+    { name:'Боб', initial:'Б' },
+    { name:'Карл', initial:'К' }
+  ];
+  const services = [
+    { name:'Arena', svg:'<svg viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>' },
+    { name:'DEX',   svg:'<svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>' },
+    { name:'Flopi', svg:'<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg>' },
+    { name:'VPN',   svg:'<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' }
+  ];
+
+  // ============ STATE ============
+  let currentIndex = 0;
+  let isExpanded = false;
+  let cards = [];
+  let theme = 'dark';
+  let isNotifOpen = false;
+  let notifTimer = null;
+  let notifAnimTimer = null;
+  let isProfileOpen = false;
+  let lastNotifAction = null;  // callback for the notif action button (error retry etc.)
+
+  // ============ DOM ============
+  const phone = document.getElementById('phone');
+  const cardsContainer = document.getElementById('cardsContainer');
+  const cardsOverlay = document.getElementById('cardsOverlay');
+  const cardsWrapper = document.getElementById('cardsWrapper');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const profileSheet = document.getElementById('profileSheet');
+  const sheetOverlay = document.getElementById('sheetOverlay');
+  const pullIndicator = document.getElementById('pullIndicator');
+
+  // ============ CARDS ============
+  function renderCards() {
+    cardsContainer.innerHTML = '';
+    cards = [];
+    tokens.forEach((token, i) => {
+      const div = document.createElement('div');
+      div.className = `card pos-${i}`;
+      const trendClass = token.trendDir === 'down' ? 'token-trend down' : 'token-trend';
+      div.innerHTML = `
+        <div class="top-row">
+          <div class="token-icon" style="background:${token.color}">${token.icon}</div>
+          <div class="token-meta">
+            <div class="token-name">${token.name}</div>
+            <div class="token-sub">BNB Smart Chain</div>
+          </div>
+          <div class="${trendClass}">${token.trend}</div>
+          <div class="balance-chip">${token.balance} <span class="unit">${token.name}</span></div>
+        </div>
+        <div class="balance-block">
+          <div class="balance">${token.balance} <span class="unit">${token.name}</span></div>
+          <div class="balance-fiat">${token.fiat}</div>
+        </div>
+        <div class="card-actions">
+          <button class="tile primary" data-action="send" aria-label="Отправить">
+            <svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+            <span class="lbl">Отправить</span>
+          </button>
+          <button class="tile" data-action="receive" aria-label="Получить">
+            <svg viewBox="0 0 24 24"><path d="M17 7L7 17"/><path d="M17 17H7V7"/></svg>
+            <span class="lbl">Получить</span>
+          </button>
+          <button class="tile" data-action="history" aria-label="История">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+            <span class="lbl">История</span>
+          </button>
+        </div>
+      `;
+      cardsContainer.appendChild(div);
+      cards.push(div);
+    });
+    updateCards();
+
+    document.querySelectorAll('.card .tile').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const token = tokens[currentIndex];
+        if (action === 'send') {
+          // Success notification with amount + commission (MDAO shows its commission too)
+          showNotif({
+            type: 'success',
+            title: 'Отправлено',
+            sub: `${token.sendAmount} ${token.name} → @alice`,
+            amount: `−${token.sendAmount} ${token.name}`,
+            commission: token.commission,
+            autoDismiss: 4500
+          });
+        } else if (action === 'receive') {
+          showError('Не удалось получить', 'Сервис получения временно недоступен. Попробуйте позже.');
+        } else if (action === 'history') {
+          showError('История недоступна', 'Не удалось загрузить историю транзакций. Проверьте подключение.');
+        }
+      });
+    });
+  }
+
+  function updateCards() {
+    cards.forEach((card, i) => {
+      const offset = (i - currentIndex + tokens.length) % tokens.length;
+      let posClass = `pos-${Math.min(offset, 3)}`;
+      card.className = `card ${posClass}`;
+      card.style.opacity = offset > 3 ? '0' : '';
+      card.style.pointerEvents = offset > 3 ? 'none' : '';
+    });
+  }
+
+  function goTo(index) {
+    if (index < 0) index = tokens.length - 1;
+    if (index >= tokens.length) index = 0;
+    currentIndex = index;
+    updateCards();
+  }
+
+  function toggleExpand(expand) {
+    isExpanded = expand;
+    cardsContainer.classList.toggle('expanded', expand);
+    cardsOverlay.classList.toggle('active', expand);
+    cards.forEach((card, i) => {
+      const offset = (i - currentIndex + tokens.length) % tokens.length;
+      card.style.setProperty('--i', offset);
+    });
+  }
+
+  // ============ SWIPE (slow, with spring) ============
+  let startX = 0, startY = 0, isDown = false, moved = false, isSwiping = false, longPressTimer = null;
+
+  function startDrag(x, y) {
+    startX = x; startY = y;
+    isDown = true; moved = false; isSwiping = false;
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      if (isDown && !moved) toggleExpand(true);
+    }, 400);
+  }
+
+  function moveDrag(x, y, ev) {
+    if (!isDown) return;
+    const dx = x - startX;
+    const dy = y - startY;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) && !isExpanded) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      isSwiping = true;
+      clearTimeout(longPressTimer);
+      if (dx < -30) { goTo(currentIndex + 1); isDown = false; }
+      else if (dx > 30) { goTo(currentIndex - 1); isDown = false; }
+    }
+  }
+
+  function endDrag() {
+    isDown = false;
+    clearTimeout(longPressTimer);
+    isSwiping = false;
+  }
+
+  cardsWrapper.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]; startDrag(t.clientX, t.clientY);
+  }, { passive: true });
+  cardsWrapper.addEventListener('touchmove', (e) => {
+    const t = e.touches[0]; moveDrag(t.clientX, t.clientY, e);
+  }, { passive: false });
+  cardsWrapper.addEventListener('touchend', endDrag);
+  cardsWrapper.addEventListener('touchcancel', endDrag);
+
+  cardsWrapper.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+  cardsWrapper.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY, e));
+  cardsWrapper.addEventListener('mouseup', endDrag);
+  cardsWrapper.addEventListener('mouseleave', endDrag);
+
+  cardsOverlay.addEventListener('click', () => { if (isExpanded) toggleExpand(false); });
+
+  // ============ CONTACTS ============
+  function renderContacts() {
+    const row = document.getElementById('contactsRow');
+    row.innerHTML = '';
+    contacts.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'contact-item';
+      div.innerHTML = `<div class="avatar">${c.initial}</div><div class="name">${c.name}</div>`;
+      div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showCapsule('info', c.name, 'Открывается чат');
+      });
+      row.appendChild(div);
+    });
+    const plus = document.createElement('div');
+    plus.className = 'contact-item';
+    plus.innerHTML = `<div class="avatar plus">+</div><div class="name">Добавить</div>`;
+    plus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showCapsule('info', 'Новый контакт', 'Поиск по нику');
+    });
+    row.appendChild(plus);
+  }
+
+  // ============ SERVICES ============
+  function renderServices() {
+    const row = document.getElementById('servicesRow');
+    row.innerHTML = '';
+    services.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'service-icon';
+      div.innerHTML = `<div class="icon-box">${s.svg}</div><div class="label">${s.name}</div>`;
+      div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showCapsule('info', s.name, 'Сервис открывается…');
+      });
+      row.appendChild(div);
+    });
+  }
+
+  // ============ NOTIFICATIONS — unified system ============
+  // ONE entity: the .notif card starts as a dot, drops, morphs into a card.
+  // Same animation for ALL notification types (info / success / error).
+  // Content adapts: icon + title + sub always; amount + commission optional; action button optional.
+  // Auto-dismiss for info/success; stays until tapped for error.
+
+  const ICON_SVG = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    // opts: { type, title, sub, amount, commission, actionLabel, actionCb, autoDismiss, actionPrimary, pill }
+    // pill=true (or auto for info without details/action) → low capsule layout
+    if (isProfileOpen) return;
+    // If a notif is already open, dismiss it first and re-show after a brief beat
+    if (isNotifOpen) {
+      dismissNotif(true);
+      notifAnimTimer = setTimeout(() => showNotif(opts), 380);
+      return;
+    }
+
+    const type = opts.type || 'info';
+    // Decide pill mode: explicit opt, or auto for info-type without details/action
+    const usePill = opts.pill !== undefined
+      ? opts.pill
+      : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+
+    // Icon
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICON_SVG[type] || ICON_SVG.info;
+
+    // Text content
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+
+    // Optional amount + commission (only shown in card mode, hidden in pill)
+    if (usePill) {
+      notif.classList.remove('has-details');
+    } else if (opts.amount || opts.commission) {
+      notif.classList.add('has-details');
+      if (opts.amount) {
+        notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`;
+        notifAmount.style.display = 'flex';
+      } else {
+        notifAmount.style.display = 'none';
+      }
+      if (opts.commission) {
+        notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`;
+        notifCommission.style.display = 'flex';
+      } else {
+        notifCommission.style.display = 'none';
+      }
+    } else {
+      notif.classList.remove('has-details');
+    }
+
+    // Optional action button (used for errors → "Повторить"); never in pill mode
+    if (!usePill && opts.actionLabel) {
+      notif.classList.add('has-action');
+      notifAction.textContent = opts.actionLabel;
+      notifAction.classList.toggle('primary', !!opts.actionPrimary);
+      lastNotifAction = opts.actionCb || null;
+    } else {
+      notif.classList.remove('has-action');
+      lastNotifAction = null;
+    }
+
+    // Toggle pill class (drives layout + animation variant)
+    notif.classList.toggle('pill', usePill);
+
+    // Trigger drop+morph animation (single entity, no separate ripple)
+    notif.classList.remove('hide');
+    void notif.offsetWidth;  // restart anim
+    notif.classList.add('show');
+    // Wave expands from the landing point (sibling element, not clipped)
+    notifWave.classList.remove('show');
+    void notifWave.offsetWidth;
+    notifWave.classList.add('show');
+    contentWrap.classList.add('shift');
+    isNotifOpen = true;
+
+    // Auto-dismiss for info/success
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) {
+      notifTimer = setTimeout(() => dismissNotif(), delay);
+    }
+  }
+
+  function dismissNotif(silent) {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show');
+    notif.classList.add('hide');
+    notifWave.classList.remove('show');
+    contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    // Clean up classes after the collapse animation finishes
+    setTimeout(() => {
+      if (!isNotifOpen) {
+        notif.classList.remove('hide');
+        notif.classList.remove('show');
+      }
+    }, 420);
+  }
+
+  // Legacy aliases (so existing call sites keep working)
+  function showCapsule(type, msg, sub) {
+    showNotif({ type, title: msg, sub });
+  }
+  function showResult(type, title, sub, amount) {
+    if (type === 'error') {
+      showNotif({
+        type: 'error',
+        title,
+        sub,
+        actionLabel: 'Повторить',
+        actionPrimary: true,
+        actionCb: () => {
+          dismissNotif();
+          setTimeout(() => showNotif({
+            type: 'success',
+            title: 'Готово',
+            sub: 'Запрос выполнен успешно',
+            amount: amount || '−0 USDT'
+          }), 350);
+        }
+      });
+    } else {
+      showNotif({ type: 'success', title, sub, amount });
+    }
+  }
+  function showError(title, detail) { showResult('error', title, detail); }
+  function closeError() { dismissNotif(); }
+  function closeResult() { dismissNotif(); }
+  function dismissCapsule() { dismissNotif(); }
+
+  // ============ PROFILE ============
+  function openProfile() {
+    if (isNotifOpen) {
+      dismissNotif();
+    }
+    isProfileOpen = true;
+    profileSheet.classList.add('open');
+    sheetOverlay.classList.add('active');
+    contentWrap.classList.add('shift');
+  }
+  function closeProfile() {
+    profileSheet.classList.remove('open');
+    sheetOverlay.classList.remove('active');
+    contentWrap.classList.remove('shift');
+    isProfileOpen = false;
+    document.getElementById('addressRow').classList.remove('show');
+  }
+
+  // ============ EVENTS ============
+  document.getElementById('profileBtn').addEventListener('click', openProfile);
+  document.getElementById('closeProfileBtn').addEventListener('click', closeProfile);
+
+  // Notif: tap the card body (not the action button) → dismiss
+  notif.addEventListener('click', (e) => {
+    // If user tapped the action button, let its own handler run
+    if (e.target === notifAction || notifAction.contains(e.target)) return;
+    dismissNotif();
+  });
+  // Notif action button → run callback (if any)
+  notifAction.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cb = lastNotifAction;
+    if (cb) cb();
+    else dismissNotif();
+  });
+
+  sheetOverlay.addEventListener('click', () => {
+    if (isProfileOpen) closeProfile();
+  });
+
+  document.getElementById('copyNickBtn').addEventListener('click', () => {
+    const nick = document.getElementById('profileNick').textContent;
+    try { navigator.clipboard.writeText(nick); } catch (e) {}
+    showCapsuleOnTop('success', 'Скопировано', nick);
+  });
+
+  // Long press on nick → show address
+  let nickPressTimer = null;
+  const nickEl = document.getElementById('profileNick');
+  function showAddress() { document.getElementById('addressRow').classList.add('show'); }
+  nickEl.addEventListener('touchstart', () => {
+    nickPressTimer = setTimeout(showAddress, 500);
+  });
+  nickEl.addEventListener('touchend', () => clearTimeout(nickPressTimer));
+  nickEl.addEventListener('mousedown', () => {
+    nickPressTimer = setTimeout(showAddress, 500);
+  });
+  nickEl.addEventListener('mouseup', () => clearTimeout(nickPressTimer));
+  nickEl.addEventListener('mouseleave', () => clearTimeout(nickPressTimer));
+
+  // Helper: show capsule on top of an open sheet
+  function showCapsuleOnTop(type, msg, sub) {
+    closeProfile();
+    setTimeout(() => showNotif({ type, title: msg, sub }), 400);
+  }
+
+  // Block clicks
+  document.getElementById('contactsBlock').addEventListener('click', () => {
+    showCapsule('info', 'Контакты', 'Открывается список');
+  });
+  document.getElementById('servicesBlock').addEventListener('click', () => {
+    showCapsule('info', 'Сервисы', 'Открывается магазин');
+  });
+
+  // Nav clicks
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      const tab = item.dataset.tab;
+      if (tab === 'wallet') showCapsule('info', 'Кошелёк', 'Главный экран');
+      else if (tab === 'fiat') showCapsule('info', 'Фиат', 'Пополнение и вывод');
+      else if (tab === 'services') showCapsule('info', 'Сервисы', 'Магазин приложений');
+    });
+  });
+
+  // Theme switcher (gear)
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(theme);
+    theme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${theme}`;
+    showCapsule('info', 'Тема', theme === 'dark' ? 'Тёмная' : theme === 'light' ? 'Светлая' : 'AMOLED');
+  });
+
+  // Notification bell
+  document.getElementById('notifBtn').addEventListener('click', () => {
+    showCapsule('info', 'Уведомлений нет', 'Вы всё прочитали');
+  });
+
+  // ============ PULL TO REFRESH ============
+  let pullStartY = 0, pullActive = false, pullTriggered = false;
+  contentWrap.addEventListener('touchstart', (e) => {
+    if (contentWrap.scrollTop === 0) {
+      pullStartY = e.touches[0].clientY;
+      pullActive = true;
+      pullTriggered = false;
+    }
+  }, { passive: true });
+  contentWrap.addEventListener('touchmove', (e) => {
+    if (!pullActive || pullTriggered) return;
+    const dy = e.touches[0].clientY - pullStartY;
+    if (dy > 60) {
+      pullTriggered = true;
+      pullIndicator.classList.add('show');
+      setTimeout(() => {
+        pullIndicator.classList.remove('show');
+        showCapsule('success', 'Обновлено', 'Балансы актуальны');
+      }, 700);
+    }
+  }, { passive: true });
+  contentWrap.addEventListener('touchend', () => { pullActive = false; });
+
+  // Mouse wheel pull-to-refresh (desktop)
+  contentWrap.addEventListener('wheel', (e) => {
+    if (contentWrap.scrollTop === 0 && e.deltaY < -60 && !pullTriggered) {
+      pullTriggered = true;
+      pullIndicator.classList.add('show');
+      setTimeout(() => {
+        pullIndicator.classList.remove('show');
+        showCapsule('success', 'Обновлено', 'Балансы актуальны');
+      }, 700);
+    }
+  });
+
+  // ============ INIT ============
+  renderCards();
+  renderContacts();
+  renderServices();
+
+  console.log('%cMDAOPay', 'color:#FF6B00;font-size:18px;font-weight:bold', '— готов. Свайпай карты, удерживай для разъезда, жми кнопку Отправить для успеха, Получить/История — для ошибки.');
+})();
+</script>
+</body>
+</html>

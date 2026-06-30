@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena — Вход через MDAOPay</title>
+<style>
+  body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #f0f2f5; display: flex; justify-content: center; height: 100vh; align-items: center; }
+  .browser-mockup { width: 100%; max-width: 480px; height: 80vh; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; border: 1px solid #e0e0e0; }
+  .browser-bar { background: #f5f5f5; padding: 10px 15px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+  .dot.red { background: #ff5f56; }
+  .dot.yellow { background: #ffbd2e; }
+  .dot.green { background: #27c93f; }
+  .url-bar { flex: 1; background: #fff; padding: 5px 10px; border-radius: 6px; font-size: 12px; color: #666; border: 1px solid #e0e0e0; }
+  .content { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
+  .logo { font-size: 32px; font-weight: 800; color: #6D4AFF; margin-bottom: 10px; }
+  .slogan { font-size: 16px; color: #666; margin-bottom: 40px; }
+  .btn-connect { background: #FF6B00; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 12px rgba(255,107,0,0.3); }
+  .btn-connect:hover { transform: translateY(-2px); }
+  .features { margin-top: 40px; text-align: left; width: 100%; }
+  .feature { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .check { color: #00D68F; font-size: 18px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="browser-mockup">
+  <div class="browser-bar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <div class="url-bar">🔒 arena.marsdao.com</div>
+  </div>
+  <div class="content">
+    <div class="logo">Arena</div>
+    <div class="slogan">Платформа соревнований и активностей MarsDAO</div>
+    
+    <button class="btn-connect" id="connectBtn">Войти через MDAOPay</button>
+
+    <div class="features">
+      <div class="feature"><span class="check">✓</span> Мгновенный вход без паролей</div>
+      <div class="feature"><span class="check">✓</span> Участие в турнирах</div>
+      <div class="feature"><span class="check">✓</span> Получение наград напрямую на кошелёк</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Simulate MDAOPay SDK call
+  document.getElementById('connectBtn').addEventListener('click', () => {
+    // In a real scenario, this opens the MDAOPay app or a modal.
+    // We redirect to a local HTML file simulating the MDAOPay confirmation screen.
+    window.location.href = 'mdaopay-connect-modal.html?type=legit';
+  });
+</script>
+
+</body>
+</html>

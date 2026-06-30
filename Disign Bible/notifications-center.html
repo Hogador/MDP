@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Уведомления</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .notif-card {
+    display: flex; gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    margin-bottom: 6px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    width: 100%; font-family: inherit; text-align: left;
+    position: relative;
+  }
+  .notif-card:active { transform: scale(0.985); box-shadow: var(--shadow-press); }
+  .notif-card.unread::before {
+    content: '';
+    position: absolute;
+    left: 4px; top: 50%; transform: translateY(-50%);
+    width: 4px; height: 32px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(255,107,0,0.4);
+  }
+  .notif-card.unread { padding-left: 18px; }
+  .notif-card .nc-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft);
+  }
+  .notif-card .nc-icon svg {
+    stroke: currentColor; stroke-width: 2.4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px;
+  }
+  .notif-card.tx-in .nc-icon { background: var(--success-soft); color: var(--success); }
+  .notif-card.tx-out .nc-icon { background: var(--danger-soft); color: var(--danger); }
+  .notif-card.swap .nc-icon { background: var(--accent-soft); color: var(--accent); }
+  .notif-card.security .nc-icon { background: var(--warning-soft); color: var(--warning); }
+  .notif-card.news .nc-icon { background: var(--tile); color: var(--text2); }
+
+  .notif-card .nc-body { flex: 1; min-width: 0; }
+  .notif-card .nc-top {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  }
+  .notif-card .nc-title { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--text); }
+  .notif-card .nc-time { font-size: var(--fs-meta); color: var(--text2); flex-shrink: 0; }
+  .notif-card .nc-text { font-size: var(--fs-label); color: var(--text2); line-height: var(--lh-normal); margin-top: 2px; }
+  .notif-card .nc-amount {
+    font-family: var(--font-mono); font-size: var(--fs-body-lg); font-weight: var(--fw-bold);
+    margin-top: 6px;
+  }
+  .notif-card.tx-in .nc-amount { color: var(--success); }
+  .notif-card.tx-out .nc-amount { color: var(--danger); }
+
+  .notif-card .nc-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 8px; padding: 6px 12px;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid rgba(255,107,0,0.2);
+    border-radius: var(--r-pill);
+    font-size: var(--fs-meta); font-weight: var(--fw-bold);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .notif-card .nc-action:active { transform: scale(0.94); }
+
+  .mark-all {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: transparent; color: var(--accent);
+    border: none; padding: 8px;
+    font-family: inherit; font-size: var(--fs-label); font-weight: var(--fw-bold);
+    cursor: pointer;
+    margin: 0 0 14px;
+  }
+  .mark-all:active { transform: scale(0.96); }
+
+  .empty-state {
+    text-align: center; padding: 80px 24px;
+    color: var(--text2);
+  }
+  .empty-state .es-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .empty-state .es-icon svg {
+    stroke: var(--text3); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 32px; height: 32px;
+  }
+  .empty-state .es-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty-state .es-sub { font-size: var(--fs-body); line-height: var(--lh-relaxed); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Уведомления</div>
+    <button class="action-btn" id="settingsLink" aria-label="Настройки">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <button class="mark-all" id="markAllBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" style="stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12l5 5L20 7"/></svg>
+      Отметить все прочитанными
+    </button>
+
+    <!-- Today -->
+    <div class="list-section-header">Сегодня</div>
+
+    <button class="notif-card tx-in unread" data-notif="1">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Входящий перевод</div>
+          <div class="nc-time">14:32</div>
+        </div>
+        <div class="nc-text">От @bob · BNB Smart Chain</div>
+        <div class="nc-amount">+150.00 USDT</div>
+      </div>
+    </button>
+
+    <button class="notif-card tx-out unread" data-notif="2">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Исходящий перевод</div>
+          <div class="nc-time">11:08</div>
+        </div>
+        <div class="nc-text">→ @alice · подтверждено</div>
+        <div class="nc-amount">−50.00 MDAO</div>
+      </div>
+    </button>
+
+    <button class="notif-card security unread" data-notif="3">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Вход в аккаунт</div>
+          <div class="nc-time">09:45</div>
+        </div>
+        <div class="nc-text">Новый вход с устройства iPhone 15 Pro · Москва, RU. Если это не вы — смените PIN.</div>
+      </div>
+    </button>
+
+    <!-- Yesterday -->
+    <div class="list-section-header">Вчера</div>
+
+    <button class="notif-card swap" data-notif="4">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Обмен завершён</div>
+          <div class="nc-time">22:14</div>
+        </div>
+        <div class="nc-text">USDT → MDAO по курсу 0.183</div>
+        <div class="nc-amount">−100.00 USDT</div>
+      </div>
+    </button>
+
+    <button class="notif-card tx-in" data-notif="5">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Входящий перевод</div>
+          <div class="nc-time">18:50</div>
+        </div>
+        <div class="nc-text">От @alice · BNB Smart Chain</div>
+        <div class="nc-amount">+500.00 USDC</div>
+      </div>
+    </button>
+
+    <button class="notif-card tx-out" data-notif="6">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Транзакция не удалась</div>
+          <div class="nc-time">12:20</div>
+        </div>
+        <div class="nc-text">→ @bob · недостаточно газа. Средства возвращены.</div>
+        <button class="nc-action" data-action="retry">Повторить</button>
+      </div>
+    </button>
+
+    <!-- This week -->
+    <div class="list-section-header">На этой неделе</div>
+
+    <button class="notif-card news" data-notif="7">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Новое обновление MDAO</div>
+          <div class="nc-time">19 июня</div>
+        </div>
+        <div class="nc-text">Версия 1.0.0 уже доступна. Улучшена производительность, добавлены новые токены.</div>
+        <button class="nc-action" data-action="update">Обновить</button>
+      </div>
+    </button>
+
+    <button class="notif-card swap" data-notif="8">
+      <div class="nc-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.39 0 4.68.94 6.4 2.6L21 8"/></svg></div>
+      <div class="nc-body">
+        <div class="nc-top">
+          <div class="nc-title">Цена MDAO выросла</div>
+          <div class="nc-time">17 июня</div>
+        </div>
+        <div class="nc-text">+7.2% за 24 часа · текущая цена $0.366</div>
+      </div>
+    </button>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+  });
+
+  document.getElementById('settingsLink').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'Настройки уведомлений', pill:true });
+  });
+
+  // Mark all read
+  document.getElementById('markAllBtn').addEventListener('click', () => {
+    document.querySelectorAll('.notif-card.unread').forEach(c => c.classList.remove('unread'));
+    MDAONotif.show({ type:'success', title:'Готово', sub:'Все прочитаны', pill:true });
+  });
+
+  // Card click → mark read + show details
+  document.querySelectorAll('.notif-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.nc-action')) return;
+      card.classList.remove('unread');
+      const title = card.querySelector('.nc-title').textContent;
+      MDAONotif.show({ type:'info', title: title, sub:'Открыть детали', pill:true });
+    });
+  });
+
+  // Action buttons
+  document.querySelectorAll('.nc-action').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = b.dataset.action;
+      if (action === 'retry') {
+        MDAONotif.show({ type:'success', title:'Повтор отправлен', sub:'Транзакция в обработке', pill:true });
+      } else if (action === 'update') {
+        MDAONotif.show({ type:'success', title:'Обновление', sub:'Загрузка…', pill:true });
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

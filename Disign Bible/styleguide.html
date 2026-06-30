@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDAOPay — Styleguide</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* Styleguide page chrome */
+  body { background: #1a1a1f; display: block; overflow-y: auto; padding: 32px; color: #fff; }
+  .sg-wrap { max-width: 1200px; margin: 0 auto; }
+  .sg-title { font-size: 36px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.8px; }
+  .sg-subtitle { font-size: 16px; color: #888; margin-bottom: 40px; font-weight: 500; }
+
+  /* Theme switcher */
+  .sg-themes { display: flex; gap: 8px; margin-bottom: 32px; }
+  .sg-themes button {
+    padding: 8px 16px; border-radius: 999px; border: 1px solid #444;
+    background: #2a2a30; color: #fff; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+  }
+  .sg-themes button.active { background: #FF6B00; border-color: #FF6B00; }
+
+  /* Each section: side phone + side notes */
+  .sg-section { margin-bottom: 60px; }
+  .sg-section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 6px;
+    letter-spacing: -0.4px; color: #fff;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sg-section-title .idx {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #FF6B00; color: #fff; font-size: 14px;
+  }
+  .sg-section-desc { font-size: 14px; color: #999; margin-bottom: 24px; }
+
+  /* Phone preview — compact */
+  .phone-preview {
+    width: 390px; height: 844px; max-height: 80vh;
+    margin: 0 auto; padding: 14px 18px 6px;
+    background: var(--bg); color: var(--text);
+    border-radius: 44px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 11px #0a0a0a, 0 0 0 13px #2a2a2a;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+    position: relative; flex-shrink: 0;
+  }
+  .phone-preview::-webkit-scrollbar { width: 0; }
+
+  /* Demo layout inside phone */
+  .sg-demo { padding: 4px 0 24px; }
+  .sg-demo-row {
+    margin-bottom: 16px;
+  }
+  .sg-demo-label {
+    font-size: 11px; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  /* Side grid for showing variants */
+  .sg-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+  /* Side-by-side preview: 3 phones in a row */
+  .sg-row-of-phones {
+    display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;
+  }
+
+  /* Token table */
+  .sg-token-table {
+    width: 100%; border-collapse: collapse;
+    background: #1f1f24; border-radius: 12px; overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .sg-token-table th, .sg-token-table td {
+    padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid #2a2a30; font-size: 13px;
+  }
+  .sg-token-table th { background: #2a2a30; font-weight: 600; color: #aaa; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+  .sg-token-table td.code { font-family: 'SF Mono', monospace; color: #FF6B00; }
+  .sg-token-swatch { display: inline-block; width: 24px; height: 24px; border-radius: 6px; vertical-align: middle; margin-right: 10px; border: 1px solid #444; }
+
+  /* Code blocks */
+  .sg-code {
+    background: #14141a; border: 1px solid #2a2a30; border-radius: 8px;
+    padding: 14px 16px; font-family: 'SF Mono', monospace; font-size: 12px;
+    color: #c8c8d0; margin-top: 10px; overflow-x: auto;
+  }
+
+  /* Demo notification trigger */
+  .sg-trigger {
+    padding: 10px 14px; background: var(--accent-soft); color: var(--accent);
+    border: 1px solid rgba(255,107,0,0.2);
+    border-radius: 12px; font-weight: 600; cursor: pointer;
+    font-size: 13px; margin-bottom: 8px; display: inline-block;
+  }
+  .sg-trigger:active { transform: scale(0.96); }
+</style>
+</head>
+<body class="theme-dark">
+
+<div class="sg-wrap">
+  <div class="sg-title">MDAOPay — Styleguide</div>
+  <div class="sg-subtitle">Phase 0 · Библиотека компонентов для всех экранов приложения</div>
+
+  <div class="sg-themes">
+    <button data-theme="dark" class="active">Dark</button>
+    <button data-theme="light">Light</button>
+    <button data-theme="amoled">AMOLED</button>
+  </div>
+
+  <!-- ============ SECTION 1: TOKENS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">1</span> Design Tokens</div>
+    <div class="sg-section-desc">Базовая система: цвета, тени, типографика, отступы, скругления.</div>
+
+    <table class="sg-token-table">
+      <thead>
+        <tr><th>Token</th><th>Dark</th><th>Light</th><th>AMOLED</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="sg-token-swatch" style="background:#0A0A0F"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--bg</span></td><td class="code">#0A0A0F</td><td class="code">#E8EBF1</td><td class="code">#000000</td></tr>
+        <tr><td><span class="sg-token-swatch" style="background:#1A1A22"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--card</span></td><td class="code">#1A1A22</td><td class="code">#FBFCFE</td><td class="code">#0B0B0D</td></tr>
+        <tr><td><span class="sg-token-swatch" style="background:#23232C"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--tile</span></td><td class="code">#23232C</td><td class="code">#E4E8EE</td><td class="code">#151518</td></tr>
+        <tr><td><span class="sg-token-swatch" style="background:#FF6B00"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--accent</span></td><td class="code" colspan="3">#FF6B00 (общий для всех тем)</td></tr>
+        <tr><td><span class="sg-token-swatch" style="background:#00D68F"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--success</span></td><td class="code" colspan="3">#00D68F</td></tr>
+        <tr><td><span class="sg-token-swatch" style="background:#FF4D6D"></span><span style="background:#FBFCFE;padding:2px 6px;border-radius:4px">--danger</span></td><td class="code" colspan="3">#FF4D6D</td></tr>
+      </tbody>
+    </table>
+
+    <table class="sg-token-table">
+      <thead><tr><th>Type scale</th><th>Size</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td class="code">--fs-caption</td><td>10px</td><td>Tiny labels, units</td></tr>
+        <tr><td class="code">--fs-meta</td><td>11px</td><td>Secondary meta</td></tr>
+        <tr><td class="code">--fs-label</td><td>12px</td><td>Section titles, sub-text</td></tr>
+        <tr><td class="code">--fs-body</td><td>13px</td><td>Default body</td></tr>
+        <tr><td class="code">--fs-body-lg</td><td>14px</td><td>Emphasized body</td></tr>
+        <tr><td class="code">--fs-title</td><td>15px</td><td>Card titles</td></tr>
+        <tr><td class="code">--fs-h3</td><td>18px</td><td>Sub-headings</td></tr>
+        <tr><td class="code">--fs-h2</td><td>20px</td><td>Screen titles</td></tr>
+        <tr><td class="code">--fs-h1</td><td>24px</td><td>Greeting, sheet title</td></tr>
+        <tr><td class="code">--fs-display</td><td>36px</td><td>Balance, hero numbers</td></tr>
+        <tr><td class="code">--fs-mega</td><td>44px</td><td>Result overlays</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ SECTION 2: BUTTONS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">2</span> Buttons</div>
+    <div class="sg-section-desc">Кнопки во всех вариантах: primary / secondary / ghost / danger, размеры sm/md/lg, с иконками.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Buttons</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="sg-demo-row"><div class="sg-demo-label">Primary</div>
+            <button class="btn btn-primary btn-block">Отправить</button>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Secondary</div>
+            <button class="btn btn-secondary btn-block">Отмена</button>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Ghost</div>
+            <button class="btn btn-ghost btn-block">Пропустить</button>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Danger</div>
+            <button class="btn btn-danger btn-block">Удалить</button>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Sizes</div>
+            <div class="sg-grid">
+              <button class="btn btn-primary btn-sm">Small</button>
+              <button class="btn btn-primary">Medium</button>
+              <button class="btn btn-primary btn-lg">Large</button>
+            </div>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">С иконкой</div>
+            <button class="btn btn-primary btn-block">
+              <span class="icon-left"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></span>
+              Отправить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3: INPUTS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">3</span> Inputs</div>
+    <div class="sg-section-desc">Поля ввода: текстовое, с суффиксом, с аффиксом, сумма, слайдер.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Inputs</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="sg-demo-row">
+            <label class="input-label">Ник получателя</label>
+            <input class="input-field" placeholder="@crazy-cherry" value="@alice">
+          </div>
+          <div class="sg-demo-row">
+            <label class="input-label">Адрес кошелька</label>
+            <div class="input-wrap">
+              <input class="input-field" placeholder="0x..." style="padding-left:34px;">
+              <span class="input-affix">0x</span>
+            </div>
+          </div>
+          <div class="sg-demo-row">
+            <label class="input-label">Сумма</label>
+            <div class="input-wrap">
+              <input class="input-field" value="25.50" style="padding-right:60px;">
+              <span class="input-suffix">USDT</span>
+            </div>
+          </div>
+          <div class="sg-demo-row">
+            <label class="input-label">Крупная сумма</label>
+            <input class="input-amount" value="1250.50" placeholder="0">
+            <div style="text-align:center;font-size:12px;color:var(--text2);margin-top:6px;">≈ $1 250.50</div>
+          </div>
+          <div class="sg-demo-row">
+            <label class="input-label">Размер шрифта</label>
+            <input type="range" class="slider" min="0" max="100" value="50">
+          </div>
+          <div class="sg-demo-row">
+            <label class="input-label">Поиск контакта</label>
+            <div class="input-wrap">
+              <input class="input-field" placeholder="Введите ник" style="padding-left:42px;">
+              <span class="input-affix" style="left:14px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--text2);stroke-width:2;fill:none;stroke-linecap:round;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: LIST ITEMS (Settings) ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">4</span> List Items (Settings)</div>
+    <div class="sg-section-desc">Список настроек: иконка + заголовок + подзаголовок + значение/шеврон/тоггл.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Настройки</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="list-section-header">Аккаунт</div>
+          <div class="list-section">
+            <button class="list-item">
+              <div class="li-icon accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg></div>
+              <div class="li-body"><div class="li-title">Профиль</div><div class="li-sub">@crazy-cherry</div></div>
+              <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button class="list-item">
+              <div class="li-icon success"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/></svg></div>
+              <div class="li-body"><div class="li-title">Безопасность</div><div class="li-sub">PIN, биометрия</div></div>
+              <span class="li-badge">2</span>
+            </button>
+            <button class="list-item">
+              <div class="li-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+              <div class="li-body"><div class="li-title">Внешний вид</div></div>
+              <span class="li-value">Тёмная</span>
+              <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+
+          <div class="list-section-header">Приложение</div>
+          <div class="list-section">
+            <button class="list-item">
+              <div class="li-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+              <div class="li-body"><div class="li-title">Уведомления</div></div>
+              <div class="toggle on" data-toggle></div>
+            </button>
+            <button class="list-item">
+              <div class="li-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></div>
+              <div class="li-body"><div class="li-title">Язык</div></div>
+              <span class="li-value">Русский</span>
+              <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button class="list-item">
+              <div class="li-icon danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+              <div class="li-body"><div class="li-title">Помощь</div></div>
+              <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5: TOGGLES / RADIO / SEGMENTED ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">5</span> Toggles, Radios, Segmented</div>
+    <div class="sg-section-desc">Переключатели, выбор темы/языка, сегмент-контролы.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Контролы</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="sg-demo-row"><div class="sg-demo-label">Toggle</div>
+            <div class="list-section">
+              <div class="list-item">
+                <div class="li-body"><div class="li-title">Push-уведомления</div></div>
+                <div class="toggle on" data-toggle></div>
+              </div>
+              <div class="list-item">
+                <div class="li-body"><div class="li-title">Биометрия</div></div>
+                <div class="toggle" data-toggle></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sg-demo-row"><div class="sg-demo-label">Radio Card (тема)</div>
+            <button class="radio-card active">
+              <div class="rc-preview" style="background:linear-gradient(135deg,#0A0A0F,#1A1A22)"></div>
+              <div class="rc-body"><div class="rc-title">Тёмная</div><div class="rc-sub">Для низкого освещения</div></div>
+              <div class="rc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+            </button>
+            <button class="radio-card">
+              <div class="rc-preview" style="background:linear-gradient(135deg,#E8EBF1,#FBFCFE)"></div>
+              <div class="rc-body"><div class="rc-title">Светлая</div><div class="rc-sub">Классическая</div></div>
+              <div class="rc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+            </button>
+            <button class="radio-card">
+              <div class="rc-preview" style="background:#000"></div>
+              <div class="rc-body"><div class="rc-title">AMOLED</div><div class="rc-sub">Экономия батареи</div></div>
+              <div class="rc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+            </button>
+          </div>
+
+          <div class="sg-demo-row"><div class="sg-demo-label">Segmented</div>
+            <div class="segmented">
+              <button class="seg active">Все</button>
+              <button class="seg">Входящие</button>
+              <button class="seg">Исходящие</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6: BADGES & CHIPS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">6</span> Badges & Chips</div>
+    <div class="sg-section-desc">Метки и чипы для статусов, категорий, тегов.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Badges</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="sg-demo-row"><div class="sg-demo-label">Badges</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span class="badge-pill">New</span>
+              <span class="badge-pill success">Confirmed</span>
+              <span class="badge-pill danger">Failed</span>
+              <span class="badge-pill warning">Pending</span>
+              <span class="badge-pill muted">Read</span>
+            </div>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Chips</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span class="chip">BNB Chain</span>
+              <span class="chip accent">
+                <svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+                Отправить
+              </span>
+              <span class="chip success">+2.4%</span>
+              <span class="chip danger">-1.2%</span>
+            </div>
+          </div>
+          <div class="sg-demo-row"><div class="sg-demo-label">Dividers</div>
+            <div>Выше</div>
+            <hr class="divider">
+            <div>Ниже</div>
+            <hr class="divider-thick">
+            <div>Секция</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 7: TOKEN CARD + CARDS STACK ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">7</span> Token Cards</div>
+    <div class="sg-section-desc">Карточки токенов главного экрана: collapsed stack + expanded.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Collapsed</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="cards-wrapper" id="cardsWrap">
+            <div class="cards-container" id="cardsCont">
+              <div class="card pos-0">
+                <div class="top-row">
+                  <div class="token-icon" style="background:#26A17B">₮</div>
+                  <div class="token-meta"><div class="token-name">USDT</div><div class="token-sub">BNB Smart Chain</div></div>
+                  <div class="token-trend">+2.4%</div>
+                  <div class="balance-chip">1 250.50 <span class="unit">USDT</span></div>
+                </div>
+                <div class="balance-block">
+                  <div class="balance">1 250.50 <span class="unit">USDT</span></div>
+                  <div class="balance-fiat">≈ $1 250.50</div>
+                </div>
+                <div class="card-actions">
+                  <button class="tile primary"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg><span class="lbl">Отправить</span></button>
+                  <button class="tile"><svg viewBox="0 0 24 24"><path d="M17 7L7 17"/><path d="M17 17H7V7"/></svg><span class="lbl">Получить</span></button>
+                  <button class="tile"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span class="lbl">История</span></button>
+                </div>
+              </div>
+              <div class="card pos-1">
+                <div class="top-row">
+                  <div class="token-icon" style="background:#6D4AFF">◈</div>
+                  <div class="token-meta"><div class="token-name">MDAO</div><div class="token-sub">BNB Smart Chain</div></div>
+                  <div class="token-trend">+5.1%</div>
+                  <div class="balance-chip">12 345.67 <span class="unit">MDAO</span></div>
+                </div>
+                <div class="balance-block"><div class="balance">12 345.67 <span class="unit">MDAO</span></div><div class="balance-fiat">≈ $4 521.30</div></div>
+              </div>
+              <div class="card pos-2">
+                <div class="top-row">
+                  <div class="token-icon" style="background:#F0B90B">◆</div>
+                  <div class="token-meta"><div class="token-name">BNB</div><div class="token-sub">BNB Smart Chain</div></div>
+                  <div class="token-trend down">-1.2%</div>
+                  <div class="balance-chip">45.23 <span class="unit">BNB</span></div>
+                </div>
+                <div class="balance-block"><div class="balance">45.23 <span class="unit">BNB</span></div><div class="balance-fiat">≈ $26 890.45</div></div>
+              </div>
+              <div class="card pos-3">
+                <div class="top-row">
+                  <div class="token-icon" style="background:#2775CA">●</div>
+                  <div class="token-meta"><div class="token-name">USDC</div><div class="token-sub">BNB Smart Chain</div></div>
+                  <div class="token-trend">+0.1%</div>
+                  <div class="balance-chip">890.12 <span class="unit">USDC</span></div>
+                </div>
+                <div class="balance-block"><div class="balance">890.12 <span class="unit">USDC</span></div><div class="balance-fiat">≈ $890.12</div></div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-block" id="toggleExpandBtn">Разложить стопку</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 8: BLOCKS (Contacts / Services) ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">8</span> Blocks</div>
+    <div class="sg-section-desc">Блоки контактов и сервисов с аватарами и иконками.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Blocks</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="block">
+            <div class="block-header"><span class="title">Контакты</span><span class="action">Все</span></div>
+            <div class="contacts-row">
+              <div class="contact-item"><div class="avatar">А</div><div class="name">Алиса</div></div>
+              <div class="contact-item"><div class="avatar">Б</div><div class="name">Боб</div></div>
+              <div class="contact-item"><div class="avatar">К</div><div class="name">Карл</div></div>
+              <div class="contact-item"><div class="avatar plus">+</div><div class="name">Добавить</div></div>
+            </div>
+          </div>
+          <div class="block">
+            <div class="block-header"><span class="title">Сервисы</span><span class="action">Все</span></div>
+            <div class="services-row">
+              <div class="service-icon"><div class="icon-box"><svg viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/></svg></div><div class="label">Arena</div></div>
+              <div class="service-icon"><div class="icon-box"><svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></div><div class="label">DEX</div></div>
+              <div class="service-icon"><div class="icon-box"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4"/></svg></div><div class="label">Flopi</div></div>
+              <div class="service-icon"><div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="label">VPN</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9: BOTTOM NAV ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">9</span> Bottom Nav</div>
+    <div class="sg-section-desc">Нижняя навигация: 3 таба (Кошелёк / Фиат / Сервисы).</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Navigation</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="background:var(--card);border-radius:20px;padding:16px;text-align:center;color:var(--text2);font-size:13px;">
+              Активный таб: <b style="color:var(--text)">Кошелёк</b>
+            </div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="bottom-nav">
+          <button class="nav-item active" data-tab="wallet">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M16 14h2"/></svg>
+            <span>Кошелёк</span>
+          </button>
+          <button class="nav-item" data-tab="fiat">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
+            <span>Фиат</span>
+          </button>
+          <button class="nav-item" data-tab="services">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Сервисы</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 10: NOTIFICATIONS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">10</span> Notifications</div>
+    <div class="sg-section-desc">Единая система: card mode (success/error) + pill mode (info). Drop+morph анимация.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Notifications</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <div class="sg-demo-label">Triggers</div>
+          <button class="sg-trigger" data-notif="success-card">Success card (с комиссией)</button>
+          <button class="sg-trigger" data-notif="error-card">Error card (с Повторить)</button>
+          <button class="sg-trigger" data-notif="info-pill">Info pill</button>
+          <button class="sg-trigger" data-notif="success-pill">Success pill</button>
+        </div>
+        <div class="spacer"></div>
+
+        <div class="notif-zone" id="sgNotifZone">
+          <div class="notif-wave" id="sgNotifWave"></div>
+          <div class="notif" id="sgNotif">
+            <div class="notif-content">
+              <div class="notif-row">
+                <div class="notif-icon info" id="sgNotifIcon"></div>
+                <div class="notif-body">
+                  <div class="notif-title" id="sgNotifTitle">Готово</div>
+                  <div class="notif-sub" id="sgNotifSub"></div>
+                </div>
+              </div>
+              <div class="notif-details">
+                <div class="notif-amount" id="sgNotifAmount"></div>
+                <div class="notif-commission" id="sgNotifCommission"></div>
+              </div>
+              <button class="notif-action" id="sgNotifAction">Готово</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 11: SHEETS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">11</span> Bottom Sheets</div>
+    <div class="sg-section-desc">Выезжающие снизу панели: профиль, ошибки, выбор.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="topbar">
+          <button class="back-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">Sheets</div>
+        </div>
+        <div class="sg-demo scroll-area">
+          <button class="sg-trigger" id="openProfileSheet">Открыть профиль</button>
+          <button class="sg-trigger" id="openConfirmSheet">Открыть подтверждение</button>
+        </div>
+        <div class="spacer"></div>
+
+        <div class="sheet-overlay" id="sgSheetOverlay"></div>
+
+        <div class="sheet" id="sgProfileSheet">
+          <div class="handle"></div>
+          <div class="close-row">
+            <button class="close-btn" id="closeProfileSheet"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          </div>
+          <h3>Профиль</h3>
+          <div class="desc">Ваш ник — это адрес кошелька. Поделитесь им, чтобы получать переводы.</div>
+          <div class="nick-row">
+            <div class="nick">@crazy-cherry</div>
+            <button class="copy-btn"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
+          <div class="discriminator">Дискриминатор: <b>#2215</b></div>
+          <div class="qr">QR</div>
+        </div>
+
+        <div class="sheet" id="sgConfirmSheet">
+          <div class="handle"></div>
+          <div class="close-row">
+            <button class="close-btn" id="closeConfirmSheet"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          </div>
+          <h3>Подтвердить отправку</h3>
+          <div class="desc">Проверьте детали транзакции перед отправкой.</div>
+          <div class="row"><span class="label">Получатель</span><span class="value">@alice</span></div>
+          <div class="row"><span class="label">Сумма</span><span class="value">25.00 USDT</span></div>
+          <div class="row"><span class="label">Комиссия</span><span class="value">0.1 USDT</span></div>
+          <div class="row"><span class="label">Сеть</span><span class="value">BNB Chain</span></div>
+          <button class="btn btn-primary btn-block" style="margin-top:18px;">Подтвердить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 12: HEADER (main screen) ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">12</span> Header (Main Screen)</div>
+    <div class="sg-section-desc">Приветствие + кнопки уведомлений и настроек.</div>
+
+    <div class="sg-row-of-phones">
+      <div class="phone-preview theme-dark">
+        <div class="header">
+          <div class="greeting">
+            <div class="hello">Привет,</div>
+            <div class="name">Антон</div>
+            <div class="nick">@crazy-cherry</div>
+          </div>
+          <div class="header-right">
+            <button class="icon-btn">
+              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="badge"></span>
+            </button>
+            <button class="icon-btn">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:14px;text-align:center;padding:24px;">
+          Карточки токенов и блоки<br>см. в разделах 7 и 8
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 13: ANIMATIONS ============ -->
+  <div class="sg-section">
+    <div class="sg-section-title"><span class="idx">13</span> Animations</div>
+    <div class="sg-section-desc">Именованные переходы и анимации (из transitions.css).</div>
+
+    <table class="sg-token-table">
+      <thead><tr><th>Name</th><th>Duration</th><th>Easing</th><th>Use case</th></tr></thead>
+      <tbody>
+        <tr><td class="code">slideInRight / slideOutRight</td><td>0.5s</td><td>spring / ease-out</td><td>Page push (forward)</td></tr>
+        <tr><td class="code">slideInLeft / slideOutLeft</td><td>0.5s</td><td>ease-out / spring</td><td>Page pop (back)</td></tr>
+        <tr><td class="code">sheetUp / sheetDown</td><td>0.55s / 0.35s</td><td>spring / ease-out</td><td>Bottom sheets</td></tr>
+        <tr><td class="code">notifDropMorph / notifCollapse</td><td>0.75s / 0.4s</td><td>ease-out</td><td>Notification card</td></tr>
+        <tr><td class="code">pillDropMorph / pillCollapse</td><td>0.65s / 0.35s</td><td>ease-out</td><td>Notification pill</td></tr>
+        <tr><td class="code">notifWaveExpand</td><td>0.9s</td><td>ease-out</td><td>Impact ripple</td></tr>
+        <tr><td class="code">chipIn</td><td>0.4s</td><td>spring</td><td>Balance chip in expanded card</td></tr>
+        <tr><td class="code">iconDraw</td><td>0.45s</td><td>ease-out</td><td>Checkmark / X draw-in</td></tr>
+        <tr><td class="code">errorShake</td><td>0.45s</td><td>ease-out</td><td>Error icon shake</td></tr>
+        <tr><td class="code">fadeIn / fadeOut</td><td>0.35s / 0.25s</td><td>ease-out</td><td>Overlays, content swap</td></tr>
+        <tr><td class="code">scaleIn / scaleOut</td><td>0.35s / 0.25s</td><td>spring / ease-out</td><td>Modals, dialogs</td></tr>
+        <tr><td class="code">slideUp / slideDown</td><td>0.35s</td><td>ease-out</td><td>Small content reveal</td></tr>
+        <tr><td class="code">shimmer</td><td>1.4s</td><td>linear infinite</td><td>Skeleton loading</td></tr>
+        <tr><td class="code">spin</td><td>0.7s</td><td>linear infinite</td><td>Spinner</td></tr>
+        <tr><td class="code">pulse</td><td>—</td><td>—</td><td>Live indicators (rare)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:60px;padding-top:32px;border-top:1px solid #2a2a30;color:#666;font-size:13px;">
+    MDAOPay Styleguide · Phase 0 · <span id="sgFileCount"></span> · Built on tokens.css + components.css + transitions.css
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ============ THEME SWITCHER ============
+  const phones = document.querySelectorAll('.phone-preview');
+  function applyTheme(theme) {
+    document.body.className = `theme-${theme}`;
+    phones.forEach(p => {
+      p.className = `phone-preview theme-${theme}`;
+    });
+    document.querySelectorAll('.sg-themes button').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === theme);
+    });
+  }
+  document.querySelectorAll('.sg-themes button').forEach(b => {
+    b.addEventListener('click', () => applyTheme(b.dataset.theme));
+  });
+
+  // ============ TOGGLES ============
+  document.querySelectorAll('[data-toggle]').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('on'));
+  });
+
+  // ============ RADIO CARDS ============
+  document.querySelectorAll('.radio-card').forEach(rc => {
+    rc.addEventListener('click', () => {
+      rc.parentElement.querySelectorAll('.radio-card').forEach(r => r.classList.remove('active'));
+      rc.classList.add('active');
+    });
+  });
+
+  // ============ SEGMENTED ============
+  document.querySelectorAll('.segmented').forEach(seg => {
+    seg.querySelectorAll('.seg').forEach(s => {
+      s.addEventListener('click', () => {
+        seg.querySelectorAll('.seg').forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+      });
+    });
+  });
+
+  // ============ BOTTOM NAV ============
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.addEventListener('click', () => {
+      n.parentElement.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      n.classList.add('active');
+    });
+  });
+
+  // ============ CARDS EXPAND TOGGLE ============
+  const toggleExpandBtn = document.getElementById('toggleExpandBtn');
+  const cardsCont = document.getElementById('cardsCont');
+  if (toggleExpandBtn && cardsCont) {
+    toggleExpandBtn.addEventListener('click', () => {
+      const expanded = cardsCont.classList.toggle('expanded');
+      toggleExpandBtn.textContent = expanded ? 'Сложить стопку' : 'Разложить стопку';
+    });
+  }
+
+  // ============ NOTIFICATIONS (styleguide demo) ============
+  const notif = document.getElementById('sgNotif');
+  const notifWave = document.getElementById('sgNotifWave');
+  const notifIcon = document.getElementById('sgNotifIcon');
+  const notifTitle = document.getElementById('sgNotifTitle');
+  const notifSub = document.getElementById('sgNotifSub');
+  const notifAmount = document.getElementById('sgNotifAmount');
+  const notifCommission = document.getElementById('sgNotifCommission');
+  const notifAction = document.getElementById('sgNotifAction');
+
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  let notifTimer = null;
+  let isNotifOpen = false;
+
+  function showNotif(opts) {
+    if (isNotifOpen) {
+      dismissNotif();
+      setTimeout(() => showNotif(opts), 400);
+      return;
+    }
+    const type = opts.type || 'info';
+    const usePill = opts.pill;
+
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type];
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+
+    notif.classList.toggle('pill', !!usePill);
+
+    if (usePill) {
+      notif.classList.remove('has-details', 'has-action');
+    } else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) {
+          notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`;
+          notifAmount.style.display = 'flex';
+        } else notifAmount.style.display = 'none';
+        if (opts.commission) {
+          notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`;
+          notifCommission.style.display = 'flex';
+        } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+
+      if (opts.actionLabel) {
+        notif.classList.add('has-action');
+        notifAction.textContent = opts.actionLabel;
+        notifAction.classList.toggle('primary', !!opts.actionPrimary);
+      } else notif.classList.remove('has-action');
+    }
+
+    notif.classList.remove('hide');
+    void notif.offsetWidth;
+    notif.classList.add('show');
+    notifWave.classList.remove('show');
+    void notifWave.offsetWidth;
+    notifWave.classList.add('show');
+    isNotifOpen = true;
+
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : (usePill ? 2600 : (type === 'error' ? 0 : 4000));
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show');
+    notif.classList.add('hide');
+    notifWave.classList.remove('show');
+    isNotifOpen = false;
+    setTimeout(() => {
+      if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); }
+    }, 420);
+  }
+  notif.addEventListener('click', (e) => {
+    if (e.target === notifAction || notifAction.contains(e.target)) return;
+    dismissNotif();
+  });
+  notifAction.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismissNotif();
+  });
+
+  document.querySelectorAll('[data-notif]').forEach(b => {
+    b.addEventListener('click', () => {
+      const k = b.dataset.notif;
+      if (k === 'success-card') showNotif({ type:'success', title:'Отправлено', sub:'25.00 USDT → @alice', amount:'−25.00 USDT', commission:'0.1 USDT', autoDismiss:5000 });
+      else if (k === 'error-card') showNotif({ type:'error', title:'Не удалось получить', sub:'Сервис получения временно недоступен.', actionLabel:'Повторить', actionPrimary:true });
+      else if (k === 'info-pill') showNotif({ type:'info', title:'Контакты', sub:'Открывается список', pill:true });
+      else if (k === 'success-pill') showNotif({ type:'success', title:'Скопировано', sub:'@crazy-cherry', pill:true });
+    });
+  });
+
+  // ============ SHEETS ============
+  const sheetOverlay = document.getElementById('sgSheetOverlay');
+  const profileSheet = document.getElementById('sgProfileSheet');
+  const confirmSheet = document.getElementById('sgConfirmSheet');
+
+  function openSheet(sheet) {
+    sheet.classList.add('open');
+    sheetOverlay.classList.add('active');
+  }
+  function closeSheets() {
+    profileSheet.classList.remove('open');
+    confirmSheet.classList.remove('open');
+    sheetOverlay.classList.remove('active');
+  }
+  document.getElementById('openProfileSheet').addEventListener('click', () => openSheet(profileSheet));
+  document.getElementById('openConfirmSheet').addEventListener('click', () => openSheet(confirmSheet));
+  document.getElementById('closeProfileSheet').addEventListener('click', closeSheets);
+  document.getElementById('closeConfirmSheet').addEventListener('click', closeSheets);
+  sheetOverlay.addEventListener('click', closeSheets);
+
+  // ============ FILE INFO ============
+  document.getElementById('sgFileCount').textContent = '13 sections · ~40 components';
+})();
+</script>
+
+</body>
+</html>

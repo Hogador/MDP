@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Error States</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .state-tabs {
+    display: flex; gap: 6px; padding: 3px;
+    background: var(--tile); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .state-tabs::-webkit-scrollbar { display: none; }
+  .state-tab {
+    flex-shrink: 0;
+    background: transparent; border: none;
+    color: var(--text2); font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    padding: 8px 12px; border-radius: var(--r-md);
+    cursor: pointer;
+  }
+  .state-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-soft); }
+
+  .state-screen { display: none; }
+  .state-screen.active { display: block; animation: fadeIn var(--d-quick) var(--ease-out); }
+
+  /* Error state */
+  .err-state {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text2);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 360px;
+    justify-content: center;
+  }
+  .err-state .es-icon {
+    width: 96px; height: 96px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+  }
+  .err-state .es-icon::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 30%, var(--danger-soft), transparent 70%);
+  }
+  .err-state .es-icon svg {
+    stroke: var(--danger); stroke-width: 1.8; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 44px; height: 44px;
+    position: relative; z-index: 1;
+  }
+  .err-state.warn .es-icon svg { stroke: var(--warning); }
+  .err-state.warn .es-icon::before { background: radial-gradient(circle at 30% 30%, var(--warning-soft), transparent 70%); }
+
+  .err-state .es-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    margin-bottom: 8px;
+  }
+  .err-state .es-sub {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    max-width: 280px;
+    margin-bottom: 20px;
+  }
+  .err-state .es-code {
+    font-family: var(--font-mono); font-size: var(--fs-label);
+    color: var(--text3);
+    background: var(--tile); padding: 4px 10px;
+    border-radius: var(--r-sm); margin-bottom: 20px;
+    box-shadow: var(--shadow-inset);
+  }
+  .err-state .es-actions { display: flex; gap: 8px; flex-direction: column; width: 100%; max-width: 280px; }
+
+  /* Inline error banner */
+  .err-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--danger-soft);
+    border: 1px solid rgba(255,77,109,0.2);
+    border-radius: var(--r-lg);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .err-banner.warn { background: var(--warning-soft); border-color: rgba(255,179,0,0.2); }
+  .err-banner.warn svg { stroke: var(--warning); }
+  .err-banner svg {
+    stroke: var(--danger); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px;
+  }
+  .err-banner .eb-body { flex: 1; min-width: 0; }
+  .err-banner .eb-title { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--text); }
+  .err-banner .eb-text { font-size: var(--fs-label); color: var(--text2); margin-top: 2px; line-height: var(--lh-normal); }
+  .err-banner .eb-action {
+    background: transparent; border: none; color: var(--accent);
+    font-family: inherit; font-size: var(--fs-label); font-weight: var(--fw-bold);
+    cursor: pointer; padding: 4px 8px; margin: -2px;
+    border-radius: var(--r-sm);
+  }
+  .err-banner .eb-action:active { background: var(--tile); }
+
+  /* Inline form error */
+  .form-error {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-soft);
+  }
+  .form-error.error { border-color: var(--danger); }
+  .form-error .fe-input-wrap {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .form-error .fe-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--font-mono);
+    font-size: var(--fs-body); font-weight: var(--fw-medium);
+  }
+  .form-error .fe-icon {
+    width: 20px; height: 20px; flex-shrink: 0;
+    color: var(--danger);
+  }
+  .form-error .fe-icon svg { stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 18px; height: 18px; }
+  .form-error.error .fe-icon { color: var(--danger); }
+  .form-error .fe-msg {
+    font-size: var(--fs-meta); color: var(--danger);
+    font-weight: var(--fw-semibold);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Insufficient funds visual */
+  .balance-display {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-soft);
+  }
+  .balance-display .bd-val {
+    font-family: var(--font-mono);
+    font-size: var(--fs-display); font-weight: var(--fw-bold);
+    color: var(--text); letter-spacing: -1.2px;
+  }
+  .balance-display .bd-val.warn { color: var(--danger); }
+  .balance-display .bd-fiat {
+    font-size: var(--fs-body); color: var(--text2); margin-top: 4px;
+  }
+  .balance-display .bd-needed {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: var(--fs-label); color: var(--text2);
+  }
+  .balance-display .bd-needed b { color: var(--danger); font-family: var(--font-mono); font-weight: var(--fw-bold); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Error States</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <div class="state-tabs" id="stateTabs">
+      <button class="state-tab active" data-state="network">Network</button>
+      <button class="state-tab" data-state="funds">Insufficient</button>
+      <button class="state-tab" data-state="address">Invalid</button>
+      <button class="state-tab" data-state="failed">Tx Failed</button>
+      <button class="state-tab" data-state="banners">Banners</button>
+    </div>
+
+    <!-- State: Network error -->
+    <div class="state-screen active" data-state="network">
+      <div class="err-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>
+        </div>
+        <div class="es-title">Сеть недоступна</div>
+        <div class="es-sub">Не удалось подключиться к RPC-узлу. Проверьте интернет-подключение и попробуйте снова.</div>
+        <div class="es-code">ERR_NETWORK_TIMEOUT · 30s</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Повторить</button>
+          <button class="btn btn-secondary btn-block">Сменить сеть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: Insufficient funds -->
+    <div class="state-screen" data-state="funds">
+      <div class="err-state warn">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a2.5 2.5 0 0 1 0 5H9"/></svg>
+        </div>
+        <div class="es-title">Недостаточно средств</div>
+        <div class="es-sub">На балансе недостаточно USDT для отправки указанной суммы и оплаты комиссии сети.</div>
+      </div>
+
+      <div class="balance-display">
+        <div style="font-size:var(--fs-meta);color:var(--text2);font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:var(--ls-wider);margin-bottom:8px;">Доступно</div>
+        <div class="bd-val">1 250.50 <span style="font-size:var(--fs-h3);color:var(--text2);font-family:var(--font-sans);">USDT</span></div>
+        <div class="bd-fiat">≈ $1 250.50</div>
+        <div class="bd-needed">
+          Нужно: <b>1 350.60 USDT</b> (сумма + комиссия)
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--soft-border);border-radius:var(--r-lg);padding:12px 14px;box-shadow:var(--shadow-soft);">
+        <div style="font-size:var(--fs-meta);color:var(--text2);font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:var(--ls-wider);margin-bottom:8px;">Решения</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-secondary btn-block btn-sm" style="justify-content:flex-start;">
+            <span style="color:var(--accent);font-weight:var(--fw-bold);margin-right:6px;">·</span>
+            Уменьшить сумму до 1 250.40 USDT
+          </button>
+          <button class="btn btn-secondary btn-block btn-sm" style="justify-content:flex-start;">
+            <span style="color:var(--accent);font-weight:var(--fw-bold);margin-right:6px;">·</span>
+            Получить перевод
+          </button>
+          <button class="btn btn-secondary btn-block btn-sm" style="justify-content:flex-start;">
+            <span style="color:var(--accent);font-weight:var(--fw-bold);margin-right:6px;">·</span>
+            Обменять другой токен на USDT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: Invalid address -->
+    <div class="state-screen" data-state="address">
+      <div class="err-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        </div>
+        <div class="es-title">Неверный адрес</div>
+        <div class="es-sub">Введённый адрес не соответствует формату BNB Smart Chain. Проверьте правильность ввода.</div>
+      </div>
+
+      <div class="list-section-header">Поле с ошибкой</div>
+      <div class="form-error error">
+        <div class="fe-input-wrap">
+          <input class="fe-input" value="0x8A9B3F2C7E4D1A6B5" readonly>
+          <div class="fe-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+        </div>
+        <div class="fe-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" style="stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          Адрес должен содержать 42 символа (0x + 40 hex)
+        </div>
+      </div>
+
+      <div style="font-size:var(--fs-label);color:var(--text2);padding:8px 4px;line-height:var(--lh-relaxed);">
+        <b style="color:var(--text);">Подсказки:</b><br>
+        • Адрес BNB Chain начинается с <code style="font-family:var(--font-mono);color:var(--accent);">0x</code><br>
+        • Содержит только цифры 0-9 и буквы a-f<br>
+        • Длина — ровно 42 символа<br>
+        • Можно ввести ник получателя (начинается с @)
+      </div>
+    </div>
+
+    <!-- State: Transaction failed -->
+    <div class="state-screen" data-state="failed">
+      <div class="err-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        </div>
+        <div class="es-title">Транзакция не удалась</div>
+        <div class="es-sub">Смарт-контракт отклонил операцию. Средства возвращены на ваш кошелёк, комиссия сети списана.</div>
+        <div class="es-code">REVERT · gas used: 21,000 / 50,000</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Повторить</button>
+          <button class="btn btn-secondary btn-block">Открыть в эксплорере</button>
+          <button class="btn btn-ghost btn-block">Связаться с поддержкой</button>
+        </div>
+      </div>
+
+      <div class="list-section-header">Возможные причины</div>
+      <div class="list-section">
+        <div class="list-item">
+          <div class="li-icon"><span style="font-size:14px;font-weight:var(--fw-bold);color:var(--text);">1</span></div>
+          <div class="li-body"><div class="li-title">Недостаточно газа</div><div class="li-sub">Повысьте gas limit при отправке</div></div>
+        </div>
+        <div class="list-item">
+          <div class="li-icon"><span style="font-size:14px;font-weight:var(--fw-bold);color:var(--text);">2</span></div>
+          <div class="li-body"><div class="li-title">Контракт получателя не поддерживает перевод</div><div class="li-sub">Проверьте адрес получателя</div></div>
+        </div>
+        <div class="list-item">
+          <div class="li-icon"><span style="font-size:14px;font-weight:var(--fw-bold);color:var(--text);">3</span></div>
+          <div class="li-body"><div class="li-title">Сеть перегружена</div><div class="li-sub">Повторите через несколько минут</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: Inline banners -->
+    <div class="state-screen" data-state="banners">
+      <div class="list-section-header">Inline banners</div>
+
+      <div class="err-banner warn">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="eb-body">
+          <div class="eb-title">Backup не создан</div>
+          <div class="eb-text">Сделайте резервную копию, чтобы не потерять доступ к кошельку.</div>
+        </div>
+        <button class="eb-action">Backup</button>
+      </div>
+
+      <div class="err-banner">
+        <svg viewBox="0 0 24 24"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>
+        <div class="eb-body">
+          <div class="eb-title">Нет соединения</div>
+          <div class="eb-text">Балансы могут быть устаревшими. Некоторые функции недоступны.</div>
+        </div>
+        <button class="eb-action">Повторить</button>
+      </div>
+
+      <div class="err-banner warn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div class="eb-body">
+          <div class="eb-title">Сеть BNB Chain перегружена</div>
+          <div class="eb-text">Комиссии могут быть выше обычного. Подтверждения занимают больше времени.</div>
+        </div>
+        <button class="eb-action">Подробнее</button>
+      </div>
+
+      <div class="err-banner">
+        <svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="eb-body">
+          <div class="eb-title">Подозрительный вход</div>
+          <div class="eb-text">Новый вход с неизвестного устройства. Если это не вы — смените PIN.</div>
+        </div>
+        <button class="eb-action">Проверить</button>
+      </div>
+
+      <div class="list-section-header" style="margin-top:16px;">Form errors</div>
+
+      <div class="form-error error">
+        <div class="fe-input-wrap">
+          <input class="fe-input" value="abc forest" readonly>
+          <div class="fe-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+        </div>
+        <div class="fe-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" style="stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          Фраза должна содержать 12 или 24 слова
+        </div>
+      </div>
+
+      <div class="form-error error">
+        <div class="fe-input-wrap">
+          <input class="fe-input" value="••••" type="password" readonly>
+          <div class="fe-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+        </div>
+        <div class="fe-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" style="stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          PIN должен содержать 6 цифр
+        </div>
+      </div>
+    </div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  document.querySelectorAll('.state-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.state-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.state-screen').forEach(s => s.classList.toggle('active', s.dataset.state === t.dataset.state));
+    });
+  });
+
+  document.querySelectorAll('.btn, .eb-action').forEach(b => {
+    b.addEventListener('click', () => {
+      const label = b.textContent.trim();
+      MDAONotif.show({ type:'info', title: label, sub:'Действие в прототипе', pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'В меню', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

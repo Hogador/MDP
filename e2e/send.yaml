@@ -1,0 +1,9 @@
+appId: com.mdaopay.app
+---
+- launchApp
+- tapOn: "Отправить"
+- inputText: "0x1234567890abcdef1234567890abcdef12345678"
+- tapOn: "Далее"
+- inputText: "10"
+- tapOn: "Подтвердить"
+- assertVisible: "Отправлено"

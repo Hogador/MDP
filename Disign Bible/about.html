@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — О приложении</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .about-hero {
+    text-align: center;
+    padding: 28px 20px 24px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+  }
+  .about-hero .ah-logo {
+    width: 88px; height: 88px;
+    background: linear-gradient(135deg, #FF6B00, #FF9A4D);
+    border-radius: 22px;
+    margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; color: #fff; font-weight: var(--fw-bold);
+    box-shadow: 0 10px 24px -6px rgba(255,107,0,0.5), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.15);
+  }
+  .about-hero .ah-name {
+    font-size: var(--fs-h1); font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: var(--ls-tight);
+  }
+  .about-hero .ah-version {
+    font-size: var(--fs-body); color: var(--text2);
+    font-family: var(--font-mono); margin-top: 4px;
+  }
+  .about-hero .ah-tagline {
+    font-size: var(--fs-label); color: var(--text2);
+    margin-top: 10px; line-height: var(--lh-relaxed);
+  }
+
+  .stat-row {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 14px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+  }
+  .stat-card .sc-val {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    font-family: var(--font-mono);
+  }
+  .stat-card .sc-lbl {
+    font-size: var(--fs-caption); color: var(--text2);
+    margin-top: 2px; font-weight: var(--fw-semibold);
+  }
+
+  .link-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; cursor: pointer;
+    background: var(--card); border: none;
+    width: 100%; font-family: inherit; text-align: left;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 8px;
+  }
+  .link-row:active { transform: scale(0.985); box-shadow: var(--shadow-press); }
+  .link-row .lr-icon {
+    width: 36px; height: 36px; border-radius: var(--r-md);
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-inset);
+  }
+  .link-row .lr-icon svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px;
+  }
+  .link-row .lr-body { flex: 1; }
+  .link-row .lr-title { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--text); }
+  .link-row .lr-sub { font-size: var(--fs-meta); color: var(--text2); margin-top: 1px; font-family: var(--font-mono); }
+  .link-row .lr-ext {
+    stroke: var(--text3); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 14px; height: 14px;
+  }
+
+  .legal-block {
+    text-align: center;
+    padding: 16px 0;
+    font-size: var(--fs-meta); color: var(--text3);
+    line-height: var(--lh-relaxed);
+  }
+  .legal-block a {
+    color: var(--accent); text-decoration: none; font-weight: var(--fw-semibold);
+  }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">О приложении</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <div class="about-hero">
+      <div class="ah-logo">◈</div>
+      <div class="ah-name">MDAOPay</div>
+      <div class="ah-version">Версия 1.0.0 (build 2215)</div>
+      <div class="ah-tagline">Децентрализованный кошелёк нового поколения. Полный контроль над вашими средствами.</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="sc-val">4</div>
+        <div class="sc-lbl">Сети</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-val">120+</div>
+        <div class="sc-lbl">Токенов</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-val">99.9%</div>
+        <div class="sc-lbl">Uptime</div>
+      </div>
+    </div>
+
+    <div class="list-section-header">Ссылки</div>
+    <button class="link-row" data-link="site">
+      <div class="lr-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></div>
+      <div class="lr-body">
+        <div class="lr-title">Официальный сайт</div>
+        <div class="lr-sub">mdaopay.xyz</div>
+      </div>
+      <svg class="lr-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </button>
+    <button class="link-row" data-link="whitepaper">
+      <div class="lr-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+      <div class="lr-body">
+        <div class="lr-title">Whitepaper</div>
+        <div class="lr-sub">docs.mdaopay.xyz</div>
+      </div>
+      <svg class="lr-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </button>
+    <button class="link-row" data-link="github">
+      <div class="lr-icon"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></div>
+      <div class="lr-body">
+        <div class="lr-title">GitHub</div>
+        <div class="lr-sub">github.com/mdaopay</div>
+      </div>
+      <svg class="lr-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </button>
+    <button class="link-row" data-link="twitter">
+      <div class="lr-icon"><svg viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></div>
+      <div class="lr-body">
+        <div class="lr-title">Twitter / X</div>
+        <div class="lr-sub">@mdaopay</div>
+      </div>
+      <svg class="lr-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </button>
+    <button class="link-row" data-link="telegram">
+      <div class="lr-icon"><svg viewBox="0 0 24 24"><path d="M21 5L2 12l5 2 2 6 3-4 5 4 4-15z"/></svg></div>
+      <div class="lr-body">
+        <div class="lr-title">Telegram</div>
+        <div class="lr-sub">t.me/mdaopay</div>
+      </div>
+      <svg class="lr-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </button>
+
+    <div class="list-section-header" style="margin-top:16px;">Система</div>
+    <div class="list-section">
+      <button class="list-item" id="checkUpdateBtn">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Проверить обновления</div>
+          <div class="li-sub">Последняя проверка: сегодня</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="list-item" id="diagBtn">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Диагностика</div>
+          <div class="li-sub">Логи, информация для поддержки</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="list-item" id="statusBtn">
+        <div class="li-icon success">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Статус сети</div>
+          <div class="li-sub">Все системы работают</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="legal-block">
+      © 2024-2026 MDAOPay<br>
+      <a href="#" data-link="terms">Условия</a> · <a href="#" data-link="privacy">Конфиденциальность</a> · <a href="#" data-link="disclaimer">Дисклеймер</a>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  const linkNames = {
+    site: 'Официальный сайт',
+    whitepaper: 'Whitepaper',
+    github: 'GitHub',
+    twitter: 'Twitter / X',
+    telegram: 'Telegram',
+    terms: 'Условия',
+    privacy: 'Конфиденциальность',
+    disclaimer: 'Дисклеймер'
+  };
+  document.querySelectorAll('[data-link]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotif({ type:'info', title:'Скоро', sub: linkNames[b.dataset.link], pill:true });
+    });
+  });
+
+  document.getElementById('checkUpdateBtn').addEventListener('click', () => {
+    showNotif({ type:'success', title:'Обновлений нет', sub:'У вас последняя версия', pill:true });
+  });
+  document.getElementById('diagBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Диагностика', sub:'Логи собраны', pill:true });
+  });
+  document.getElementById('statusBtn').addEventListener('click', () => {
+    showNotif({ type:'success', title:'Статус: OK', sub:'Все системы работают', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

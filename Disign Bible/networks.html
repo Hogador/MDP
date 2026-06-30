@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Сети</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .network-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; cursor: pointer;
+    background: transparent; border: none; width: 100%;
+    font-family: inherit; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .network-item:last-child { border-bottom: none; }
+  .network-item:active { background: var(--tile); }
+  .network-item .ni-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: var(--fw-bold); font-size: 14px; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.18);
+  }
+  .network-item .ni-body { flex: 1; min-width: 0; }
+  .network-item .ni-name {
+    font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .network-item .ni-chain {
+    font-size: var(--fs-meta); color: var(--text2); font-family: var(--font-mono);
+    margin-top: 2px;
+  }
+  .network-item .ni-active {
+    font-size: var(--fs-caption); font-weight: var(--fw-bold); color: var(--success);
+    background: var(--success-soft);
+    padding: 2px 8px; border-radius: var(--r-pill);
+  }
+  .network-item .ni-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .network-item.active .ni-check {
+    border-color: var(--accent); background: var(--accent);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5L20 7'/></svg>");
+    background-size: 14px; background-repeat: no-repeat; background-position: center;
+  }
+
+  .add-network {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 16px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px dashed var(--accent);
+    border-radius: var(--r-lg);
+    width: 100%; font-family: inherit;
+    font-size: var(--fs-body-lg); font-weight: var(--fw-bold);
+    margin-bottom: 16px;
+  }
+  .add-network:active { transform: scale(0.985); }
+  .add-network svg { stroke: var(--accent); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 18px; height: 18px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Сети</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <button class="add-network" id="addNetBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Добавить сеть (RPC)
+    </button>
+
+    <div class="list-section-header">Встроенные сети</div>
+    <div class="list-section">
+      <button class="network-item active" data-net="bsc">
+        <div class="ni-icon" style="background:#F0B90B;">◆</div>
+        <div class="ni-body">
+          <div class="ni-name">BNB Smart Chain <span class="ni-active">активна</span></div>
+          <div class="ni-chain">Chain ID: 56 · rpc-bsc.mdao.xyz</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+      <button class="network-item" data-net="eth">
+        <div class="ni-icon" style="background:#627EEA;">Ξ</div>
+        <div class="ni-body">
+          <div class="ni-name">Ethereum</div>
+          <div class="ni-chain">Chain ID: 1 · rpc-eth.mdao.xyz</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+      <button class="network-item" data-net="polygon">
+        <div class="ni-icon" style="background:#8247E5;">◆</div>
+        <div class="ni-body">
+          <div class="ni-name">Polygon</div>
+          <div class="ni-chain">Chain ID: 137 · rpc-poly.mdao.xyz</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+      <button class="network-item" data-net="arb">
+        <div class="ni-icon" style="background:#28A0F0;">◆</div>
+        <div class="ni-body">
+          <div class="ni-name">Arbitrum One</div>
+          <div class="ni-chain">Chain ID: 42161 · rpc-arb.mdao.xyz</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+      <button class="network-item" data-net="op">
+        <div class="ni-icon" style="background:#FF0420;">◆</div>
+        <div class="ni-body">
+          <div class="ni-name">Optimism</div>
+          <div class="ni-chain">Chain ID: 10 · rpc-op.mdao.xyz</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+    </div>
+
+    <div class="list-section-header">Пользовательские</div>
+    <div class="list-section">
+      <button class="network-item" data-net="custom1">
+        <div class="ni-icon" style="background:linear-gradient(135deg,#7B4DFF,#2D7FF9);">⚡</div>
+        <div class="ni-body">
+          <div class="ni-name">My Custom RPC</div>
+          <div class="ni-chain">Chain ID: 1234 · my-node.example.com</div>
+        </div>
+        <div class="ni-check"></div>
+      </button>
+    </div>
+
+    <div style="font-size:var(--fs-label);color:var(--text2);padding:12px 16px;line-height:var(--lh-relaxed);">
+      MDAOPay использует собственные RPC-узлы для скорости и приватности. Активная сеть определяет, где выполняются транзакции и отображаются балансы.
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // Network switch
+  document.querySelectorAll('.network-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.network-item').forEach(i => {
+        i.classList.remove('active');
+        const badge = i.querySelector('.ni-active');
+        if (badge) badge.remove();
+      });
+      item.classList.add('active');
+      const badge = document.createElement('span');
+      badge.className = 'ni-active';
+      badge.textContent = 'активна';
+      item.querySelector('.ni-name').appendChild(badge);
+      const name = item.querySelector('.ni-name').childNodes[0].textContent.trim();
+      showNotif({ type:'success', title:'Сеть', sub: name, pill:true });
+    });
+  });
+
+  document.getElementById('addNetBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Добавление RPC', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

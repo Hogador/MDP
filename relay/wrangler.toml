@@ -1,0 +1,20 @@
+name = "mdaopay-relay"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+
+# FCM credentials — set via:
+#   wrangler secret put FCM_SERVER_KEY
+# FCM_SERVER_KEY = ""
+
+# SocialRecoveryModule address
+# SOCIAL_RECOVERY_MODULE = ""
+# RPC_URL = ""
+
+# Shared secret for HMAC request signing (required for write endpoints)
+#   wrangler secret put RELAY_SECRET
+# RELAY_SECRET = ""
+
+[[kv_namespaces]]
+binding = "KV"
+id = ""
+preview_id = ""

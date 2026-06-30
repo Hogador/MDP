@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Резервная копия</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .backup-status {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 24px 20px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .backup-status .bs-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--warning-soft);
+  }
+  .backup-status .bs-icon svg {
+    stroke: var(--warning); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 32px; height: 32px;
+  }
+  .backup-status .bs-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+  }
+  .backup-status .bs-sub {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+  }
+
+  .warning-block {
+    display: flex; gap: 12px;
+    background: var(--danger-soft);
+    border: 1px solid rgba(255,77,109,0.2);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .warning-block svg {
+    stroke: var(--danger); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px; flex-shrink: 0;
+  }
+  .warning-block .wb-text {
+    font-size: var(--fs-label); color: var(--text);
+    line-height: var(--lh-relaxed);
+  }
+  .warning-block .wb-text b { color: var(--danger); font-weight: var(--fw-bold); }
+
+  .phrase-display {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    padding: 14px;
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+  }
+  .phrase-word {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-soft);
+  }
+  .phrase-word .pw-num {
+    font-size: var(--fs-caption); color: var(--text3); font-weight: var(--fw-bold);
+    font-family: var(--font-mono);
+    min-width: 18px;
+  }
+  .phrase-word .pw-text {
+    font-size: var(--fs-body); color: var(--text); font-weight: var(--fw-semibold);
+    font-family: var(--font-mono);
+    flex: 1;
+  }
+  .phrase-word.masked .pw-text { color: var(--text3); user-select: none; }
+  .phrase-word.masked .pw-text::before { content: '••••'; }
+
+  .verify-row {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .verify-input {
+    flex: 1;
+  }
+  .verify-input .vi-lbl {
+    font-size: var(--fs-caption); color: var(--text2); font-weight: var(--fw-bold);
+    margin-bottom: 4px;
+  }
+  .verify-input input {
+    width: 100%; background: var(--tile);
+    border: 1px solid var(--soft-border);
+    color: var(--text); font-family: var(--font-mono);
+    padding: 10px 12px; border-radius: var(--r-md);
+    font-size: var(--fs-body-lg); font-weight: var(--fw-semibold);
+    box-shadow: var(--shadow-inset);
+    outline: none;
+  }
+  .verify-input input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Резервная копия</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Status -->
+    <div class="backup-status">
+      <div class="bs-icon">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </div>
+      <div class="bs-title">Backup не создан</div>
+      <div class="bs-sub">Без резервной копии вы потеряете доступ к кошельку при потере устройства. Сделайте backup сейчас.</div>
+    </div>
+
+    <!-- Warning -->
+    <div class="warning-block">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div class="wb-text">
+        <b>Никому не показывайте recovery phrase.</b>任何人 с этими словами получит полный доступ к вашим средствам. MDAOPay никогда не попросит вашу фразу.
+      </div>
+    </div>
+
+    <!-- Recovery phrase -->
+    <div class="list-section-header">Recovery phrase (12 слов)</div>
+    <div class="phrase-display" id="phraseDisplay">
+      <div class="phrase-word masked"><span class="pw-num">1</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">2</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">3</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">4</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">5</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">6</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">7</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">8</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">9</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">10</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">11</span><span class="pw-text"></span></div>
+      <div class="phrase-word masked"><span class="pw-num">12</span><span class="pw-text"></span></div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="revealBtn" style="margin-bottom:16px;">
+      <span class="icon-left"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+      Показать фразу
+    </button>
+
+    <!-- Verify -->
+    <div class="list-section-header">Проверка (необязательно)</div>
+    <div style="font-size:var(--fs-label);color:var(--text2);padding:0 4px 12px;line-height:var(--lh-normal);">
+      Введите указанные слова из вашей фразы для проверки:
+    </div>
+    <div class="verify-row">
+      <div class="verify-input">
+        <div class="vi-lbl">Слово #3</div>
+        <input type="text" placeholder="—">
+      </div>
+      <div class="verify-input">
+        <div class="vi-lbl">Слово #7</div>
+        <input type="text" placeholder="—">
+      </div>
+      <div class="verify-input">
+        <div class="vi-lbl">Слово #11</div>
+        <input type="text" placeholder="—">
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-block" id="verifyBtn" style="margin-bottom:16px;">Проверить</button>
+
+    <!-- Export -->
+    <div class="list-section-header">Экспорт</div>
+    <div class="list-section">
+      <button class="list-item" id="exportJsonBtn">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Экспорт JSON keystore</div>
+          <div class="li-sub">Зашифрованный файл с паролем</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="list-item" id="exportQrBtn">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7v7h-7z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Экспорт в QR</div>
+          <div class="li-sub">Для импорта на другое устройство</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // Demo phrase
+  const PHRASE = ['apple','forest','mountain','river','ocean','desert','cloud','stone','crystal','ember','whisper','horizon'];
+
+  document.getElementById('revealBtn').addEventListener('click', () => {
+    const words = document.querySelectorAll('.phrase-word');
+    const isMasked = words[0].classList.contains('masked');
+    if (isMasked) {
+      // Reveal
+      words.forEach((w, i) => {
+        w.classList.remove('masked');
+        w.querySelector('.pw-text').textContent = PHRASE[i];
+      });
+      showNotif({ type:'warning' === 'warning' ? 'info' : 'info', title:'Внимание', sub:'Не показывайте никому', pill:true });
+    } else {
+      // Hide
+      words.forEach(w => {
+        w.classList.add('masked');
+        w.querySelector('.pw-text').textContent = '';
+      });
+    }
+  });
+
+  document.getElementById('verifyBtn').addEventListener('click', () => {
+    const inputs = document.querySelectorAll('.verify-input input');
+    const expected = [PHRASE[2], PHRASE[6], PHRASE[10]];
+    const actual = [...inputs].map(i => i.value.trim().toLowerCase());
+    const ok = expected.every((w, i) => w === actual[i]);
+    if (ok) {
+      showNotif({ type:'success', title:'Проверка пройдена', sub:'Фраза верна', pill:true });
+    } else {
+      showNotif({ type:'error', title:'Ошибка проверки', sub:'Слова не совпадают', actionLabel:'Попробовать снова', actionPrimary:true, actionCb: () => { inputs.forEach(i => i.value = ''); dismissNotif(); } });
+    }
+  });
+
+  document.getElementById('exportJsonBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Экспорт JSON', sub:'Введите пароль', pill:true });
+  });
+  document.getElementById('exportQrBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Экспорт QR', sub:'Генерация кода', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

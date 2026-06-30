@@ -1,0 +1,35 @@
+# Add this job to .github/workflows/ci.yml
+
+  findings-verify:
+    runs-on: ubuntu-latest
+    needs: [contracts, backend, relay]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify FINDINGS.md claims
+        run: python3 scripts/verify-findings.py
+      - name: Check FINDINGS.md sync
+        run: |
+          OPEN_COUNT=$(grep -c '| OPEN |' security/FINDINGS.md || echo 0)
+          CRITICAL_OPEN=$(awk '/\| CRITICAL \|.*\| OPEN \|/' security/FINDINGS.md | wc -l)
+          echo "Open findings: $OPEN_COUNT"
+          echo "Critical open: $CRITICAL_OPEN"
+          if [ "$CRITICAL_OPEN" -gt 0 ]; then
+            echo "⚠️  $CRITICAL_OPEN CRITICAL findings still OPEN"
+            # Don't fail CI, just warn
+          fi
+      - name: Findings dashboard
+        run: |
+          echo "### Security Findings Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| OPEN | $(grep -c '| OPEN |' security/FINDINGS.md || echo 0) |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLAIMED_FIXED | $(grep -c '| CLAIMED_FIXED |' security/FINDINGS.md || echo 0) |" >> $GITHUB_STEP_SUMMARY
+          echo "| VERIFIED | $(grep -c '| VERIFIED |' security/FINDINGS.md || echo 0) |" >> $GITHUB_STEP_SUMMARY
+          echo "| REGRESSED | $(grep -c '| REGRESSED |' security/FINDINGS.md || echo 0) |" >> $GITHUB_STEP_SUMMARY
+          echo "| CONFLICT | $(grep -c '| CONFLICT |' security/FINDINGS.md || echo 0) |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Modals & Dialogs</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .triggers {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 4px 4px 20px;
+  }
+  .trigger-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    font-family: inherit;
+    width: 100%; text-align: left;
+  }
+  .trigger-btn:active { transform: scale(0.985); }
+  .trigger-btn .tb-icon {
+    width: 38px; height: 38px; border-radius: var(--r-md);
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-inset);
+  }
+  .trigger-btn .tb-icon svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px;
+  }
+  .trigger-btn .tb-icon.accent { background: var(--accent-soft); }
+  .trigger-btn .tb-icon.accent svg { stroke: var(--accent); }
+  .trigger-btn .tb-icon.danger { background: var(--danger-soft); }
+  .trigger-btn .tb-icon.danger svg { stroke: var(--danger); }
+  .trigger-btn .tb-icon.success { background: var(--success-soft); }
+  .trigger-btn .tb-icon.success svg { stroke: var(--success); }
+  .trigger-btn .tb-icon.warning { background: var(--warning-soft); }
+  .trigger-btn .tb-icon.warning svg { stroke: var(--warning); }
+  .trigger-btn .tb-body { flex: 1; }
+  .trigger-btn .tb-title { font-size: var(--fs-body-lg); font-weight: var(--fw-semibold); color: var(--text); }
+  .trigger-btn .tb-sub { font-size: var(--fs-meta); color: var(--text2); margin-top: 1px; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--d-base) var(--ease-out);
+    z-index: 70;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.active {
+    opacity: 1; pointer-events: auto;
+    background: rgba(0,0,0,0.55);
+  }
+
+  /* Modal card */
+  .modal-card {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 24px 20px 20px;
+    width: 100%;
+    box-shadow: 0 30px 60px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+    transform: scale(0.85);
+    opacity: 0;
+    transition: transform var(--d-base) var(--spring), opacity var(--d-quick) var(--ease-out);
+  }
+  .modal-overlay.active .modal-card {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .modal-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 18px -3px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15);
+  }
+  .modal-icon svg {
+    stroke: #fff; stroke-width: 2.4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 30px; height: 30px;
+  }
+  .modal-icon.danger { background: var(--danger); }
+  .modal-icon.warning { background: var(--warning); }
+  .modal-icon.success { background: var(--success); }
+  .modal-icon.accent { background: var(--accent); }
+  .modal-icon.info { background: var(--tile); color: var(--text); }
+  .modal-icon.info svg { stroke: var(--text); }
+
+  .modal-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    text-align: center; letter-spacing: var(--ls-snug);
+    margin-bottom: 8px;
+  }
+  .modal-text {
+    font-size: var(--fs-body); color: var(--text2);
+    text-align: center; line-height: var(--lh-relaxed);
+    margin-bottom: 16px;
+  }
+  .modal-text b { color: var(--text); font-weight: var(--fw-bold); }
+
+  .modal-detail {
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-inset);
+  }
+  .modal-detail .md-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: var(--fs-label);
+  }
+  .modal-detail .md-lbl { color: var(--text2); }
+  .modal-detail .md-val { color: var(--text); font-weight: var(--fw-semibold); font-family: var(--font-mono); }
+  .modal-detail .md-val.accent { color: var(--accent); }
+
+  .modal-actions {
+    display: flex; gap: 8px; flex-direction: column;
+  }
+  .modal-actions.row { flex-direction: row; }
+  .modal-actions.row .btn { flex: 1; }
+
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    background: var(--tile); border: none;
+    width: 30px; height: 30px; border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .modal-close svg { stroke: var(--text2); stroke-width: 2.2; fill: none; stroke-linecap: round; width: 14px; height: 14px; }
+  .modal-close:active { transform: scale(0.9); }
+
+  .modal-position { position: relative; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Modals & Dialogs</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <div class="list-section-header">Triggers</div>
+    <div class="triggers">
+      <button class="trigger-btn" data-modal="confirm">
+        <div class="tb-icon warning"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Подтверждение действия</div><div class="tb-sub">Confirm / Cancel</div></div>
+      </button>
+
+      <button class="trigger-btn" data-modal="approve">
+        <div class="tb-icon accent"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Approve token spending</div><div class="tb-sub">Смарт-контракт запрашивает доступ</div></div>
+      </button>
+
+      <button class="trigger-btn" data-modal="switch">
+        <div class="tb-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Switch network</div><div class="tb-sub">Смена сети для dApp</div></div>
+      </button>
+
+      <button class="trigger-btn" data-modal="sign">
+        <div class="tb-icon success"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Sign transaction</div><div class="tb-sub">Подтверждение tx для dApp</div></div>
+      </button>
+
+      <button class="trigger-btn" data-modal="delete">
+        <div class="tb-icon danger"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Delete wallet / contact</div><div class="tb-sub">Необратимое действие</div></div>
+      </button>
+
+      <button class="trigger-btn" data-modal="info">
+        <div class="tb-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+        <div class="tb-body"><div class="tb-title">Info dialog</div><div class="tb-sub">Информационное сообщение</div></div>
+      </button>
+    </div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal overlay -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card" id="modalCard">
+      <button class="modal-close" id="modalCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  const overlay = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+
+  const MODALS = {
+    confirm: `
+      <div class="modal-icon warning"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+      <div class="modal-title">Выйти из кошелька?</div>
+      <div class="modal-text">Все данные будут удалены с устройства. Убедитесь, что у вас есть <b>recovery phrase</b>, иначе восстановить доступ будет невозможно.</div>
+      <div class="modal-actions row">
+        <button class="btn btn-secondary" data-modal-action="cancel">Отмена</button>
+        <button class="btn btn-danger" data-modal-action="confirm">Выйти</button>
+      </div>
+    `,
+    approve: `
+      <div class="modal-icon accent"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="modal-title">Approve USDT</div>
+      <div class="modal-text">Смарт-контракт <b>0x4F2E…8B9C</b> запрашивает разрешение на использование ваших USDT.</div>
+      <div class="modal-detail">
+        <div class="md-row"><span class="md-lbl">Контракт</span><span class="md-val">Arena DEX</span></div>
+        <div class="md-row"><span class="md-lbl">Токен</span><span class="md-val">USDT</span></div>
+        <div class="md-row"><span class="md-lbl">Лимит</span><span class="md-val accent">Unlimited</span></div>
+        <div class="md-row"><span class="md-lbl">Комиссия</span><span class="md-val">~0.10 USDT</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-modal-action="approve">Approve</button>
+        <button class="btn btn-ghost" data-modal-action="cancel">Отклонить</button>
+      </div>
+    `,
+    switch: `
+      <div class="modal-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/></svg></div>
+      <div class="modal-title">Сменить сеть</div>
+      <div class="modal-text">dApp <b>Arena</b> запрашивает переключение на <b>Ethereum Mainnet</b>. Текущая сеть: BNB Smart Chain.</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-modal-action="switch">Переключить</button>
+        <button class="btn btn-ghost" data-modal-action="cancel">Остаться на BNB Chain</button>
+      </div>
+    `,
+    sign: `
+      <div class="modal-icon success"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div class="modal-title">Подтвердить транзакцию</div>
+      <div class="modal-text">Подпишите транзакцию для смарт-контракта Arena.</div>
+      <div class="modal-detail">
+        <div class="md-row"><span class="md-lbl">От</span><span class="md-val">0x8A9B…C1D2</span></div>
+        <div class="md-row"><span class="md-lbl">Контракт</span><span class="md-val">0x4F2E…8B9C</span></div>
+        <div class="md-row"><span class="md-lbl">Значение</span><span class="md-val">0 ETH</span></div>
+        <div class="md-row"><span class="md-lbl">Gas</span><span class="md-val">~120,000</span></div>
+        <div class="md-row"><span class="md-lbl">Комиссия</span><span class="md-val accent">~$3.45</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-modal-action="sign">Подписать</button>
+        <button class="btn btn-ghost" data-modal-action="cancel">Отклонить</button>
+      </div>
+    `,
+    delete: `
+      <div class="modal-icon danger"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg></div>
+      <div class="modal-title">Удалить контакт?</div>
+      <div class="modal-text">Контакт <b>@bob</b> будет удалён. История транзакций сохранится. Это действие нельзя отменить.</div>
+      <div class="modal-actions row">
+        <button class="btn btn-secondary" data-modal-action="cancel">Отмена</button>
+        <button class="btn btn-danger" data-modal-action="delete">Удалить</button>
+      </div>
+    `,
+    info: `
+      <div class="modal-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+      <div class="modal-title">Новое обновление</div>
+      <div class="modal-text">Версия <b>1.1.0</b> уже доступна. Улучшена производительность, добавлены новые токены, исправлены ошибки.</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-modal-action="update">Обновить</button>
+        <button class="btn btn-ghost" data-modal-action="cancel">Позже</button>
+      </div>
+    `
+  };
+
+  function openModal(key) {
+    content.innerHTML = MODALS[key] || '';
+    overlay.classList.add('active');
+  }
+  function closeModal() {
+    overlay.classList.remove('active');
+  }
+
+  document.querySelectorAll('[data-modal]').forEach(b => {
+    b.addEventListener('click', () => openModal(b.dataset.modal));
+  });
+
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  // Modal action buttons (delegated)
+  content.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-modal-action]');
+    if (!btn) return;
+    const action = btn.dataset.modalAction;
+    closeModal();
+    setTimeout(() => {
+      const labels = {
+        confirm: { type: 'info', title: 'Выход отменён', sub: 'Кошелёк остался' },
+        cancel: { type: 'info', title: 'Отменено', sub: 'Действие отменено' },
+        approve: { type: 'success', title: 'Approve отправлен', sub: 'Ожидание подтверждения сети' },
+        switch: { type: 'success', title: 'Сеть сменена', sub: 'Ethereum Mainnet активна' },
+        sign: { type: 'success', title: 'Подписано', sub: 'Транзакция отправлена' },
+        delete: { type: 'success', title: 'Удалено', sub: 'Контакт удалён' },
+        update: { type: 'success', title: 'Загрузка…', sub: 'Обновление 1.1.0' }
+      };
+      const n = labels[action] || labels.cancel;
+      MDAONotif.show({ ...n, pill: true });
+    }, 300);
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    if (overlay.classList.contains('active')) closeModal();
+    else MDAONotif.show({ type:'info', title:'Назад', sub:'В меню', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

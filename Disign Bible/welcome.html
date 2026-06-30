@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Добро пожаловать</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .phone.welcome {
+    background: var(--bg);
+    padding: 0;
+  }
+  .welcome-screen {
+    flex: 1; display: flex; flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide-container {
+    flex: 1; position: relative; overflow: hidden;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 32px 24px;
+    text-align: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+    transform: translateX(20px);
+  }
+  .slide.active {
+    opacity: 1; pointer-events: auto;
+    transform: translateX(0);
+  }
+  .slide.leaving {
+    opacity: 0; transform: translateX(-20px);
+  }
+
+  .slide-art {
+    width: 220px; height: 220px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-raise), var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+  }
+  .slide-art::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 30%, var(--accent-soft), transparent 70%);
+    pointer-events: none;
+  }
+  .slide-art svg {
+    width: 110px; height: 110px;
+    stroke: var(--accent); stroke-width: 1.6; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    position: relative; z-index: 1;
+  }
+
+  .slide-title {
+    font-size: 28px; font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: var(--ls-tight); margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .slide-text {
+    font-size: var(--fs-body-lg); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    max-width: 280px;
+  }
+
+  .slide-dots {
+    display: flex; gap: 8px; justify-content: center;
+    padding: 16px 0;
+  }
+  .slide-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tile);
+    transition: all 0.3s var(--ease-out);
+    box-shadow: var(--shadow-inset);
+  }
+  .slide-dot.active {
+    width: 24px; border-radius: 4px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(255,107,0,0.4);
+  }
+
+  .welcome-actions {
+    padding: 16px 24px 32px;
+    display: flex; flex-direction: column; gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .skip-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: transparent; border: none;
+    color: var(--text2); font-family: inherit;
+    font-size: var(--fs-body); font-weight: var(--fw-semibold);
+    cursor: pointer; z-index: 10;
+    padding: 8px 12px;
+  }
+  .skip-btn:active { color: var(--text); }
+
+  .logo-top {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    font-size: var(--fs-h2); font-weight: var(--fw-bold);
+    color: var(--accent); letter-spacing: var(--ls-tight);
+    z-index: 5;
+  }
+  .logo-top span { color: var(--text); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark welcome" id="phone">
+  <div class="welcome-screen">
+    <div class="logo-top">MDAO<span>Pay</span></div>
+    <button class="skip-btn" id="skipBtn">Пропустить</button>
+
+    <div class="slide-container" id="slideContainer">
+
+      <!-- Slide 1: Welcome -->
+      <div class="slide active" data-slide="1">
+        <div class="slide-art">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h6M9 13h6M9 17h6"/>
+          </svg>
+        </div>
+        <div class="slide-title">Добро пожаловать в MDAOPay</div>
+        <div class="slide-text">Децентрализованный кошелёк нового поколения. Полный контроль над вашими средствами — без посредников.</div>
+      </div>
+
+      <!-- Slide 2: Multi-chain -->
+      <div class="slide" data-slide="2">
+        <div class="slide-art">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+        </div>
+        <div class="slide-title">Мультичейн-кошелёк</div>
+        <div class="slide-text">BNB Chain, Ethereum, Polygon, Arbitrum и Optimism. Все ваши токены в одном месте.</div>
+      </div>
+
+      <!-- Slide 3: Security -->
+      <div class="slide" data-slide="3">
+        <div class="slide-art">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="slide-title">Безопасность прежде всего</div>
+        <div class="slide-text">PIN, биометрия и recovery phrase. Ваши ключи хранятся только на вашем устройстве.</div>
+      </div>
+
+      <!-- Slide 4: MDAO ecosystem -->
+      <div class="slide" data-slide="4">
+        <div class="slide-art">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <circle cx="5" cy="5" r="2"/>
+            <circle cx="19" cy="5" r="2"/>
+            <circle cx="5" cy="19" r="2"/>
+            <circle cx="19" cy="19" r="2"/>
+            <path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/>
+          </svg>
+        </div>
+        <div class="slide-title">Экосистема MDAO</div>
+        <div class="slide-text">Arena, DEX, Flopi, VPN — все сервисы в одном приложении. Зарабатывайте, обменивайте, общайтесь.</div>
+      </div>
+
+    </div>
+
+    <div class="slide-dots" id="slideDots">
+      <div class="slide-dot active"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+      <div class="slide-dot"></div>
+    </div>
+
+    <div class="welcome-actions">
+      <button class="btn btn-primary btn-block btn-lg" id="createBtn">Создать кошелёк</button>
+      <button class="btn btn-secondary btn-block" id="importBtn">Импортировать существующий</button>
+    </div>
+  </div>
+
+  <!-- Notif zone -->
+  <div class="notif-zone" id="notifZone" style="position:absolute;bottom:0;left:0;right:0;height:0;pointer-events:none;">
+    <div class="notif-wave" id="notifWave"></div>
+    <div class="notif" id="notif">
+      <div class="notif-content">
+        <div class="notif-row">
+          <div class="notif-icon info" id="notifIcon"></div>
+          <div class="notif-body">
+            <div class="notif-title" id="notifTitle">Готово</div>
+            <div class="notif-sub" id="notifSub"></div>
+          </div>
+        </div>
+        <div class="notif-details">
+          <div class="notif-amount" id="notifAmount"></div>
+          <div class="notif-commission" id="notifCommission"></div>
+        </div>
+        <button class="notif-action" id="notifAction">Готово</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  let currentSlide = 1;
+  const totalSlides = 4;
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.slide-dot');
+
+  function goToSlide(n) {
+    if (n < 1 || n > totalSlides || n === currentSlide) return;
+    slides.forEach(s => {
+      const sn = +s.dataset.slide;
+      s.classList.remove('active', 'leaving');
+      if (sn === n) s.classList.add('active');
+      else if (sn === currentSlide) s.classList.add('leaving');
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i + 1 === n));
+    currentSlide = n;
+  }
+
+  function nextSlide() {
+    if (currentSlide < totalSlides) goToSlide(currentSlide + 1);
+  }
+
+  // Click on slide container to advance
+  document.getElementById('slideContainer').addEventListener('click', (e) => {
+    // Don't advance if user clicks skip or buttons
+    if (e.target.closest('button')) return;
+    nextSlide();
+  });
+
+  // Swipe support
+  let startX = 0;
+  document.getElementById('slideContainer').addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+  }, { passive: true });
+  document.getElementById('slideContainer').addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) nextSlide();
+      else if (currentSlide > 1) goToSlide(currentSlide - 1);
+    }
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextSlide();
+    if (e.key === 'ArrowLeft' && currentSlide > 1) goToSlide(currentSlide - 1);
+  });
+
+  document.getElementById('skipBtn').addEventListener('click', () => {
+    goToSlide(totalSlides);
+  });
+
+  document.getElementById('createBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Создание кошелька', sub:'Открываем…', pill:true, autoDismiss:1500 });
+    // In real app: window.location.href = 'create-wallet.html';
+  });
+
+  document.getElementById('importBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Импорт кошелька', sub:'Открываем…', pill:true, autoDismiss:1500 });
+    // In real app: window.location.href = 'import-wallet.html';
+  });
+})();
+</script>
+</body>
+</html>

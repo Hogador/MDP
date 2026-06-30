@@ -1,0 +1,252 @@
+/* ============================================================
+   MDAOPay — Transitions Library
+   All animations, choreography primitives, and motion utilities.
+   Depends on tokens.css (--spring, --ease-out, --d-*).
+   ============================================================ */
+
+/* ============ KEYFRAMES ============ */
+
+/* Page push (forward navigation) */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0.4; }
+}
+/* Page pop (back navigation) */
+@keyframes slideInLeft {
+  from { transform: translateX(-30%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-30%);  opacity: 0; }
+}
+
+/* Bottom sheet */
+@keyframes sheetUp {
+  from { transform: translateY(110%); }
+  to   { transform: translateY(0); }
+}
+@keyframes sheetDown {
+  from { transform: translateY(0); }
+  to   { transform: translateY(110%); }
+}
+
+/* Fade */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* Scale (modals, dialogs) */
+@keyframes scaleIn  {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+@keyframes scaleOut {
+  from { transform: scale(1);    opacity: 1; }
+  to   { transform: scale(0.85); opacity: 0; }
+}
+
+/* Slide up (small content reveal) */
+@keyframes slideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@keyframes slideDown {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Pulse (only for live indicators — use sparingly) */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.92); }
+}
+
+/* Notification — drop + morph (card mode) */
+@keyframes notifDropMorph {
+  0%   { transform: translateX(-50%) translateY(-110px) scale(0.05); border-radius: 50%; }
+  35%  { transform: translateX(-50%) translateY(0)      scale(0.05); border-radius: 50%; }
+  55%  { transform: translateX(-50%) translateY(0)      scale(0.4, 0.06); border-radius: 50%; }
+  100% { transform: translateX(-50%) translateY(0)      scale(1); border-radius: 28px; }
+}
+@keyframes notifCollapse {
+  0%   { transform: translateX(-50%) translateY(0) scale(1); border-radius: 28px; opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0) scale(0.05); border-radius: 50%; opacity: 0; }
+}
+
+/* Notification — pill mode (low capsule) */
+@keyframes pillDropMorph {
+  0%   { transform: translateX(-50%) translateY(-90px) scale(0.05); border-radius: 50%; }
+  35%  { transform: translateX(-50%) translateY(0)      scale(0.05); border-radius: 50%; }
+  55%  { transform: translateX(-50%) translateY(0)      scale(0.3, 0.08); border-radius: 50%; }
+  100% { transform: translateX(-50%) translateY(0)      scale(1); border-radius: 999px; }
+}
+@keyframes pillCollapse {
+  0%   { transform: translateX(-50%) translateY(0) scale(1); border-radius: 999px; opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0) scale(0.05); border-radius: 50%; opacity: 0; }
+}
+
+/* Notification wave (impact ripple) */
+@keyframes notifWaveExpand {
+  0%   { transform: translate(-50%, 50%) scale(0.6); opacity: 0.75; }
+  100% { transform: translate(-50%, 50%) scale(9);   opacity: 0; }
+}
+
+/* Icon draw-in (checkmark, X) */
+@keyframes iconDraw {
+  from { stroke-dashoffset: 60; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Error shake (for error icon) */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-6px) rotate(-3deg); }
+  50%      { transform: translateX(6px)  rotate(3deg); }
+  75%      { transform: translateX(-3px) rotate(-1deg); }
+}
+
+/* Balance chip slide-in (in compact card mode) */
+@keyframes chipIn {
+  0%   { opacity: 0; transform: scale(0.6) translateX(8px); }
+  100% { opacity: 1; transform: scale(1) translateX(0); }
+}
+
+/* Pull-to-refresh spinner track */
+@keyframes pullRelease {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-100%); }
+}
+
+/* Skeleton shimmer (loading placeholders) */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ============ ANIMATION UTILITIES ============ */
+
+.anim-slide-in-right  { animation: slideInRight  var(--d-page) var(--spring)   forwards; }
+.anim-slide-out-right { animation: slideOutRight var(--d-page) var(--ease-out) forwards; }
+.anim-slide-in-left   { animation: slideInLeft   var(--d-page) var(--ease-out) forwards; }
+.anim-slide-out-left  { animation: slideOutLeft  var(--d-page) var(--spring)   forwards; }
+.anim-sheet-up        { animation: sheetUp       var(--d-sheet) var(--spring)   forwards; }
+.anim-sheet-down      { animation: sheetDown     var(--d-base)  var(--ease-out) forwards; }
+.anim-fade-in         { animation: fadeIn        var(--d-base)  var(--ease-out) forwards; }
+.anim-fade-out        { animation: fadeOut       var(--d-quick) var(--ease-out) forwards; }
+.anim-scale-in        { animation: scaleIn       var(--d-base)  var(--spring)   forwards; }
+.anim-scale-out       { animation: scaleOut      var(--d-quick) var(--ease-out) forwards; }
+.anim-slide-up        { animation: slideUp       var(--d-base)  var(--ease-out) forwards; }
+.anim-spin            { animation: spin          0.7s linear infinite; }
+
+/* Stagger helpers (apply to children with --i index) */
+.stagger > * {
+  animation: slideUp var(--d-base) var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/* ============ INTERACTIVE TRANSITIONS ============ */
+
+/* Default transition for all interactive elements */
+.btn,
+.icon-btn,
+.list-item,
+.tile,
+.nav-item,
+.contact-item,
+.service-icon,
+.block,
+.card,
+.toggle,
+.radio-card,
+.input-field {
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow var(--d-quick) var(--ease-out),
+    background var(--d-quick) var(--ease-out),
+    color var(--d-quick) var(--ease-out),
+    border-color var(--d-quick) var(--ease-out),
+    opacity var(--d-quick) var(--ease-out);
+}
+
+/* Press feedback */
+.pressable:active {
+  transform: scale(0.96);
+}
+
+/* ============ PAGE TRANSITIONS (apply to .page elements) ============ */
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.page.entering  { animation: slideInRight var(--d-page) var(--spring)   forwards; }
+.page.leaving   { animation: slideOutRight var(--d-page) var(--ease-out) forwards; }
+.page.entering-back  { animation: slideInLeft  var(--d-page) var(--ease-out) forwards; }
+.page.leaving-back   { animation: slideOutLeft var(--d-page) var(--spring)   forwards; }
+
+/* ============ SHEET TRANSITIONS ============ */
+.sheet {
+  transform: translateY(110%);
+  transition: transform var(--d-sheet) var(--spring);
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+.sheet-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============ OVERLAY TRANSITIONS (cards expand, modal backdrop) ============ */
+.overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+.overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============ THEME SWITCH TRANSITION ============ */
+.theme-dark, .theme-light, .theme-amoled, .phone, body {
+  transition:
+    background-color var(--d-base) var(--ease-out),
+    color var(--d-base) var(--ease-out);
+}
+
+/* Most themed elements should also transition colors smoothly */
+.card, .block, .sheet, .tile, .icon-btn, .nav-item,
+.avatar, .service-icon .icon-box, .input-field, .list-item {
+  transition:
+    background-color var(--d-base) var(--ease-out),
+    border-color var(--d-base) var(--ease-out),
+    color var(--d-base) var(--ease-out),
+    box-shadow var(--d-quick) var(--ease-out),
+    transform 0.12s var(--ease-out);
+}
+
+/* ============ SKELETON LOADING ============ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--tile) 0%,
+    var(--surface) 50%,
+    var(--tile) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--r-md);
+}

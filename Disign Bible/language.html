@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Язык</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .lang-preview {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .lang-preview .lp-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    margin-bottom: 8px;
+  }
+  .lang-preview .lp-text {
+    font-size: var(--fs-h2); font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: var(--ls-snug);
+  }
+  .lang-preview .lp-sub {
+    font-size: var(--fs-label); color: var(--text2); margin-top: 4px;
+  }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Язык</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <div class="lang-preview">
+      <div class="lp-label">Текущий язык</div>
+      <div class="lp-text" id="currentLangName">Русский</div>
+      <div class="lp-sub" id="currentLangNative">Russian</div>
+    </div>
+
+    <div class="list-section-header">Выберите язык</div>
+    <div class="list-section">
+      <button class="list-item lang-item active" data-lang="ru" data-name="Русский" data-native="Russian">
+        <div class="li-icon"><span style="font-size:18px;">🇷🇺</span></div>
+        <div class="li-body">
+          <div class="li-title">Русский</div>
+          <div class="li-sub">Russian</div>
+        </div>
+        <div class="li-check" style="width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 24 24" style="stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;width:14px;height:14px;"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="en" data-name="English" data-native="English">
+        <div class="li-icon"><span style="font-size:18px;">🇬🇧</span></div>
+        <div class="li-body">
+          <div class="li-title">English</div>
+          <div class="li-sub">English</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="zh" data-name="中文" data-native="Chinese">
+        <div class="li-icon"><span style="font-size:18px;">🇨🇳</span></div>
+        <div class="li-body">
+          <div class="li-title">中文</div>
+          <div class="li-sub">Chinese (Simplified)</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="es" data-name="Español" data-native="Spanish">
+        <div class="li-icon"><span style="font-size:18px;">🇪🇸</span></div>
+        <div class="li-body">
+          <div class="li-title">Español</div>
+          <div class="li-sub">Spanish</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="fr" data-name="Français" data-native="French">
+        <div class="li-icon"><span style="font-size:18px;">🇫🇷</span></div>
+        <div class="li-body">
+          <div class="li-title">Français</div>
+          <div class="li-sub">French</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="de" data-name="Deutsch" data-native="German">
+        <div class="li-icon"><span style="font-size:18px;">🇩🇪</span></div>
+        <div class="li-body">
+          <div class="li-title">Deutsch</div>
+          <div class="li-sub">German</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="ja" data-name="日本語" data-native="Japanese">
+        <div class="li-icon"><span style="font-size:18px;">🇯🇵</span></div>
+        <div class="li-body">
+          <div class="li-title">日本語</div>
+          <div class="li-sub">Japanese</div>
+        </div>
+      </button>
+      <button class="list-item lang-item" data-lang="ko" data-name="한국어" data-native="Korean">
+        <div class="li-icon"><span style="font-size:18px;">🇰🇷</span></div>
+        <div class="li-body">
+          <div class="li-title">한국어</div>
+          <div class="li-sub">Korean</div>
+        </div>
+      </button>
+    </div>
+
+    <div style="font-size:var(--fs-label);color:var(--text2);padding:12px 16px;line-height:var(--lh-relaxed);">
+      Язык интерфейса изменится немедленно. Названия токенов и сети останутся на языке оригинала.
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // Language selection
+  document.querySelectorAll('.lang-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.lang-item').forEach(i => {
+        i.classList.remove('active');
+        const check = i.querySelector('.li-check');
+        if (check) check.remove();
+      });
+      item.classList.add('active');
+      // Add check
+      const check = document.createElement('div');
+      check.className = 'li-check';
+      check.style.cssText = 'width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      check.innerHTML = '<svg viewBox="0 0 24 24" style="stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;width:14px;height:14px;"><path d="M5 12l5 5L20 7"/></svg>';
+      item.appendChild(check);
+      // Update preview
+      document.getElementById('currentLangName').textContent = item.dataset.name;
+      document.getElementById('currentLangNative').textContent = item.dataset.native;
+      showNotif({ type:'success', title:'Язык', sub: item.dataset.name, pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  // Theme cycle
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

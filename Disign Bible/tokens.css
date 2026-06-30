@@ -1,0 +1,228 @@
+/* ============================================================
+   MDAOPay — Design Tokens
+   Source of truth for all themes, colors, shadows, typography.
+   Loaded BEFORE components.css and transitions.css.
+   ============================================================ */
+
+/* ============ EASING ============ */
+:root {
+  --spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:  cubic-bezier(0.7, 0, 0.84, 0);
+  --ease:     cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ ACCENT (brand, same across themes) ============ */
+:root {
+  --accent:        #FF6B00;
+  --accent-press:  #E55F00;
+  --accent-soft:   rgba(255, 107, 0, 0.10);
+
+  /* Alternative accents (Appearance screen palette) */
+  --accent-blue:   #2D7FF9;
+  --accent-green:  #00B377;
+  --accent-purple: #7B4DFF;
+  --accent-pink:   #F94D9E;
+
+  /* Semantic */
+  --success:       #00D68F;
+  --success-soft:  rgba(0, 214, 143, 0.12);
+  --danger:        #FF4D6D;
+  --danger-soft:   rgba(255, 77, 109, 0.12);
+  --warning:       #FFB300;
+  --warning-soft:  rgba(255, 179, 0, 0.12);
+}
+
+/* ============ TYPOGRAPHY ============ */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+
+  /* Type scale (mobile-first) */
+  --fs-caption:  10px;   /* tiny labels, units */
+  --fs-meta:     11px;   /* secondary meta */
+  --fs-label:    12px;   /* section titles, sub-text */
+  --fs-body:     13px;   /* default body */
+  --fs-body-lg:  14px;   /* emphasized body */
+  --fs-title:    15px;   /* card titles, list-item primary */
+  --fs-h3:       18px;   /* sub-headings */
+  --fs-h2:       20px;   /* screen titles (compact) */
+  --fs-h1:       24px;   /* large screen titles, greeting */
+  --fs-display:  36px;   /* balance, hero numbers */
+  --fs-mega:     44px;   /* result overlays */
+
+  /* Weights */
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* Line heights */
+  --lh-tight:    1.1;
+  --lh-snug:     1.2;
+  --lh-normal:   1.4;
+  --lh-relaxed:  1.5;
+
+  /* Letter spacing */
+  --ls-tight:   -0.5px;
+  --ls-snug:    -0.2px;
+  --ls-normal:  0;
+  --ls-wide:    0.2px;
+  --ls-wider:   0.8px;
+  --ls-uppercase: 1px;
+}
+
+/* ============ SPACING (4-based grid) ============ */
+:root {
+  --sp-0:   0;
+  --sp-1:   2px;
+  --sp-2:   4px;
+  --sp-3:   6px;
+  --sp-4:   8px;
+  --sp-5:   10px;
+  --sp-6:   12px;
+  --sp-8:   16px;
+  --sp-10:  20px;
+  --sp-12:  24px;
+  --sp-16:  32px;
+  --sp-20:  40px;
+  --sp-24:  48px;
+}
+
+/* ============ RADII ============ */
+:root {
+  --r-xs:    4px;
+  --r-sm:    8px;
+  --r-md:    12px;
+  --r-lg:    14px;
+  --r-xl:    16px;
+  --r-2xl:   20px;
+  --r-3xl:   24px;
+  --r-4xl:   28px;
+  --r-pill:  999px;
+  --r-card:  28px;
+  --r-sheet: 28px;
+}
+
+/* ============ DURATIONS ============ */
+:root {
+  --d-fast:    0.18s;
+  --d-quick:   0.25s;
+  --d-base:    0.35s;
+  --d-page:    0.5s;
+  --d-sheet:   0.55s;
+  --d-result:  0.7s;
+}
+
+/* ============ SIZING ============ */
+:root {
+  --tap-min:    44px;     /* minimum touch target */
+  --icon-sm:    18px;
+  --icon-md:    22px;
+  --icon-lg:    28px;
+  --icon-xl:    44px;
+
+  --phone-w:    390px;
+  --phone-h:    844px;
+}
+
+/* ============================================================
+   THEMES — apply via class on the root element (.phone or body)
+   Each theme overrides --bg, --card, --surface, --tile, --text*,
+   --border, --soft-border, and all 5 shadow tokens.
+   ============================================================ */
+
+.theme-dark {
+  --bg:           #0A0A0F;
+  --card:         #1A1A22;
+  --surface:      #121218;
+  --tile:         #23232C;
+  --text:         #FFFFFF;
+  --text2:        #7E8089;
+  --text3:        #4D4F58;
+  --border:       #26262F;
+  --soft-border:  rgba(255, 255, 255, 0.04);
+
+  /* Elevation — soft neomorphic shadows */
+  --shadow-raise: 0 18px 40px -10px rgba(0,0,0,0.7),
+                  0 6px 14px -4px rgba(0,0,0,0.5),
+                  inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-soft:  0 10px 22px -6px rgba(0,0,0,0.6),
+                  0 3px 8px -2px rgba(0,0,0,0.4),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-inset: inset 0 -4px 10px rgba(0,0,0,0.4),
+                  inset 0 1px 1px rgba(255,255,255,0.06);
+  --shadow-press: inset 0 5px 12px rgba(0,0,0,0.7),
+                  inset 0 -1px 1px rgba(255,255,255,0.04);
+  --shadow-glow:  inset 0 1px 0 rgba(255,255,255,0.08);
+
+  /* Overlay backgrounds (dim, no blur by design decision) */
+  --overlay-dim:  rgba(0, 0, 0, 0.4);
+  --overlay-strong: rgba(0, 0, 0, 0.6);
+}
+
+.theme-light {
+  --bg:           #E8EBF1;
+  --card:         #FBFCFE;
+  --surface:      #FFFFFF;
+  --tile:         #E4E8EE;
+  --text:         #0A0A0F;
+  --text2:        #6B7280;
+  --text3:        #9CA3AF;
+  --border:       #DCE0E8;
+  --soft-border:  #D6DAE2;
+
+  --shadow-raise: 0 20px 40px -12px rgba(28,32,52,0.28),
+                  0 6px 14px -4px rgba(28,32,52,0.16),
+                  inset 0 1px 0 rgba(255,255,255,0.95);
+  --shadow-soft:  0 10px 22px -8px rgba(28,32,52,0.22),
+                  0 3px 6px -2px rgba(28,32,52,0.14),
+                  inset 0 1px 0 rgba(255,255,255,0.9);
+  --shadow-inset: inset 0 -4px 10px rgba(28,32,52,0.10),
+                  inset 0 1px 1px rgba(255,255,255,0.95);
+  --shadow-press: inset 0 5px 12px rgba(28,32,52,0.18),
+                  inset 0 -1px 1px rgba(255,255,255,0.7);
+  --shadow-glow:  inset 0 1px 0 rgba(255,255,255,1);
+
+  --overlay-dim:    rgba(20, 22, 32, 0.32);
+  --overlay-strong: rgba(20, 22, 32, 0.55);
+}
+
+.theme-amoled {
+  --bg:           #000000;
+  --card:         #0B0B0D;
+  --surface:      #050505;
+  --tile:         #151518;
+  --text:         #FFFFFF;
+  --text2:        #5A5A60;
+  --text3:        #3A3A40;
+  --border:       #1C1C1C;
+  --soft-border:  #161616;
+
+  --shadow-raise: 0 18px 40px -10px rgba(0,0,0,0.95),
+                  0 6px 14px -4px rgba(0,0,0,0.7),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-soft:  0 10px 22px -6px rgba(0,0,0,0.85),
+                  0 3px 8px -2px rgba(0,0,0,0.6),
+                  inset 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-inset: inset 0 -4px 10px rgba(0,0,0,0.7),
+                  inset 0 1px 1px rgba(255,255,255,0.04);
+  --shadow-press: inset 0 5px 12px rgba(0,0,0,0.9),
+                  inset 0 -1px 1px rgba(255,255,255,0.03);
+  --shadow-glow:  inset 0 1px 0 rgba(255,255,255,0.05);
+
+  --overlay-dim:    rgba(0, 0, 0, 0.55);
+  --overlay-strong: rgba(0, 0, 0, 0.8);
+}
+
+/* ============ ACCESSIBILITY: REDUCED MOTION ============ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spring:   var(--ease-out);
+    --d-fast:   0.01s;
+    --d-quick:  0.01s;
+    --d-base:   0.01s;
+    --d-page:   0.01s;
+    --d-sheet:  0.01s;
+    --d-result: 0.01s;
+  }
+}

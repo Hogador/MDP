@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Помощь</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .help-search {
+    margin: 4px 0 16px;
+  }
+
+  .faq-item {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    margin-bottom: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+  }
+  .faq-item .faq-q {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    background: transparent; border: none; width: 100%;
+    font-family: inherit; text-align: left;
+    color: var(--text); font-size: var(--fs-body-lg); font-weight: var(--fw-semibold);
+  }
+  .faq-item .faq-q:active { background: var(--tile); }
+  .faq-item .faq-q .fq-chevron {
+    stroke: var(--text2); stroke-width: 2.4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px;
+    transition: transform var(--d-base) var(--spring);
+    flex-shrink: 0;
+  }
+  .faq-item.open .faq-q .fq-chevron { transform: rotate(180deg); }
+  .faq-item .faq-a {
+    max-height: 0; overflow: hidden;
+    transition: max-height var(--d-base) var(--ease-out);
+    padding: 0 16px;
+    color: var(--text2); font-size: var(--fs-body); line-height: var(--lh-relaxed);
+  }
+  .faq-item.open .faq-a {
+    max-height: 200px;
+    padding: 0 16px 14px;
+  }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--success-soft); color: var(--success);
+    padding: 4px 10px; border-radius: var(--r-pill);
+    font-size: var(--fs-meta); font-weight: var(--fw-bold);
+  }
+  .status-pill .sp-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+
+  .status-card {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 8px;
+  }
+  .status-card .sc-left { display: flex; align-items: center; gap: 10px; }
+  .status-card .sc-name { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--text); }
+  .status-card .sc-sub { font-size: var(--fs-meta); color: var(--text2); margin-top: 1px; }
+  .status-card .sc-icon {
+    width: 32px; height: 32px; border-radius: var(--r-sm);
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: var(--fw-bold); color: #fff; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .status-card.ok .sc-icon { background: var(--success); }
+  .status-card.warn .sc-icon { background: var(--warning); }
+  .status-card.err .sc-icon { background: var(--danger); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Помощь</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Search -->
+    <div class="help-search">
+      <div class="input-wrap">
+        <input class="input-field" placeholder="Поиск в FAQ" style="padding-left:42px;">
+        <span class="input-affix" style="left:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--text2);stroke-width:2;fill:none;stroke-linecap:round;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="list-section-header">Быстрые действия</div>
+    <div class="list-section">
+      <button class="list-item" id="chatBtn">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Написать в поддержку</div>
+          <div class="li-sub">Ответ в течение 24 часов</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="list-item" id="bugBtn">
+        <div class="li-icon danger">
+          <svg viewBox="0 0 24 24"><rect x="8" y="6" width="8" height="14" rx="4"/><path d="M19 7l-3 2M19 13h-3M19 17l-3-2M5 7l3 2M5 13h3M5 17l3-2"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Сообщить о баге</div>
+          <div class="li-sub">Скриншот + описание</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- FAQ -->
+    <div class="list-section-header">Частые вопросы</div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Как отправить криптовалюту?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        Откройте карту нужного токена на главном экране, нажмите «Отправить». Введите адрес получателя (или отсканируйте QR), сумму и подтвердите. Транзакция отправится в течение нескольких секунд.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Что такое recovery phrase?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        Это 12 или 24 слова, которые восстанавливают полный доступ к кошельку. Никому не показывайте их. Храните в надёжном месте (желательно офлайн). Без фразы восстановить доступ невозможно.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Какая комиссия за отправку?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        Комиссия зависит от сети. Для BNB Chain обычно 0.1–0.5 USDT эквивалента. Для MDAO — 0.5 MDAO. Точная сумма показывается перед подтверждением транзакции.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Можно ли отменить транзакцию?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        После подтверждения в блокчейне транзакция неотменяема. Внимательно проверяйте адрес и сумму перед отправкой. Pending-транзакции можно попытаться заменить (Replace-by-fee), но это работает не всегда.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Забыл PIN — что делать?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        Удалите приложение и переустановите его. При восстановлении введите recovery phrase — кошелёк вернётся, и вы сможете установить новый PIN. Без recovery phrase восстановление невозможно.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">
+        <span>Как добавить кастомный токен?</span>
+        <svg class="fq-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="faq-a">
+        Настройки → Кошельки и токены → «Добавить кастомный токен». Введите адрес контракта (на нужной сети). Токен подтянется автоматически, если он соответствует стандарту BEP-20 / ERC-20.
+      </div>
+    </div>
+
+    <!-- Network status -->
+    <div class="list-section-header" style="margin-top:16px;">Статус сетей</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:0 4px 12px;">
+      <span class="status-pill"><span class="sp-dot"></span>Все системы работают</span>
+    </div>
+
+    <div class="status-card ok">
+      <div class="sc-left">
+        <div class="sc-icon">◆</div>
+        <div>
+          <div class="sc-name">BNB Smart Chain</div>
+          <div class="sc-sub">Высота блока: 38,452,108</div>
+        </div>
+      </div>
+      <span class="status-pill"><span class="sp-dot"></span>OK</span>
+    </div>
+    <div class="status-card ok">
+      <div class="sc-left">
+        <div class="sc-icon" style="background:#627EEA;">Ξ</div>
+        <div>
+          <div class="sc-name">Ethereum</div>
+          <div class="sc-sub">Высота блока: 19,872,341</div>
+        </div>
+      </div>
+      <span class="status-pill"><span class="sp-dot"></span>OK</span>
+    </div>
+    <div class="status-card warn">
+      <div class="sc-left">
+        <div class="sc-icon" style="background:#8247E5;">◆</div>
+        <div>
+          <div class="sc-name">Polygon</div>
+          <div class="sc-sub">Задержка 12 сек</div>
+        </div>
+      </div>
+      <span class="status-pill" style="background:var(--warning-soft);color:var(--warning);"><span class="sp-dot" style="background:var(--warning);box-shadow:0 0 6px var(--warning);"></span>Slow</span>
+    </div>
+    <div class="status-card ok">
+      <div class="sc-left">
+        <div class="sc-icon" style="background:#28A0F0;">◆</div>
+        <div>
+          <div class="sc-name">Arbitrum One</div>
+          <div class="sc-sub">Высота блока: 187,234,108</div>
+        </div>
+      </div>
+      <span class="status-pill"><span class="sp-dot"></span>OK</span>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq-item');
+      item.classList.toggle('open');
+    });
+  });
+
+  document.getElementById('chatBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Чат с поддержкой', pill:true });
+  });
+  document.getElementById('bugBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Форма баг-репорта', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Контакты</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .contacts-list {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .contact-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    width: 100%; font-family: inherit; text-align: left;
+  }
+  .contact-card:active { transform: scale(0.985); box-shadow: var(--shadow-press); }
+  .contact-card .cc-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: var(--fw-bold); color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  }
+  .contact-card .cc-body { flex: 1; min-width: 0; }
+  .contact-card .cc-name { font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text); }
+  .contact-card .cc-nick { font-size: var(--fs-label); color: var(--accent); font-family: var(--font-mono); margin-top: 1px; }
+  .contact-card .cc-meta { font-size: var(--fs-meta); color: var(--text2); margin-top: 3px; }
+  .contact-card .cc-actions {
+    display: flex; gap: 6px; flex-shrink: 0;
+  }
+  .contact-card .cc-act-btn {
+    width: 36px; height: 36px; border-radius: var(--r-md);
+    background: var(--tile); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .contact-card .cc-act-btn:active { transform: scale(0.9); box-shadow: var(--shadow-press); }
+  .contact-card .cc-act-btn svg { stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 16px; height: 16px; }
+  .contact-card .cc-act-btn.send { background: var(--accent-soft); }
+  .contact-card .cc-act-btn.send svg { stroke: var(--accent); }
+
+  .fab {
+    position: absolute;
+    bottom: 20px; right: 20px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 24px -4px rgba(255,107,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15);
+    z-index: 60;
+    transition: transform 0.15s var(--spring);
+  }
+  .fab:active { transform: scale(0.92); }
+  .fab svg { stroke: #fff; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 24px; height: 24px; }
+
+  .empty-contacts {
+    text-align: center; padding: 60px 24px;
+    color: var(--text2);
+    display: none;
+  }
+  .empty-contacts.show { display: block; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Контакты</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Search -->
+    <div style="margin: 4px 0 14px;">
+      <div class="input-wrap">
+        <input class="input-field" id="searchInput" placeholder="Поиск по имени или нику" style="padding-left:42px;">
+        <span class="input-affix" style="left:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--text2);stroke-width:2;fill:none;stroke-linecap:round;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <!-- Contacts list -->
+    <div class="list-section-header">Все контакты (<span id="contactCount">6</span>)</div>
+    <div class="contacts-list" id="contactsList">
+
+      <button class="contact-card" data-name="Алиса" data-nick="@alice">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#FF6B00,#FF9A4D);">А</div>
+        <div class="cc-body">
+          <div class="cc-name">Алиса</div>
+          <div class="cc-nick">@alice</div>
+          <div class="cc-meta">0x4F2E…8B9C · 5 транзакций</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+      <button class="contact-card" data-name="Боб" data-nick="@bob">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#2D7FF9,#5DA5FF);">Б</div>
+        <div class="cc-body">
+          <div class="cc-name">Боб</div>
+          <div class="cc-nick">@bob</div>
+          <div class="cc-meta">0x7D1A…3E5F · 3 транзакции</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+      <button class="contact-card" data-name="Карл" data-nick="@carl">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#00B377,#3DD99A);">К</div>
+        <div class="cc-body">
+          <div class="cc-name">Карл</div>
+          <div class="cc-nick">@carl</div>
+          <div class="cc-meta">0x9C8B…2A4D · 2 транзакции</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+      <button class="contact-card" data-name="Мария" data-nick="@maria">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#7B4DFF,#A884FF);">М</div>
+        <div class="cc-body">
+          <div class="cc-name">Мария</div>
+          <div class="cc-nick">@maria</div>
+          <div class="cc-meta">0x1B2C…7D8E · 1 транзакция</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+      <button class="contact-card" data-name="Дмитрий" data-nick="@dmitry">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#F94D9E,#FF85B8);">Д</div>
+        <div class="cc-body">
+          <div class="cc-name">Дмитрий</div>
+          <div class="cc-nick">@dmitry</div>
+          <div class="cc-meta">0x3E5F…9A1B · 0 транзакций</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+      <button class="contact-card" data-name="Елена" data-nick="@elena">
+        <div class="cc-avatar" style="background:linear-gradient(135deg,#FFB300,#FFD166);">Е</div>
+        <div class="cc-body">
+          <div class="cc-name">Елена</div>
+          <div class="cc-nick">@elena</div>
+          <div class="cc-meta">0x6F8A…2B3C · 0 транзакций</div>
+        </div>
+        <div class="cc-actions">
+          <button class="cc-act-btn send" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+        </div>
+      </button>
+
+    </div>
+
+    <!-- Empty state (shown when no search results) -->
+    <div class="empty-contacts" id="emptyContacts">
+      <div style="font-size:48px;margin-bottom:12px;">🔍</div>
+      <div style="font-size:var(--fs-h3);font-weight:var(--fw-bold);color:var(--text);margin-bottom:6px;">Ничего не найдено</div>
+      <div style="font-size:var(--fs-body);line-height:var(--lh-relaxed);">Попробуйте другой запрос или добавьте новый контакт</div>
+    </div>
+
+    <div style="height:80px;"></div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="addContactBtn" aria-label="Добавить контакт">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  const cards = document.querySelectorAll('.contact-card');
+  const empty = document.getElementById('emptyContacts');
+  const list = document.getElementById('contactsList');
+  const countEl = document.getElementById('contactCount');
+
+  // Search
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    let visible = 0;
+    cards.forEach(c => {
+      const name = c.dataset.name.toLowerCase();
+      const nick = c.dataset.nick.toLowerCase();
+      const match = !q || name.includes(q) || nick.includes(q);
+      c.style.display = match ? 'flex' : 'none';
+      if (match) visible++;
+    });
+    empty.classList.toggle('show', visible === 0);
+    list.style.display = visible === 0 ? 'none' : 'flex';
+    countEl.textContent = visible;
+  });
+
+  // Card click → open details
+  cards.forEach(c => {
+    c.addEventListener('click', (e) => {
+      if (e.target.closest('.cc-act-btn')) return;
+      MDAONotif.show({ type:'info', title: c.dataset.name, sub: c.dataset.nick, pill:true });
+    });
+  });
+
+  // Send button on card
+  document.querySelectorAll('.cc-act-btn.send').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = b.closest('.contact-card');
+      MDAONotif.show({ type:'success', title:'Отправить', sub: card.dataset.name, pill:true });
+    });
+  });
+
+  document.getElementById('addContactBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'Новый контакт', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

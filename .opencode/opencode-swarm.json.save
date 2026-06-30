@@ -1,0 +1,28 @@
+{
+  "agents": {
+    "planner": {
+      "model": "openrouter/xiaomi/mimo-v2.5",
+      "role": "decompose tasks into parallel subtasks"
+    },
+    "scanner": {
+      "model": "openrouter/north-mini-code:free",
+      "role": "scan repo, find relevant files, detect patterns"
+    },
+    "coder": {
+      "model": "openrouter/deepseek/deepseek-v4-flash",
+      "role": "write code and apply changes"
+    },
+    "reviewer": {
+      "model": "openrouter/openai/gpt-5.2",
+      "role": "review code for correctness and architectural fit"
+    },
+    "tester": {
+      "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+      "role": "verify product behavior against PRD and TDD"
+    },
+    "final": {
+      "model": "openrouter/z-ai/glm-5.2",
+      "role": "final synthesis for hard decisions only"
+    }
+  }
+}

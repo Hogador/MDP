@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Получить</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .receive-hero {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 24px 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .receive-hero .rh-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    margin-bottom: 14px;
+  }
+  .receive-hero .rh-qr-wrap {
+    display: inline-block;
+    padding: 10px;
+    background: #fff;
+    border-radius: var(--r-lg);
+    box-shadow: 0 8px 20px -4px rgba(0,0,0,0.3);
+    margin-bottom: 14px;
+  }
+  .receive-hero .rh-qr {
+    width: 220px; height: 220px;
+    background-image:
+      linear-gradient(45deg, #0a0a0f 25%, transparent 25%),
+      linear-gradient(-45deg, #0a0a0f 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #0a0a0f 75%),
+      linear-gradient(-45deg, transparent 75%, #0a0a0f 75%);
+    background-size: 11px 11px;
+    background-position: 0 0, 0 5.5px, 5.5px -5.5px, -5.5px 0;
+    border-radius: var(--r-sm);
+    position: relative;
+  }
+  .receive-hero .rh-qr::after {
+    content: '◈';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px;
+    background: #fff;
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #FF6B00; font-weight: var(--fw-bold);
+    border: 3px solid #fff;
+  }
+  .receive-hero .rh-nick {
+    font-size: var(--fs-h2); font-weight: var(--fw-bold); color: var(--accent);
+    font-family: var(--font-mono);
+    margin-top: 6px;
+  }
+  .receive-hero .rh-network {
+    font-size: var(--fs-label); color: var(--text2);
+    margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: var(--r-pill);
+    background: var(--tile);
+  }
+  .receive-hero .rh-network .dot { width: 8px; height: 8px; border-radius: 50%; background: #F0B90B; }
+
+  .addr-card {
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+  }
+  .addr-card .ac-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-wider);
+    margin-bottom: 8px;
+  }
+  .addr-card .ac-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .addr-card .ac-addr {
+    flex: 1; min-width: 0;
+    font-family: var(--font-mono); font-size: var(--fs-label);
+    color: var(--text); font-weight: var(--fw-medium);
+    word-break: break-all; line-height: var(--lh-normal);
+  }
+  .addr-card .ac-copy {
+    background: var(--surface); border: none;
+    width: 36px; height: 36px; border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .addr-card .ac-copy:active { transform: scale(0.9); box-shadow: var(--shadow-press); }
+  .addr-card .ac-copy svg { stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .network-tabs {
+    display: flex; gap: 6px; padding: 3px;
+    background: var(--tile); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .network-tabs::-webkit-scrollbar { display: none; }
+  .network-tabs .nt-tab {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    background: transparent; border: none;
+    color: var(--text2); font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    border-radius: var(--r-md); cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background var(--d-quick), color var(--d-quick);
+  }
+  .network-tabs .nt-tab.active {
+    background: var(--surface); color: var(--text);
+    box-shadow: var(--shadow-soft);
+  }
+  .network-tabs .nt-tab .nt-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .amount-request {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg); padding: 14px 16px;
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 16px;
+  }
+  .amount-request .ar-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-wider);
+    margin-bottom: 8px;
+  }
+  .amount-request .ar-row {
+    display: flex; gap: 10px; align-items: stretch;
+  }
+  .amount-request input {
+    flex: 1; min-width: 0;
+    background: var(--tile); border: 1px solid var(--soft-border);
+    color: var(--text); font-family: var(--font-mono);
+    padding: 12px 14px; border-radius: var(--r-md);
+    font-size: var(--fs-body-lg); font-weight: var(--fw-bold);
+    box-shadow: var(--shadow-inset);
+    outline: none;
+  }
+  .amount-request input:focus { border-color: var(--accent); }
+  .amount-request .ar-suffix {
+    background: var(--tile); border: 1px solid var(--soft-border);
+    padding: 0 14px; border-radius: var(--r-md);
+    display: flex; align-items: center;
+    font-size: var(--fs-body-lg); color: var(--text2); font-weight: var(--fw-bold);
+    box-shadow: var(--shadow-inset);
+  }
+  .amount-request .ar-hint {
+    font-size: var(--fs-meta); color: var(--text2);
+    margin-top: 8px; line-height: var(--lh-normal);
+  }
+
+  .share-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .share-btn {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg); padding: 12px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    font-family: inherit;
+  }
+  .share-btn:active { transform: scale(0.96); box-shadow: var(--shadow-press); }
+  .share-btn svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px;
+  }
+  .share-btn .sb-lbl { font-size: var(--fs-caption); color: var(--text2); font-weight: var(--fw-semibold); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Получить</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Network tabs -->
+    <div class="network-tabs">
+      <button class="nt-tab active" data-net="bsc">
+        <span class="nt-dot" style="background:#F0B90B"></span>
+        BNB Chain
+      </button>
+      <button class="nt-tab" data-net="eth">
+        <span class="nt-dot" style="background:#627EEA"></span>
+        Ethereum
+      </button>
+      <button class="nt-tab" data-net="polygon">
+        <span class="nt-dot" style="background:#8247E5"></span>
+        Polygon
+      </button>
+    </div>
+
+    <!-- Hero with QR -->
+    <div class="receive-hero">
+      <div class="rh-label">Ваш QR-код</div>
+      <div class="rh-qr-wrap">
+        <div class="rh-qr"></div>
+      </div>
+      <div class="rh-nick">@crazy-cherry</div>
+      <div class="rh-network">
+        <span class="dot"></span>
+        BNB Smart Chain
+      </div>
+    </div>
+
+    <!-- Address -->
+    <div class="addr-card">
+      <div class="ac-label">Адрес кошелька</div>
+      <div class="ac-row">
+        <div class="ac-addr" id="addrText">0x8A9B3F2C7E4D1A6B5C8E9F0A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2</div>
+        <button class="ac-copy" id="copyBtn" aria-label="Копировать">
+          <svg width="16" height="16" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Amount request -->
+    <div class="amount-request">
+      <div class="ar-label">Запросить сумму (опционально)</div>
+      <div class="ar-row">
+        <input type="text" inputmode="decimal" id="reqAmount" placeholder="0.00">
+        <div class="ar-suffix">USDT</div>
+      </div>
+      <div class="ar-hint">Отправитель увидит сумму в QR и сможет отправить одним тапом.</div>
+    </div>
+
+    <!-- Share -->
+    <div class="list-section-header">Поделиться</div>
+    <div class="share-grid">
+      <button class="share-btn" data-share="tg">
+        <svg viewBox="0 0 24 24"><path d="M21 5L2 12l5 2 2 6 3-4 5 4 4-15z"/></svg>
+        <span class="sb-lbl">Telegram</span>
+      </button>
+      <button class="share-btn" data-share="wa">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span class="sb-lbl">WhatsApp</span>
+      </button>
+      <button class="share-btn" data-share="link">
+        <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span class="sb-lbl">Ссылка</span>
+      </button>
+    </div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  // Copy address
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const addr = document.getElementById('addrText').textContent;
+    try { navigator.clipboard.writeText(addr); } catch(e) {}
+    MDAONotif.show({ type:'success', title:'Скопировано', sub:'Адрес кошелька', pill:true });
+  });
+
+  // Network switch
+  document.querySelectorAll('.nt-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.nt-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const name = t.textContent.trim();
+      document.querySelector('.rh-network').innerHTML = `<span class="dot" style="background:${t.querySelector('.nt-dot').style.background}"></span>${name}`;
+      MDAONotif.show({ type:'info', title:'Сеть', sub: name, pill:true });
+    });
+  });
+
+  // Amount request
+  const amountInput = document.getElementById('reqAmount');
+  amountInput.addEventListener('input', () => {
+    amountInput.value = amountInput.value.replace(/[^0-9.]/g, '');
+  });
+  amountInput.addEventListener('change', () => {
+    if (parseFloat(amountInput.value) > 0) {
+      MDAONotif.show({ type:'success', title:'QR обновлён', sub:`${amountInput.value} USDT`, pill:true });
+    }
+  });
+
+  // Share buttons
+  document.querySelectorAll('[data-share]').forEach(b => {
+    b.addEventListener('click', () => {
+      const labels = { tg:'Telegram', wa:'WhatsApp', link:'Ссылка' };
+      MDAONotif.show({ type:'success', title:'Поделиться', sub: labels[b.dataset.share], pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

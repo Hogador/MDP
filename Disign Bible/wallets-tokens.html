@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Кошельки и токены</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .wallet-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 2px solid var(--soft-border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-family: inherit; text-align: left;
+  }
+  .wallet-card:active { transform: scale(0.985); }
+  .wallet-card.active { border-color: var(--accent); box-shadow: var(--shadow-soft), 0 0 0 2px var(--accent-soft); }
+  .wallet-card .wc-icon {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #FF9A4D);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: var(--fw-bold); color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px -2px rgba(255,107,0,0.4);
+  }
+  .wallet-card .wc-body { flex: 1; min-width: 0; }
+  .wallet-card .wc-name { font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text); }
+  .wallet-card .wc-addr { font-size: var(--fs-meta); color: var(--text2); font-family: var(--font-mono); margin-top: 2px; }
+  .wallet-card .wc-active {
+    font-size: var(--fs-caption); font-weight: var(--fw-bold); color: var(--success);
+    background: var(--success-soft);
+    padding: 3px 8px; border-radius: var(--r-pill);
+    flex-shrink: 0;
+  }
+
+  .add-wallet {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 16px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px dashed var(--accent);
+    border-radius: var(--r-lg);
+    width: 100%; font-family: inherit;
+    font-size: var(--fs-body); font-weight: var(--fw-bold);
+  }
+  .add-wallet:active { transform: scale(0.985); }
+  .add-wallet svg { stroke: var(--accent); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 16px; height: 16px; }
+
+  .token-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; cursor: pointer;
+    background: transparent; border: none; width: 100%;
+    font-family: inherit; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .token-row:last-child { border-bottom: none; }
+  .token-row:active { background: var(--tile); }
+  .token-row .tr-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: var(--fw-bold); font-size: 14px; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 3px 8px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  }
+  .token-row .tr-body { flex: 1; min-width: 0; }
+  .token-row .tr-name { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--text); }
+  .token-row .tr-sub { font-size: var(--fs-meta); color: var(--text2); margin-top: 1px; }
+  .token-row .tr-toggle {
+    width: 40px; height: 24px;
+    background: var(--tile); border: none;
+    border-radius: var(--r-pill); position: relative;
+    cursor: pointer; flex-shrink: 0;
+    box-shadow: var(--shadow-inset);
+  }
+  .token-row .tr-toggle::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    background: var(--text); border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    transition: transform var(--d-base) var(--spring);
+  }
+  .token-row .tr-toggle.on { background: var(--accent); }
+  .token-row .tr-toggle.on::after { transform: translateX(16px); background: #fff; }
+
+  .add-token {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; cursor: pointer;
+    background: transparent; border: none; width: 100%;
+    font-family: inherit; text-align: left;
+    color: var(--accent); font-size: var(--fs-body); font-weight: var(--fw-bold);
+  }
+  .add-token:active { background: var(--tile); }
+  .add-token svg { stroke: var(--accent); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 16px; height: 16px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Кошельки и токены</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Accounts -->
+    <div class="list-section-header">Аккаунты</div>
+    <button class="wallet-card active" data-wallet="1">
+      <div class="wc-icon">А</div>
+      <div class="wc-body">
+        <div class="wc-name">Аккаунт 1</div>
+        <div class="wc-addr">0x8A9B…C1D2</div>
+      </div>
+      <span class="wc-active">Активен</span>
+    </button>
+    <button class="wallet-card" data-wallet="2">
+      <div class="wc-icon" style="background:linear-gradient(135deg,#2D7FF9,#5DA5FF);">Б</div>
+      <div class="wc-body">
+        <div class="wc-name">Аккаунт 2</div>
+        <div class="wc-addr">0x4F2E…8B9C</div>
+      </div>
+    </button>
+    <button class="add-wallet" id="addWalletBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Добавить аккаунт
+    </button>
+
+    <!-- Tokens -->
+    <div class="list-section-header" style="margin-top:16px;">Управление токенами</div>
+    <div class="list-section">
+      <button class="token-row" data-token="usdt">
+        <div class="tr-icon" style="background:#26A17B">₮</div>
+        <div class="tr-body">
+          <div class="tr-name">USDT</div>
+          <div class="tr-sub">Tether USD · BNB Chain</div>
+        </div>
+        <div class="tr-toggle on" data-tok-toggle></div>
+      </button>
+      <button class="token-row" data-token="mdao">
+        <div class="tr-icon" style="background:#6D4AFF">◈</div>
+        <div class="tr-body">
+          <div class="tr-name">MDAO</div>
+          <div class="tr-sub">MDAOPay Token · BNB Chain</div>
+        </div>
+        <div class="tr-toggle on" data-tok-toggle></div>
+      </button>
+      <button class="token-row" data-token="bnb">
+        <div class="tr-icon" style="background:#F0B90B">◆</div>
+        <div class="tr-body">
+          <div class="tr-name">BNB</div>
+          <div class="tr-sub">BNB · BNB Chain</div>
+        </div>
+        <div class="tr-toggle on" data-tok-toggle></div>
+      </button>
+      <button class="token-row" data-token="usdc">
+        <div class="tr-icon" style="background:#2775CA">●</div>
+        <div class="tr-body">
+          <div class="tr-name">USDC</div>
+          <div class="tr-sub">USD Coin · BNB Chain</div>
+        </div>
+        <div class="tr-toggle on" data-tok-toggle></div>
+      </button>
+      <button class="token-row" data-token="eth">
+        <div class="tr-icon" style="background:#627EEA">Ξ</div>
+        <div class="tr-body">
+          <div class="tr-name">ETH</div>
+          <div class="tr-sub">Ethereum · L1</div>
+        </div>
+        <div class="tr-toggle" data-tok-toggle></div>
+      </button>
+      <button class="token-row" data-token="wbtc">
+        <div class="tr-icon" style="background:#F09242">₿</div>
+        <div class="tr-body">
+          <div class="tr-name">WBTC</div>
+          <div class="tr-sub">Wrapped Bitcoin</div>
+        </div>
+        <div class="tr-toggle" data-tok-toggle></div>
+      </button>
+      <button class="add-token" id="addTokenBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить кастомный токен
+      </button>
+    </div>
+
+    <div style="font-size:var(--fs-label);color:var(--text2);padding:12px 16px;line-height:var(--lh-relaxed);">
+      Токены с выключенным тогглом скрыты из главного экрана, но остаются в кошельке. Баланс можно посмотреть здесь.
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  let isNotifOpen = false, notifTimer = null, lastNotifAction = null;
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // Wallet switch
+  document.querySelectorAll('.wallet-card').forEach(w => {
+    w.addEventListener('click', () => {
+      document.querySelectorAll('.wallet-card').forEach(x => {
+        x.classList.remove('active');
+        const badge = x.querySelector('.wc-active');
+        if (badge) badge.remove();
+      });
+      w.classList.add('active');
+      const badge = document.createElement('span');
+      badge.className = 'wc-active';
+      badge.textContent = 'Активен';
+      w.appendChild(badge);
+      showNotif({ type:'success', title:'Аккаунт', sub: w.querySelector('.wc-name').textContent, pill:true });
+    });
+  });
+
+  // Token toggles
+  document.querySelectorAll('[data-tok-toggle]').forEach(t => {
+    t.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const on = t.classList.toggle('on');
+      const name = t.closest('.token-row').querySelector('.tr-name').textContent;
+      showNotif({ type: on ? 'success' : 'info', title: name, sub: on ? 'Показывается' : 'Скрыт', pill:true });
+    });
+  });
+
+  // Token row click (without toggle) — show details
+  document.querySelectorAll('.token-row').forEach(r => {
+    r.addEventListener('click', (e) => {
+      if (e.target.closest('[data-tok-toggle]')) return;
+      const name = r.querySelector('.tr-name').textContent;
+      showNotif({ type:'info', title: name, sub: 'Открыть детали', pill:true });
+    });
+  });
+
+  document.getElementById('addWalletBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Создание аккаунта', pill:true });
+  });
+  document.getElementById('addTokenBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Добавление токена', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

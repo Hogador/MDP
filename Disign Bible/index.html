@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDAOPay — Prototype Hub</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    background: #0A0A0F; color: #fff; padding: 40px 20px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 8px; }
+  .subtitle { font-size: 16px; color: #888; margin-bottom: 32px; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    display: flex; flex-direction: column;
+    background: #1A1A22; border: 1px solid #26262F;
+    border-radius: 16px; padding: 16px;
+    text-decoration: none; color: inherit;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: #FF6B00;
+    box-shadow: 0 8px 20px -4px rgba(255,107,0,0.25);
+  }
+  .card .num {
+    font-size: 11px; font-weight: 700; color: #FF6B00;
+    letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .card .title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .card .desc { font-size: 13px; color: #888; line-height: 1.4; margin-bottom: 10px; flex: 1; }
+  .card .meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card .tag {
+    font-size: 10px; padding: 3px 8px; border-radius: 999px;
+    background: #23232C; color: #7E8089; font-weight: 600;
+    border: 1px solid #26262F;
+  }
+  .card .tag.done { background: rgba(0,214,143,0.12); color: #00D68F; border-color: rgba(0,214,143,0.3); }
+  .card .tag.phase { background: rgba(255,107,0,0.12); color: #FF6B00; border-color: rgba(255,107,0,0.3); }
+
+  .section-title {
+    font-size: 14px; font-weight: 700; color: #FF6B00;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 32px 0 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: #26262F;
+  }
+  .section-count { color: #7E8089; font-weight: 600; }
+
+  .footer {
+    margin-top: 40px; padding-top: 24px; border-top: 1px solid #26262F;
+    font-size: 13px; color: #555; line-height: 1.6;
+  }
+  .footer a { color: #FF6B00; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MDAOPay — Prototype Hub</h1>
+  <div class="subtitle">Unified Access Layer for Web3 · Identity · Trust · Access · Payments</div>
+
+  <div class="section-title">
+    Documentation <span class="section-count">4 документа</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="PRD.md">
+      <div class="num">DOC</div>
+      <div class="title">PRD</div>
+      <div class="desc">Product Requirements Document. Vision, MVP scope, architecture, roadmap, ADR.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+    <a class="card" href="design-bible.md">
+      <div class="num">DOC</div>
+      <div class="title">Design Bible</div>
+      <div class="desc">8 глав: Foundations, Components, Patterns, Motion, Screens, Voice, A11y, Theming.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+    <a class="card" href="test-scenarios.md">
+      <div class="num">DOC</div>
+      <div class="title">Test Scenarios</div>
+      <div class="desc">432 сценария + 20 smoke + 15 existential. TDD linkage. Chaos protocol. Risk formula.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+    <a class="card" href="code-roadmap.md">
+      <div class="num">DOC</div>
+      <div class="title">Code Roadmap</div>
+      <div class="desc">15-недельный план MVP. Identity Connect в Phase 0. Недели 1-15.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+  </div>
+
+  <div class="section-title">
+    Foundations <span class="section-count">4 файла</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="styleguide.html">
+      <div class="num">LIB</div>
+      <div class="title">Styleguide</div>
+      <div class="desc">Галерея всех компонентов в 3 темах. 13 секций.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+    <a class="card" href="tokens.css">
+      <div class="num">CSS</div>
+      <div class="title">Tokens</div>
+      <div class="desc">Design tokens: 3 темы, акценты, типографика, тени, скругления.</div>
+    </a>
+    <a class="card" href="components.css">
+      <div class="num">CSS</div>
+      <div class="title">Components</div>
+      <div class="desc">Переиспользуемые компоненты: buttons, inputs, lists, sheets, notif.</div>
+    </a>
+    <a class="card" href="notif.js">
+      <div class="num">JS</div>
+      <div class="title">Notif Helper</div>
+      <div class="desc">Shared notification system: MDAONotif.show/dismiss.</div>
+    </a>
+  </div>
+
+  <div class="section-title">
+    Main Screen <span class="section-count">1 экран</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="main-screen.html">
+      <div class="num">MAIN</div>
+      <div class="title">Главный экран</div>
+      <div class="desc">Карточки токенов, контакты, сервисы, nav, уведомления. Long-press → expand.</div>
+      <div class="meta"><span class="tag done">готов</span></div>
+    </a>
+  </div>
+
+  <div class="section-title">
+    Settings <span class="section-count">11 экранов</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="settings.html"><div class="num">1.1</div><div class="title">Settings Hub</div><div class="desc">Список разделов настроек.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="profile.html"><div class="num">1.2</div><div class="title">Профиль</div><div class="desc">QR, адрес, share, edit.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="security.html"><div class="num">1.3</div><div class="title">Безопасность</div><div class="desc">PIN, биометрия, автоблокировка.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="appearance.html"><div class="num">1.4</div><div class="title">Внешний вид</div><div class="desc">Тема, акцент, шрифт.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="notifications.html"><div class="num">1.5</div><div class="title">Уведомления</div><div class="desc">Категории, quiet hours, звук.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="language.html"><div class="num">1.6</div><div class="title">Язык</div><div class="desc">8 языков, флаги.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="networks.html"><div class="num">1.7</div><div class="title">Сети</div><div class="desc">BSC, Ethereum, Polygon, Arbitrum, Optimism.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="wallets-tokens.html"><div class="num">1.8</div><div class="title">Кошельки и токены</div><div class="desc">Multi-account, token visibility.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="backup.html"><div class="num">1.9</div><div class="title">Резервная копия</div><div class="desc">Recovery phrase, verify, export.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="about.html"><div class="num">1.10</div><div class="title">О приложении</div><div class="desc">Лого, ссылки, статус.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="help.html"><div class="num">1.11</div><div class="title">Помощь</div><div class="desc">FAQ, статус сетей.</div><div class="meta"><span class="tag done">готов</span></div></a>
+  </div>
+
+  <div class="section-title">
+    Transactions <span class="section-count">6 экранов</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="send.html"><div class="num">2.1</div><div class="title">Send flow</div><div class="desc">4 шага: recipient → amount → confirm → result.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="receive.html"><div class="num">2.2</div><div class="title">Receive</div><div class="desc">QR, адрес, share.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="history.html"><div class="num">2.3</div><div class="title">History</div><div class="desc">Фильтры, группировка, типы tx.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="tx-details.html"><div class="num">2.4</div><div class="title">Transaction details</div><div class="desc">Hero, from/to, детали, explorer.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="contacts.html"><div class="num">2.5</div><div class="title">Contacts</div><div class="desc">Search, FAB, send button.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="notifications-center.html"><div class="num">2.6</div><div class="title">Notifications center</div><div class="desc">Список уведомлений, unread.</div><div class="meta"><span class="tag done">готов</span></div></a>
+  </div>
+
+  <div class="section-title">
+    Onboarding <span class="section-count">4 экрана</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="welcome.html"><div class="num">3.1</div><div class="title">Welcome</div><div class="desc">Слайдер 4 экрана, свайпы.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="create-wallet.html"><div class="num">3.2</div><div class="title">Create wallet</div><div class="desc">Warning → phrase → verify → success.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="import-wallet.html"><div class="num">3.3</div><div class="title">Import wallet</div><div class="desc">3 метода: phrase / keystore / private key.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="pin-setup.html"><div class="num">3.4</div><div class="title">PIN setup</div><div class="desc">Keypad, 2 стадии, Face ID.</div><div class="meta"><span class="tag done">готов</span></div></a>
+  </div>
+
+  <div class="section-title">
+    Trusted Contacts Recovery <span class="section-count">4 экрана</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="recovery-initiate.html"><div class="num">RC-1</div><div class="title">Recovery — Статус</div><div class="desc">Статус контактов, таймер 48h, отмена.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="recovery-confirm.html"><div class="num">RC-2</div><div class="title">Recovery — Подтверждение</div><div class="desc">Trusted Contact: аватар, Face ID, без кодов.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="recovery-veto.html"><div class="num">RC-3</div><div class="title">Recovery — Отклонение</div><div class="desc">Несанкционированный запрос, бесплатный veto.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="backup-setup.html"><div class="num">RC-4</div><div class="title">Настройка контактов</div><div class="desc">Добавление по @username, privacy, 2 из 3.</div><div class="meta"><span class="tag done">готов</span></div></a>
+  </div>
+
+  <div class="section-title">
+    Identity Connect (dApp Prototypes) <span class="section-count">4 экрана</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="dapp-legit-arena.html"><div class="num">DAPP</div><div class="title">Легитимный dApp (Arena)</div><div class="desc">Вход через MDAOPay. Запрашивает профиль и ограниченные платежи.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="dapp-scam-airdrop.html"><div class="num">DAPP</div><div class="title">Фишинговый dApp (Airdrop)</div><div class="desc">Скам-сайт. Запрашивает approve всех токенов и безлимитный вывод.</div><div class="meta"><span class="tag done">готов</span><span class="tag phase">Scam Demo</span></div></a>
+    <a class="card" href="connect-modal.html?type=legit"><div class="num">MODAL</div><div class="title">Connect Modal (Legit)</div><div class="desc">Capability Mapping: список разрешений ✓/✗.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="connect-modal.html?type=scam"><div class="num">MODAL</div><div class="title">Connect Modal (Scam)</div><div class="desc">WARNING, красная кнопка "Разрешить (рискованно)".</div><div class="meta"><span class="tag done">готов</span><span class="tag phase">Scam Demo</span></div></a>
+  </div>
+
+  <div class="section-title">
+    Edge Cases <span class="section-count">4 каталога</span>
+  </div>
+  <div class="grid">
+    <a class="card" href="empty-states.html"><div class="num">4.1</div><div class="title">Empty States</div><div class="desc">6 состояний: нет tx / контактов / поиска / токенов / уведомлений / оффлайн.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="loading-states.html"><div class="num">4.2</div><div class="title">Loading States</div><div class="desc">5 типов: splash / init / sync / skeletons / button loading.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="error-states.html"><div class="num">4.3</div><div class="title">Error States</div><div class="desc">5 типов: network / insufficient / invalid / failed / banners.</div><div class="meta"><span class="tag done">готов</span></div></a>
+    <a class="card" href="modals.html"><div class="num">4.4</div><div class="title">Modals & Dialogs</div><div class="desc">6 модалей: confirm / approve / switch / sign / delete / info.</div><div class="meta"><span class="tag done">готов</span></div></a>
+  </div>
+
+  <div class="footer">
+    <strong>MDAOPay</strong> · 30 screens + 4 docs · Unified Access Layer for Web3<br>
+    Identity · Trust · Access · Payments as an application
+  </div>
+</div>
+</body>
+</html>

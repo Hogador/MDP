@@ -1,0 +1,60 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Database and project backups
+backups/
+.backup/
+
+# Forge broadcast artifacts
+contracts/broadcast/
+
+# Third-party agent skills (antigravity, external)
+.agents/
+
+# Environment files — secrets
+.env
+.env.*
+*.env
+
+# Firebase config (generated per-environment)
+google-services.json
+app/google-services.json
+
+# Build artifacts
+build/
+out/
+cache/
+
+# Node.js
+node_modules/
+relay/node_modules/
+
+# Foundry
+contracts/out/
+contracts/cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+
+# OpenCode config (contains API tokens)
+.config/opencode/
+.opencode/opencode-swarm.json
+backend/.kotlin/
+*.bak

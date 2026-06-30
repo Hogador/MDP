@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDAOPay — Успех</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .success-screen {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 18px; padding: 24px;
+  }
+  .success-icon {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: var(--success);
+    display: flex; align-items: center; justify-content: center;
+    animation: scaleIn 0.6s var(--spring);
+    box-shadow: 0 14px 30px -6px rgba(0,214,143,0.5), inset 0 2px 3px rgba(255,255,255,0.3);
+  }
+  .success-icon svg {
+    stroke: #fff; stroke-width: 4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 50px; height: 50px;
+    stroke-dasharray: 60; stroke-dashoffset: 60;
+    animation: iconDraw 0.5s var(--ease-out) 0.4s forwards;
+  }
+  .success-title { font-size: var(--fs-h1); font-weight: var(--fw-bold); color: var(--text); }
+  .success-sub { font-size: var(--fs-body); color: var(--text2); line-height: var(--lh-relaxed); max-width: 280px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone" style="height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; padding: 0;">
+  <div class="success-screen">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+    </div>
+    <div class="success-title">Готово</div>
+    <div class="success-sub">Доступ предоставлен. Вы успешно вошли в сервис.</div>
+    <button class="btn btn-primary btn-block" style="max-width: 280px; margin-top: 16px;" onclick="window.location.href='dapp-legit-arena.html'">
+      Вернуться в Arena
+    </button>
+  </div>
+</div>
+</body>
+</html>

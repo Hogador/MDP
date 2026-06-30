@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Создать кошелёк</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* Steps indicator */
+  .steps {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 4px 14px;
+  }
+  .step-dot {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--tile);
+    box-shadow: var(--shadow-inset);
+    transition: background var(--d-base) var(--ease-out);
+  }
+  .step-dot.done { background: var(--accent); }
+  .step-dot.active { background: var(--accent); box-shadow: var(--shadow-inset), 0 0 8px rgba(255,107,0,0.4); }
+
+  .step-screen { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  .step-screen.active { display: flex; animation: slideInRight 0.35s var(--ease-out); }
+  @keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Step 1: Warning */
+  .warn-hero {
+    text-align: center;
+    padding: 24px 20px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+  }
+  .warn-hero .wh-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--warning-soft);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    animation: pulse 2s var(--ease-out) infinite;
+  }
+  .warn-hero .wh-icon svg {
+    stroke: var(--warning); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 36px; height: 36px;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,179,0,0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(255,179,0,0); }
+  }
+  .warn-hero .wh-title {
+    font-size: var(--fs-h2); font-weight: var(--fw-bold); color: var(--text);
+    margin-bottom: 8px;
+  }
+  .warn-hero .wh-text {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+  }
+
+  .warn-tips {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 16px;
+  }
+  .warn-tips .wt-row {
+    display: flex; gap: 12px;
+    padding: 8px 0;
+    align-items: flex-start;
+  }
+  .warn-tips .wt-icon {
+    width: 24px; height: 24px; border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .warn-tips .wt-icon.ok { background: var(--success-soft); color: var(--success); }
+  .warn-tips .wt-icon.no { background: var(--danger-soft); color: var(--danger); }
+  .warn-tips .wt-icon svg { stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 14px; height: 14px; }
+  .warn-tips .wt-text {
+    font-size: var(--fs-label); color: var(--text);
+    line-height: var(--lh-normal);
+    padding-top: 2px;
+  }
+  .warn-tips .wt-text b { font-weight: var(--fw-bold); }
+
+  .checkbox-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .checkbox-row:active { transform: scale(0.99); }
+  .checkbox-row .cb {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid var(--border);
+    flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .checkbox-row.checked .cb {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .checkbox-row .cb svg {
+    stroke: #fff; stroke-width: 3; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 14px; height: 14px;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .checkbox-row.checked .cb svg { opacity: 1; }
+  .checkbox-row .cb-text {
+    flex: 1; font-size: var(--fs-body); color: var(--text);
+    line-height: var(--lh-normal);
+  }
+
+  /* Step 2: Phrase display */
+  .phrase-intro {
+    text-align: center;
+    font-size: var(--fs-body-lg); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    padding: 0 20px 20px;
+  }
+  .phrase-intro b { color: var(--text); font-weight: var(--fw-bold); }
+
+  .phrase-display {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    padding: 14px;
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+  }
+  .phrase-word {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-soft);
+  }
+  .phrase-word .pw-num {
+    font-size: var(--fs-caption); color: var(--text3); font-weight: var(--fw-bold);
+    font-family: var(--font-mono); min-width: 18px;
+  }
+  .phrase-word .pw-text {
+    font-size: var(--fs-body-lg); color: var(--text); font-weight: var(--fw-bold);
+    font-family: var(--font-mono); flex: 1;
+  }
+  .phrase-word.masked .pw-text { color: var(--text3); }
+  .phrase-word.masked .pw-text::before { content: '••••'; }
+
+  .phrase-actions {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+
+  /* Step 3: Verify */
+  .verify-intro {
+    text-align: center;
+    font-size: var(--fs-body-lg); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    padding: 0 20px 20px;
+  }
+  .verify-grid {
+    display: grid; grid-template-columns: 1fr; gap: 12px;
+    padding: 0 4px 16px;
+  }
+  .verify-input {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-soft);
+  }
+  .verify-input .vi-lbl {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-wider);
+    margin-bottom: 6px;
+  }
+  .verify-input input {
+    width: 100%; background: transparent;
+    border: none; outline: none;
+    color: var(--text); font-family: var(--font-mono);
+    font-size: var(--fs-h3); font-weight: var(--fw-bold);
+    padding: 0;
+  }
+  .verify-input input::placeholder { color: var(--text3); }
+  .verify-input.correct { border-color: var(--success); }
+  .verify-input.wrong { border-color: var(--danger); }
+
+  /* Step 4: Success */
+  .success-screen {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 18px;
+    padding: 24px;
+  }
+  .success-icon {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: var(--success);
+    display: flex; align-items: center; justify-content: center;
+    animation: scaleIn 0.6s var(--spring);
+    box-shadow: 0 14px 30px -6px rgba(0,214,143,0.5), inset 0 2px 3px rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.15);
+  }
+  .success-icon svg {
+    stroke: #fff; stroke-width: 4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 50px; height: 50px;
+    stroke-dasharray: 60; stroke-dashoffset: 60;
+    animation: iconDraw 0.5s var(--ease-out) 0.4s forwards;
+  }
+  .success-title {
+    font-size: var(--fs-h1); font-weight: var(--fw-bold); color: var(--text);
+  }
+  .success-sub {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    max-width: 280px;
+  }
+  .success-actions { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title" id="topbarTitle">Создать кошелёк</div>
+  </div>
+
+  <div class="steps" id="steps">
+    <div class="step-dot active" data-step="1"></div>
+    <div class="step-dot" data-step="2"></div>
+    <div class="step-dot" data-step="3"></div>
+  </div>
+
+  <div class="content-wrap" id="contentWrap" style="overflow:hidden;">
+
+    <!-- STEP 1: Warning -->
+    <div class="step-screen active" data-step="1">
+      <div class="scroll-area">
+        <div class="warn-hero">
+          <div class="wh-icon">
+            <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          </div>
+          <div class="wh-title">Сохраните recovery phrase</div>
+          <div class="wh-text">12 слов на следующем экране — единственный способ восстановить доступ к кошельку. Без них средства будут потеряны навсегда.</div>
+        </div>
+
+        <div class="warn-tips">
+          <div class="wt-row">
+            <div class="wt-icon ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+            <div class="wt-text"><b>Запишите на бумаге</b> и храните в безопасном месте (сейф, банк)</div>
+          </div>
+          <div class="wt-row">
+            <div class="wt-icon ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+            <div class="wt-text"><b>Сделайте 2 копии</b> в разных местах на случай потери</div>
+          </div>
+          <div class="wt-row">
+            <div class="wt-icon no"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            <div class="wt-text"><b>Никому не показывайте</b> фразу — даже поддержке MDAOPay</div>
+          </div>
+          <div class="wt-row">
+            <div class="wt-icon no"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            <div class="wt-text"><b>Не фотографируйте</b> на телефон, не сохраняйте в облаке</div>
+          </div>
+        </div>
+
+        <div class="checkbox-row" id="confirmCheck">
+          <div class="cb"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+          <div class="cb-text">Я понимаю, что потеря recovery phrase означает потерю всех средств. Я готов записать фразу.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="next1" style="margin-top:12px;" disabled>Продолжить</button>
+    </div>
+
+    <!-- STEP 2: Phrase display -->
+    <div class="step-screen" data-step="2">
+      <div class="scroll-area">
+        <div class="phrase-intro">
+          Ваша <b>recovery phrase</b>. Запишите слова в точном порядке и сохраните в надёжном месте.
+        </div>
+
+        <div class="phrase-display" id="phraseDisplay">
+          <!-- generated by JS -->
+        </div>
+
+        <div class="phrase-actions">
+          <button class="btn btn-secondary btn-block" id="revealBtn">
+            <span class="icon-left"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            Показать
+          </button>
+          <button class="btn btn-secondary btn-block" id="copyBtn">
+            <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+            Копировать
+          </button>
+        </div>
+
+        <div style="font-size:var(--fs-meta);color:var(--text2);text-align:center;padding:8px 16px;line-height:var(--lh-relaxed);">
+          Не переходите дальше, пока не запишете все 12 слов.
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="next2" style="margin-top:12px;">Я записал фразу</button>
+    </div>
+
+    <!-- STEP 3: Verify -->
+    <div class="step-screen" data-step="3">
+      <div class="scroll-area">
+        <div class="verify-intro">
+          Проверка: введите указанные слова из вашей фразы, чтобы подтвердить, что вы их записали.
+        </div>
+
+        <div class="verify-grid" id="verifyGrid">
+          <!-- generated by JS -->
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="verifyBtn" style="margin-top:12px;">Подтвердить</button>
+    </div>
+
+    <!-- STEP 4: Success -->
+    <div class="step-screen" data-step="4">
+      <div class="success-screen">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+        <div class="success-title">Кошелёк создан!</div>
+        <div class="success-sub">Ваш кошелёк готов к использованию. Для завершения настройки установите PIN-код защиты.</div>
+        <div class="success-actions">
+          <button class="btn btn-primary btn-block btn-lg" id="setupPinBtn">Установить PIN</button>
+          <button class="btn btn-ghost btn-block" id="skipPinBtn">Пропустить</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Notif zone -->
+  <div class="notif-zone" id="notifZone" style="position:absolute;bottom:0;left:0;right:0;height:0;pointer-events:none;">
+    <div class="notif-wave" id="notifWave"></div>
+    <div class="notif" id="notif">
+      <div class="notif-content">
+        <div class="notif-row">
+          <div class="notif-icon info" id="notifIcon"></div>
+          <div class="notif-body">
+            <div class="notif-title" id="notifTitle">Готово</div>
+            <div class="notif-sub" id="notifSub"></div>
+          </div>
+        </div>
+        <div class="notif-details">
+          <div class="notif-amount" id="notifAmount"></div>
+          <div class="notif-commission" id="notifCommission"></div>
+        </div>
+        <button class="notif-action" id="notifAction">Готово</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  // ============ STATE ============
+  const PHRASE = ['apple','forest','mountain','river','ocean','desert','cloud','stone','crystal','ember','whisper','horizon'];
+  let step = 1;
+  let phraseRevealed = false;
+
+  // ============ STEP NAVIGATION ============
+  function goToStep(n) {
+    document.querySelectorAll('.step-screen').forEach(s => s.classList.toggle('active', +s.dataset.step === n));
+    document.querySelectorAll('.step-dot').forEach(d => {
+      const s = +d.dataset.step;
+      d.classList.toggle('active', s === n);
+      d.classList.toggle('done', s < n);
+    });
+    step = n;
+    const titles = { 1: 'Создать кошелёк', 2: 'Recovery phrase', 3: 'Проверка', 4: 'Готово' };
+    document.getElementById('topbarTitle').textContent = titles[n];
+    document.getElementById('steps').style.display = n === 4 ? 'none' : 'flex';
+    document.getElementById('backBtn').dataset.step = n;
+  }
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    if (step === 1) {
+      MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+    } else if (step === 4) {
+      MDAONotif.show({ type:'info', title:'Готово', sub:'На главный экран', pill:true, autoDismiss:1500 });
+    } else {
+      goToStep(step - 1);
+    }
+  });
+
+  // ============ STEP 1: Warning ============
+  const checkbox = document.getElementById('confirmCheck');
+  const next1 = document.getElementById('next1');
+  checkbox.addEventListener('click', () => {
+    checkbox.classList.toggle('checked');
+    next1.disabled = !checkbox.classList.contains('checked');
+  });
+  next1.addEventListener('click', () => {
+    if (next1.disabled) return;
+    generatePhrase();
+    goToStep(2);
+  });
+
+  // ============ STEP 2: Phrase display ============
+  function generatePhrase() {
+    const display = document.getElementById('phraseDisplay');
+    display.innerHTML = '';
+    PHRASE.forEach((word, i) => {
+      const div = document.createElement('div');
+      div.className = 'phrase-word masked';
+      div.innerHTML = `<span class="pw-num">${i + 1}</span><span class="pw-text"></span>`;
+      display.appendChild(div);
+    });
+    phraseRevealed = false;
+  }
+
+  document.getElementById('revealBtn').addEventListener('click', () => {
+    const words = document.querySelectorAll('.phrase-word');
+    phraseRevealed = !phraseRevealed;
+    words.forEach((w, i) => {
+      if (phraseRevealed) {
+        w.classList.remove('masked');
+        w.querySelector('.pw-text').textContent = PHRASE[i];
+      } else {
+        w.classList.add('masked');
+        w.querySelector('.pw-text').textContent = '';
+      }
+    });
+    document.getElementById('revealBtn').innerHTML = phraseRevealed
+      ? '<span class="icon-left"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg></span>Скрыть'
+      : '<span class="icon-left"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>Показать';
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    if (!phraseRevealed) {
+      MDAONotif.show({ type:'error', title:'Сначала покажите фразу', sub:'Нажмите «Показать»', actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+    try { navigator.clipboard.writeText(PHRASE.join(' ')); } catch(e) {}
+    MDAONotif.show({ type:'success', title:'Скопировано', sub:'Фраза в буфере', pill:true, autoDismiss:2000 });
+  });
+
+  document.getElementById('next2').addEventListener('click', () => {
+    if (!phraseRevealed) {
+      MDAONotif.show({ type:'error', title:'Покажите фразу', sub:'Сначала нажмите «Показать»', actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+    generateVerify();
+    goToStep(3);
+  });
+
+  // ============ STEP 3: Verify ============
+  const VERIFY_INDICES = [2, 6, 10]; // words #3, #7, #11
+  function generateVerify() {
+    const grid = document.getElementById('verifyGrid');
+    grid.innerHTML = '';
+    VERIFY_INDICES.forEach(idx => {
+      const div = document.createElement('div');
+      div.className = 'verify-input';
+      div.innerHTML = `
+        <div class="vi-lbl">Слово #${idx + 1}</div>
+        <input type="text" placeholder="—" data-idx="${idx}">
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  document.getElementById('verifyBtn').addEventListener('click', () => {
+    const inputs = document.querySelectorAll('.verify-input input');
+    let allCorrect = true;
+    inputs.forEach(inp => {
+      const idx = +inp.dataset.idx;
+      const expected = PHRASE[idx];
+      const actual = inp.value.trim().toLowerCase();
+      const wrap = inp.closest('.verify-input');
+      wrap.classList.remove('correct', 'wrong');
+      if (actual === expected) {
+        wrap.classList.add('correct');
+      } else {
+        wrap.classList.add('wrong');
+        allCorrect = false;
+      }
+    });
+
+    if (allCorrect) {
+      MDAONotif.show({ type:'success', title:'Проверка пройдена', sub:'Фраза верна', pill:true });
+      setTimeout(() => goToStep(4), 1500);
+    } else {
+      MDAONotif.show({ type:'error', title:'Ошибка проверки', sub:'Слова не совпадают', actionLabel:'Попробовать снова', actionPrimary:true, actionCb: () => {
+        inputs.forEach(inp => {
+          inp.value = '';
+          inp.closest('.verify-input').classList.remove('correct', 'wrong');
+        });
+        MDAONotif.dismiss();
+      }});
+    }
+  });
+
+  // ============ STEP 4: Success ============
+  document.getElementById('setupPinBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'PIN setup', sub:'Открываем…', pill:true, autoDismiss:1500 });
+    // In real app: window.location.href = 'pin-setup.html';
+  });
+
+  document.getElementById('skipPinBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Готово', sub:'На главный экран', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

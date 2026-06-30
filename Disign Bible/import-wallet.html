@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Импорт кошелька</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .method-tabs {
+    display: flex; gap: 6px; padding: 3px;
+    background: var(--tile); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 20px;
+  }
+  .method-tab {
+    flex: 1;
+    background: transparent; border: none;
+    color: var(--text2); font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    padding: 10px 8px; border-radius: var(--r-md);
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: background var(--d-quick), color var(--d-quick);
+  }
+  .method-tab svg {
+    stroke: currentColor; stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px;
+  }
+  .method-tab.active {
+    background: var(--surface); color: var(--text);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .method-screen { display: none; }
+  .method-screen.active { display: block; animation: slideInRight 0.35s var(--ease-out); }
+  @keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Phrase textarea */
+  .phrase-textarea {
+    width: 100%; min-height: 120px;
+    background: var(--tile);
+    border: 1px solid var(--soft-border);
+    color: var(--text); font-family: var(--font-mono);
+    font-size: var(--fs-body-lg); font-weight: var(--fw-medium);
+    padding: 14px 16px; border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    outline: none; resize: none;
+    line-height: var(--lh-relaxed);
+  }
+  .phrase-textarea::placeholder { color: var(--text3); font-weight: var(--fw-medium); }
+  .phrase-textarea:focus { border-color: var(--accent); }
+
+  .paste-row {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+
+  /* Keystore */
+  .keystore-info {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 12px 14px; margin-bottom: 12px;
+    box-shadow: var(--shadow-soft);
+  }
+  .keystore-info .ki-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0;
+    font-size: var(--fs-label);
+  }
+  .keystore-info .ki-lbl { color: var(--text2); }
+  .keystore-info .ki-val { color: var(--text); font-weight: var(--fw-semibold); }
+
+  .file-upload {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--tile);
+    border: 2px dashed var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: var(--fs-body); font-weight: var(--fw-semibold);
+    margin-bottom: 12px;
+    font-family: inherit;
+  }
+  .file-upload:active { transform: scale(0.985); border-color: var(--accent); }
+  .file-upload svg { stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 20px; height: 20px; }
+  .file-upload.has-file {
+    border-style: solid; border-color: var(--success);
+    background: var(--success-soft); color: var(--success);
+  }
+
+  /* Private key */
+  .pk-input {
+    width: 100%;
+    background: var(--tile);
+    border: 1px solid var(--soft-border);
+    color: var(--text); font-family: var(--font-mono);
+    font-size: var(--fs-body); font-weight: var(--fw-medium);
+    padding: 14px 16px; border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    outline: none;
+  }
+  .pk-input::placeholder { color: var(--text3); }
+  .pk-input:focus { border-color: var(--accent); }
+
+  .advanced-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: var(--tile); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    margin-top: 12px;
+    cursor: pointer;
+  }
+  .advanced-row .ar-text { flex: 1; font-size: var(--fs-body); color: var(--text); }
+  .advanced-row .ar-text .ar-sub { font-size: var(--fs-meta); color: var(--text2); margin-top: 2px; }
+  .advanced-row .ar-chevron { stroke: var(--text2); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 16px; height: 16px; }
+
+  .info-note {
+    display: flex; gap: 10px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(255,107,0,0.15);
+    border-radius: var(--r-lg);
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: var(--fs-label); color: var(--text);
+    line-height: var(--lh-normal);
+  }
+  .info-note svg {
+    stroke: var(--accent); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px;
+  }
+  .info-note b { color: var(--accent); font-weight: var(--fw-bold); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Импорт кошелька</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Method tabs -->
+    <div class="method-tabs" id="methodTabs">
+      <button class="method-tab active" data-method="phrase">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Recovery Phrase
+      </button>
+      <button class="method-tab" data-method="keystore">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        Keystore JSON
+      </button>
+      <button class="method-tab" data-method="key">
+        <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.5 7.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
+        Private Key
+      </button>
+    </div>
+
+    <!-- Method 1: Recovery Phrase -->
+    <div class="method-screen active" data-method="phrase">
+      <label class="input-label">Recovery phrase (12 или 24 слова)</label>
+      <textarea class="phrase-textarea" id="phraseInput" placeholder="apple forest mountain river ocean desert cloud stone crystal ember whisper horizon"></textarea>
+
+      <div class="paste-row">
+        <button class="btn btn-secondary btn-sm" id="pastePhrase" style="flex:1;">
+          <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+          Вставить
+        </button>
+        <button class="btn btn-ghost btn-sm" id="scanPhrase" style="flex:1;">
+          <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7v7h-7z"/></svg></span>
+          QR
+        </button>
+      </div>
+
+      <div class="info-note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><b>Подсказка:</b> Введите слова через пробел в правильном порядке. Фраза никогда не покидает устройство.</div>
+      </div>
+
+      <div class="advanced-row" id="advancedPhrase">
+        <div class="ar-text">
+          Дополнительные настройки
+          <div class="ar-sub">Имя кошелька, пароль шифрования</div>
+        </div>
+        <svg class="ar-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <!-- Method 2: Keystore JSON -->
+    <div class="method-screen" data-method="keystore">
+      <div class="keystore-info">
+        <div class="ki-row"><span class="ki-lbl">Формат</span><span class="ki-val">JSON keystore v3</span></div>
+        <div class="ki-row"><span class="ki-lbl">Шифрование</span><span class="ki-val">scrypt + AES-128-CTR</span></div>
+      </div>
+
+      <label class="input-label">Keystore файл</label>
+      <button class="file-upload" id="fileUpload">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+        <span id="fileLabel">Выбрать файл .json</span>
+      </button>
+      <input type="file" id="fileInput" accept=".json" style="display:none;">
+
+      <label class="input-label" style="margin-top:14px;">Пароль от keystore</label>
+      <div class="input-wrap">
+        <input class="input-field" id="keystorePass" type="password" placeholder="Введите пароль" style="padding-right:50px;">
+        <button class="scan-btn" id="togglePass" style="width:36px;height:36px;background:var(--surface);">
+          <svg viewBox="0 0 24 24" style="stroke:var(--text2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;width:16px;height:16px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <div class="info-note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div><b>Безопасность:</b> Keystore-файл зашифрован паролем. Файл и пароль необходимы вместе.</div>
+      </div>
+    </div>
+
+    <!-- Method 3: Private Key -->
+    <div class="method-screen" data-method="key">
+      <label class="input-label">Private key</label>
+      <input class="pk-input" id="pkInput" placeholder="0x... (64 hex символа)">
+
+      <div class="paste-row">
+        <button class="btn btn-secondary btn-sm" id="pastePk" style="flex:1;">
+          <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+          Вставить
+        </button>
+        <button class="btn btn-ghost btn-sm" id="scanPk" style="flex:1;">
+          <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7v7h-7z"/></svg></span>
+          QR
+        </button>
+      </div>
+
+      <div class="info-note" style="background:var(--danger-soft);border-color:rgba(255,77,109,0.2);">
+        <svg style="stroke:var(--danger);"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div><b style="color:var(--danger);">Опасно:</b> Private key даёт полный доступ к кошельку. Никогда не передавайте его и не храните в открытом виде.</div>
+      </div>
+
+      <div class="advanced-row" id="advancedPk">
+        <div class="ar-text">
+          Выберите сеть
+          <div class="ar-sub">BNB Chain (по умолчанию)</div>
+        </div>
+        <svg class="ar-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <div style="height:24px;"></div>
+  </div>
+
+  <!-- Import button -->
+  <button class="btn btn-primary btn-block" id="importBtn" style="margin-top:8px;flex-shrink:0;">Импортировать</button>
+
+  <!-- Notif zone -->
+  <div class="notif-zone" id="notifZone" style="position:absolute;bottom:0;left:0;right:0;height:0;pointer-events:none;">
+    <div class="notif-wave" id="notifWave"></div>
+    <div class="notif" id="notif">
+      <div class="notif-content">
+        <div class="notif-row">
+          <div class="notif-icon info" id="notifIcon"></div>
+          <div class="notif-body">
+            <div class="notif-title" id="notifTitle">Готово</div>
+            <div class="notif-sub" id="notifSub"></div>
+          </div>
+        </div>
+        <div class="notif-details">
+          <div class="notif-amount" id="notifAmount"></div>
+          <div class="notif-commission" id="notifCommission"></div>
+        </div>
+        <button class="notif-action" id="notifAction">Готово</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  let currentMethod = 'phrase';
+
+  // Method tabs
+  document.querySelectorAll('.method-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.method-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const m = t.dataset.method;
+      document.querySelectorAll('.method-screen').forEach(s => s.classList.toggle('active', s.dataset.method === m));
+      currentMethod = m;
+    });
+  });
+
+  // Paste buttons
+  async function pasteTo(target) {
+    try {
+      const text = await navigator.clipboard.readText();
+      target.value = text;
+      MDAONotif.show({ type:'success', title:'Вставлено', sub:'Из буфера обмена', pill:true });
+    } catch(e) {
+      MDAONotif.show({ type:'info', title:'Вставьте вручную', sub:'Буфер недоступен', pill:true });
+    }
+  }
+
+  document.getElementById('pastePhrase').addEventListener('click', () => pasteTo(document.getElementById('phraseInput')));
+  document.getElementById('pastePk').addEventListener('click', () => pasteTo(document.getElementById('pkInput')));
+
+  document.getElementById('scanPhrase').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'QR-сканер', pill:true });
+  });
+  document.getElementById('scanPk').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'QR-сканер', pill:true });
+  });
+
+  // File upload
+  const fileUpload = document.getElementById('fileUpload');
+  const fileInput = document.getElementById('fileInput');
+  const fileLabel = document.getElementById('fileLabel');
+  fileUpload.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      fileLabel.textContent = fileInput.files[0].name;
+      fileUpload.classList.add('has-file');
+    }
+  });
+
+  // Toggle password
+  const passInput = document.getElementById('keystorePass');
+  const toggleBtn = document.getElementById('togglePass');
+  toggleBtn.addEventListener('click', () => {
+    passInput.type = passInput.type === 'password' ? 'text' : 'password';
+  });
+
+  // Advanced rows
+  ['advancedPhrase', 'advancedPk'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      MDAONotif.show({ type:'info', title:'Скоро', sub:'Расширенные настройки', pill:true });
+    });
+  });
+
+  // Import button
+  document.getElementById('importBtn').addEventListener('click', () => {
+    let valid = false;
+    let errMsg = '';
+
+    if (currentMethod === 'phrase') {
+      const v = document.getElementById('phraseInput').value.trim();
+      const words = v.split(/\s+/);
+      if (words.length < 12) {
+        errMsg = 'Введите минимум 12 слов';
+      } else if (words.length !== 12 && words.length !== 24) {
+        errMsg = 'Фраза должна быть 12 или 24 слова';
+      } else {
+        valid = true;
+      }
+    } else if (currentMethod === 'keystore') {
+      if (!fileInput.files.length) {
+        errMsg = 'Выберите keystore файл';
+      } else if (!document.getElementById('keystorePass').value) {
+        errMsg = 'Введите пароль от keystore';
+      } else {
+        valid = true;
+      }
+    } else if (currentMethod === 'key') {
+      const v = document.getElementById('pkInput').value.trim();
+      if (!v) {
+        errMsg = 'Введите private key';
+      } else if (v.length < 64) {
+        errMsg = 'Private key должен быть 64 hex символа';
+      } else {
+        valid = true;
+      }
+    }
+
+    if (!valid) {
+      MDAONotif.show({ type:'error', title:'Ошибка импорта', sub: errMsg, actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+
+    // Simulate import
+    MDAONotif.show({ type:'info', title:'Импорт', sub:'Расшифровка…', pill:true });
+    setTimeout(() => {
+      MDAONotif.show({ type:'success', title:'Импортирован', sub:'Установите PIN для защиты', pill:true, autoDismiss:2000 });
+      setTimeout(() => {
+        // In real app: window.location.href = 'pin-setup.html';
+        MDAONotif.show({ type:'info', title:'PIN setup', sub:'Открываем…', pill:true, autoDismiss:1500 });
+      }, 2200);
+    }, 1500);
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'На welcome экран', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

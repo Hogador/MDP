@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Подтверждение</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* Modal specific styles */
+  .modal-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--d-base) var(--ease-out);
+    z-index: 90;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.active {
+    opacity: 1; pointer-events: auto;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+  }
+  .modal-sheet {
+    background: var(--card);
+    width: 100%;
+    border-radius: var(--r-3xl) var(--r-3xl) 0 0;
+    padding: 24px 20px calc(28px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform var(--d-sheet) var(--spring);
+    border-top: 1px solid var(--soft-border);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+  }
+  .modal-overlay.active .modal-sheet {
+    transform: translateY(0);
+  }
+  .modal-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .modal-header .mh-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: bold; color: #fff;
+  }
+  .modal-header .mh-title {
+    font-size: 20px; font-weight: 700; color: var(--text);
+  }
+  .modal-header .mh-sub {
+    font-size: 14px; color: var(--text2); margin-top: 4px;
+  }
+
+  .permissions-list {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .perm-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px;
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--soft-border);
+  }
+  .perm-icon {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .perm-icon.allow { background: rgba(0,214,143,0.15); }
+  .perm-icon.deny { background: rgba(255,77,109,0.15); }
+  .perm-icon.warn { background: rgba(255,179,0,0.15); }
+  .perm-icon svg { stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 14px; height: 14px; }
+  .perm-icon.allow svg { stroke: var(--success); }
+  .perm-icon.deny svg { stroke: var(--danger); }
+  .perm-icon.warn svg { stroke: var(--warning); }
+  
+  .perm-text { flex: 1; }
+  .perm-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .perm-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+
+  .warning-box {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.2);
+    border-radius: var(--r-lg);
+    padding: 12px;
+    margin-bottom: 20px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .warning-box svg { stroke: var(--danger); stroke-width: 2; fill: none; width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+  .warning-box .wb-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .warning-box .wb-text b { color: var(--danger); }
+
+  .actions { display: flex; gap: 10px; }
+  .actions .btn { flex: 1; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone" style="height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; padding: 0;">
+
+  <!-- Background dummy content (simulating app behind modal) -->
+  <div style="flex: 1; background: var(--bg); opacity: 0.3; filter: blur(10px);"></div>
+
+  <!-- Modal Overlay -->
+  <div class="modal-overlay active" id="modalOverlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="mh-icon" id="dappIcon" style="background: #6D4AFF;">A</div>
+        <div class="mh-title" id="dappName">Arena</div>
+        <div class="mh-sub" id="dappDomain">arena.marsdao.com</div>
+      </div>
+
+      <div class="permissions-list" id="permList">
+        <!-- Permissions injected by JS -->
+      </div>
+
+      <div class="warning-box" id="warningBox" style="display: none;">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div class="wb-text"><b>Внимание!</b> Этот сервис запрашивает расширенные права. Убедитесь, что вы доверяете этому сайту.</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" id="rejectBtn">Отклонить</button>
+        <button class="btn btn-primary" id="approveBtn">Разрешить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get('type');
+
+  const dappIcon = document.getElementById('dappIcon');
+  const dappName = document.getElementById('dappName');
+  const dappDomain = document.getElementById('dappDomain');
+  const permList = document.getElementById('permList');
+  const warningBox = document.getElementById('warningBox');
+  const approveBtn = document.getElementById('approveBtn');
+
+  const checkSvg = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>';
+  const crossSvg = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  const warnSvg = '<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+
+  if (type === 'scam') {
+    dappIcon.textContent = 'M';
+    dappIcon.style.background = '#FF4D6D';
+    dappName.textContent = 'MarsDAO Airdrop';
+    dappDomain.textContent = 'marsdao-airdrop-claim.com';
+    
+    permList.innerHTML = `
+      <div class="perm-item">
+        <div class="perm-icon allow">${checkSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Доступ к профилю (@username)</div>
+          <div class="perm-desc">Чтение вашего ника и аватара</div>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-icon warn">${warnSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Approve всех токенов</div>
+          <div class="perm-desc">Сервис сможет разрешить вывод всех ваших USDT и MDAO</div>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-icon deny">${crossSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Перевод всех средств</div>
+          <div class="perm-desc">Безлимитный вывод на любой адрес</div>
+        </div>
+      </div>
+    `;
+    warningBox.style.display = 'flex';
+    approveBtn.textContent = 'Разрешить (рискованно)';
+    approveBtn.classList.remove('btn-primary');
+    approveBtn.classList.add('btn-danger');
+  } else {
+    // Legit
+    dappIcon.textContent = 'A';
+    dappIcon.style.background = '#6D4AFF';
+    dappName.textContent = 'Arena';
+    dappDomain.textContent = 'arena.marsdao.com';
+    
+    permList.innerHTML = `
+      <div class="perm-item">
+        <div class="perm-icon allow">${checkSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Доступ к профилю (@username)</div>
+          <div class="perm-desc">Чтение вашего ника и аватара</div>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-icon allow">${checkSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Отправка платежей (до 100 USDT)</div>
+          <div class="perm-desc">Лимит: 100 USDT за операцию, 500 USDT в день</div>
+        </div>
+      </div>
+      <div class="perm-item">
+        <div class="perm-icon deny">${crossSvg}</div>
+        <div class="perm-text">
+          <div class="perm-title">Вывод всех средств</div>
+          <div class="perm-desc">Запрещено</div>
+        </div>
+      </div>
+    `;
+    warningBox.style.display = 'none';
+    approveBtn.textContent = 'Разрешить';
+  }
+
+  document.getElementById('rejectBtn').addEventListener('click', () => {
+    window.location.href = 'dapp-legit-arena.html'; // Go back
+  });
+
+  document.getElementById('approveBtn').addEventListener('click', () => {
+    // Simulate Face ID success and redirect
+    window.location.href = 'dapp-success.html';
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "mdaopay-relay",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "typescript": "^5.7.0",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9",
+    "wrangler": "4.103.0"
+  }
+}

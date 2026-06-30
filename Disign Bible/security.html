@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Безопасность</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .security-status {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+  }
+  .security-status .ss-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--success-soft);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .security-status .ss-icon svg {
+    stroke: var(--success); stroke-width: 2.4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 22px; height: 22px;
+  }
+  .security-status.warn .ss-icon { background: var(--warning-soft); }
+  .security-status.warn .ss-icon svg { stroke: var(--warning); }
+  .security-status .ss-body { flex: 1; }
+  .security-status .ss-title { font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text); }
+  .security-status .ss-sub { font-size: var(--fs-label); color: var(--text2); margin-top: 2px; line-height: var(--lh-normal); }
+
+  .pin-dots {
+    display: flex; gap: 14px; justify-content: center;
+    padding: 12px 0;
+  }
+  .pin-dots .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    transition: all 0.2s var(--ease-out);
+  }
+  .pin-dots .dot.filled {
+    background: var(--accent); border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(255,107,0,0.4);
+  }
+
+  .timer-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    margin-top: 8px;
+  }
+  .timer-opt {
+    background: var(--tile);
+    border: 2px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-inset);
+  }
+  .timer-opt:active { transform: scale(0.96); }
+  .timer-opt.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: var(--shadow-soft), 0 0 0 1px var(--accent);
+  }
+  .timer-opt .to-time { font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text); }
+  .timer-opt.active .to-time { color: var(--accent); }
+  .timer-opt .to-lbl { font-size: var(--fs-caption); color: var(--text2); margin-top: 2px; font-weight: var(--fw-semibold); }
+  .timer-opt.active .to-lbl { color: var(--accent); }
+
+  .danger-zone {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .danger-zone-title {
+    font-size: var(--fs-meta); color: var(--danger); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-wider);
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Безопасность</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Status -->
+    <div class="security-status" id="secStatus">
+      <div class="ss-icon"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div class="ss-body">
+        <div class="ss-title">Защита включена</div>
+        <div class="ss-sub">PIN-код и биометрия активны</div>
+      </div>
+    </div>
+
+    <!-- PIN code section -->
+    <div class="list-section-header">PIN-код</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">PIN-код</div>
+          <div class="li-sub">6 цифр</div>
+        </div>
+        <div class="toggle on" id="pinToggle" data-toggle></div>
+      </div>
+
+      <div id="pinDotsRow" style="padding: 4px 16px 12px;">
+        <div class="pin-dots">
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+        </div>
+      </div>
+
+      <button class="list-item" id="changePinBtn">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.5 7.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/><path d="M14 4l6 6"/></svg>
+        </div>
+        <div class="li-body"><div class="li-title">Сменить PIN</div></div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- Biometry -->
+    <div class="list-section-header">Биометрия</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon success">
+          <svg viewBox="0 0 24 24"><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M3 21a9 9 0 0 1 18 0"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Face ID</div>
+          <div class="li-sub">Разблокировка по лицу</div>
+        </div>
+        <div class="toggle on" id="faceIdToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 11a5 5 0 0 0-10 0v2a2 2 0 0 0 2 2h2m6-4v2a2 2 0 0 1-2 2h-2"/><path d="M12 4v2M5 8l1.5 1.5M19 8l-1.5 1.5"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Touch ID</div>
+          <div class="li-sub">Разблокировка по отпечатку</div>
+        </div>
+        <div class="toggle" id="touchIdToggle" data-toggle></div>
+      </div>
+    </div>
+
+    <!-- Auto-lock -->
+    <div class="list-section-header">Автоблокировка</div>
+    <div class="list-section" style="padding: 10px 16px 14px;">
+      <div style="font-size:var(--fs-label);color:var(--text2);line-height:var(--lh-normal);margin-bottom:8px;">
+        Блокировать кошелёк после бездействия:
+      </div>
+      <div class="timer-grid">
+        <button class="timer-opt" data-time="0"><div class="to-time">0</div><div class="to-lbl">Сразу</div></button>
+        <button class="timer-opt" data-time="30"><div class="to-time">30с</div><div class="to-lbl">30 сек</div></button>
+        <button class="timer-opt active" data-time="60"><div class="to-time">1м</div><div class="to-lbl">1 мин</div></button>
+        <button class="timer-opt" data-time="300"><div class="to-time">5м</div><div class="to-lbl">5 мин</div></button>
+      </div>
+    </div>
+
+    <!-- Privacy -->
+    <div class="list-section-header">Приватность</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Скрывать баланс</div>
+          <div class="li-sub">Показывать •••• вместо сумм</div>
+        </div>
+        <div class="toggle" id="hideBalanceToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Антифишинг</div>
+          <div class="li-sub">Показывать адрес при отправке</div>
+        </div>
+        <div class="toggle on" id="antiphishToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M9 9h6v6H9z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Скриншоты</div>
+          <div class="li-sub">Запретить в приложении</div>
+        </div>
+        <div class="toggle on" id="noScreenshotsToggle" data-toggle></div>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="danger-zone">
+      <div class="danger-zone-title">Опасная зона</div>
+      <div class="list-section">
+        <button class="list-item" id="wipeBtn">
+          <div class="li-icon danger">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+          </div>
+          <div class="li-body">
+            <div class="li-title" style="color:var(--danger);">Стереть кошелёк</div>
+            <div class="li-sub">Удалить все данные с устройства</div>
+          </div>
+          <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  let isNotifOpen = false;
+  let notifTimer = null;
+  let lastNotifAction = null;
+
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const secStatus = document.getElementById('secStatus');
+
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // ============ ACTIONS ============
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  // PIN toggle — when off, hide dots and show warning
+  const pinToggle = document.getElementById('pinToggle');
+  const pinDotsRow = document.getElementById('pinDotsRow');
+  pinToggle.addEventListener('click', () => {
+    const on = pinToggle.classList.toggle('on');
+    pinDotsRow.style.display = on ? 'block' : 'none';
+    if (on) {
+      secStatus.classList.remove('warn');
+      secStatus.querySelector('.ss-icon').innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg>';
+      secStatus.querySelector('.ss-title').textContent = 'Защита включена';
+      secStatus.querySelector('.ss-sub').textContent = 'PIN-код и биометрия активны';
+      showNotif({ type:'success', title:'PIN включён', sub:'Кошелёк защищён', pill:true });
+    } else {
+      secStatus.classList.add('warn');
+      secStatus.querySelector('.ss-icon').innerHTML = '<svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+      secStatus.querySelector('.ss-title').textContent = 'Защита отключена';
+      secStatus.querySelector('.ss-sub').textContent = 'Без PIN — кто угодно получит доступ';
+      showNotif({ type:'error', title:'PIN отключён', sub:'Это небезопасно', actionLabel:'Включить обратно', actionPrimary:true, actionCb: () => { pinToggle.click(); } });
+    }
+  });
+
+  // Other toggles
+  ['faceIdToggle', 'touchIdToggle', 'hideBalanceToggle', 'antiphishToggle', 'noScreenshotsToggle'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) t.addEventListener('click', () => {
+      const on = t.classList.toggle('on');
+      const name = t.closest('.list-item').querySelector('.li-title').textContent;
+      showNotif({ type: on ? 'success' : 'info', title: name, sub: on ? 'Включено' : 'Выключено', pill:true });
+    });
+  });
+
+  // Change PIN
+  document.getElementById('changePinBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Сменить PIN', sub:'Введите текущий PIN', pill:true });
+  });
+
+  // Auto-lock timer
+  document.querySelectorAll('.timer-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.timer-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      const t = opt.dataset.time;
+      const lbl = opt.querySelector('.to-lbl').textContent;
+      showNotif({ type:'success', title:'Автоблокировка', sub: lbl, pill:true });
+    });
+  });
+
+  // Wipe wallet
+  document.getElementById('wipeBtn').addEventListener('click', () => {
+    showNotif({
+      type:'error',
+      title:'Стереть кошелёк?',
+      sub:'Все данные будут удалены без возможности восстановления. Убедитесь, что есть резервная копия.',
+      actionLabel:'Подтвердить',
+      actionPrimary:true,
+      actionCb: () => {
+        dismissNotif();
+        setTimeout(() => showNotif({ type:'success', title:'Отмена', sub:'Кошелёк сохранён', pill:true }), 400);
+      }
+    });
+  });
+
+  // Theme cycle
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

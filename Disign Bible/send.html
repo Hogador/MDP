@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Отправить</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* Steps indicator */
+  .steps {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 4px 14px;
+  }
+  .step-dot {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--tile);
+    box-shadow: var(--shadow-inset);
+    transition: background var(--d-base) var(--ease-out);
+  }
+  .step-dot.done { background: var(--accent); }
+  .step-dot.active { background: var(--accent); box-shadow: var(--shadow-inset), 0 0 8px rgba(255,107,0,0.4); }
+
+  /* Step screens */
+  .step-screen { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  .step-screen.active { display: flex; animation: slideInRight 0.35s var(--ease-out); }
+  @keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Step 1: Recipient */
+  .token-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px 8px 8px;
+    background: var(--tile);
+    border-radius: var(--r-pill);
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    margin: 0 auto 16px;
+    width: max-content;
+  }
+  .token-pill .tp-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: var(--fw-bold); font-size: 14px; color: #fff;
+    box-shadow: 0 3px 8px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  }
+  .token-pill .tp-name { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--text); }
+  .token-pill .tp-balance { font-size: var(--fs-label); color: var(--text2); font-family: var(--font-mono); }
+  .token-pill .tp-chevron { stroke: var(--text2); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 14px; height: 14px; }
+
+  .scan-btn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: var(--r-md);
+    background: var(--accent-soft); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+  }
+  .scan-btn:active { transform: translateY(-50%) scale(0.92); }
+  .scan-btn svg { stroke: var(--accent); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 18px; height: 18px; }
+
+  .recent-list { margin-top: 18px; }
+  .recent-list .rl-header {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    margin-bottom: 8px;
+  }
+  .recent-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    margin-bottom: 6px;
+    box-shadow: var(--shadow-soft);
+    width: 100%; font-family: inherit; text-align: left;
+  }
+  .recent-item:active { transform: scale(0.985); }
+  .recent-item .ri-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: var(--fw-bold); color: var(--text);
+    flex-shrink: 0;
+    box-shadow: var(--shadow-inset);
+  }
+  .recent-item .ri-body { flex: 1; min-width: 0; }
+  .recent-item .ri-name { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--text); }
+  .recent-item .ri-addr { font-size: var(--fs-meta); color: var(--text2); font-family: var(--font-mono); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Step 2: Amount */
+  .amount-display {
+    text-align: center;
+    padding: 20px 0 12px;
+  }
+  .amount-display .ad-input {
+    width: 100%; background: transparent; border: none;
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 52px; font-weight: var(--fw-bold);
+    letter-spacing: -2px; text-align: center;
+    outline: none; padding: 8px 0;
+    min-width: 0;
+  }
+  .amount-display .ad-input::placeholder { color: var(--text3); }
+  .amount-display .ad-fiat {
+    font-size: var(--fs-h3); color: var(--text2);
+    margin-top: 4px;
+  }
+  .amount-display .ad-fiat span { font-family: var(--font-mono); }
+  .amount-display .ad-balance {
+    font-size: var(--fs-label); color: var(--text2);
+    margin-top: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: var(--r-pill);
+    background: var(--tile);
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    cursor: pointer;
+  }
+  .amount-display .ad-balance:active { transform: scale(0.96); }
+  .amount-display .ad-balance b { color: var(--text); font-family: var(--font-mono); }
+
+  .amount-actions {
+    display: flex; gap: 8px; padding: 0 4px;
+  }
+  .amount-actions .aa-btn {
+    flex: 1; padding: 10px;
+    background: var(--tile); border: 1px solid var(--soft-border);
+    border-radius: var(--r-md);
+    color: var(--text); font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-bold);
+    cursor: pointer;
+    box-shadow: var(--shadow-inset);
+  }
+  .amount-actions .aa-btn:active { transform: scale(0.96); }
+  .amount-actions .aa-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  .fee-preview {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg); padding: 12px 14px;
+    box-shadow: var(--shadow-soft);
+    margin: 16px 4px;
+  }
+  .fee-preview .fp-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: var(--fs-label); padding: 4px 0;
+  }
+  .fee-preview .fp-row.total {
+    border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 8px;
+  }
+  .fee-preview .fp-row .fp-lbl { color: var(--text2); font-weight: var(--fw-medium); }
+  .fee-preview .fp-row .fp-val { color: var(--text); font-weight: var(--fw-semibold); font-family: var(--font-mono); }
+  .fee-preview .fp-row.total .fp-val { color: var(--accent); font-size: var(--fs-body-lg); }
+
+  /* Step 3: Confirm */
+  .confirm-hero {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .confirm-hero .ch-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: var(--fw-bold); font-size: 22px; color: #fff;
+    box-shadow: 0 6px 14px -3px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2);
+  }
+  .confirm-hero .ch-amount {
+    font-family: var(--font-mono);
+    font-size: var(--fs-mega); font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: -1.5px; line-height: 1;
+  }
+  .confirm-hero .ch-amount .unit { font-size: var(--fs-h2); color: var(--text2); margin-left: 6px; font-family: var(--font-sans); }
+  .confirm-hero .ch-fiat { font-size: var(--fs-body-lg); color: var(--text2); margin-top: 6px; }
+  .confirm-hero .ch-arrow {
+    margin: 14px auto; width: 32px; height: 32px;
+    border-radius: 50%; background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-inset);
+  }
+  .confirm-hero .ch-arrow svg { stroke: var(--text2); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 16px; height: 16px; }
+  .confirm-hero .ch-recipient {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+  }
+  .confirm-hero .ch-addr {
+    font-size: var(--fs-meta); color: var(--text2); font-family: var(--font-mono);
+    margin-top: 4px;
+  }
+
+  /* Step 4: Result */
+  .result-screen {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 18px;
+    padding: 24px;
+  }
+  .result-icon-big {
+    width: 100px; height: 100px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: scaleIn 0.6s var(--spring);
+    box-shadow: 0 14px 30px -6px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.15);
+  }
+  .result-icon-big.success { background: var(--success); }
+  .result-icon-big svg {
+    stroke: #fff; stroke-width: 4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 50px; height: 50px;
+    stroke-dasharray: 60; stroke-dashoffset: 60;
+    animation: iconDraw 0.5s var(--ease-out) 0.4s forwards;
+  }
+  .result-title {
+    font-size: var(--fs-h1); font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: var(--ls-tight);
+  }
+  .result-sub {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    max-width: 280px;
+  }
+  .result-amount {
+    font-family: var(--font-mono);
+    font-size: var(--fs-display); font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: -1.2px;
+  }
+  .result-actions { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <!-- Topbar (changes per step) -->
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title" id="topbarTitle">Отправить</div>
+  </div>
+
+  <!-- Steps indicator -->
+  <div class="steps" id="steps">
+    <div class="step-dot active" data-step="1"></div>
+    <div class="step-dot" data-step="2"></div>
+    <div class="step-dot" data-step="3"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-wrap" id="contentWrap" style="overflow:hidden;">
+
+    <!-- STEP 1: Recipient -->
+    <div class="step-screen active" data-step="1">
+      <div class="scroll-area">
+        <!-- Token pill -->
+        <div class="token-pill">
+          <div class="tp-icon" style="background:#26A17B" id="tpIcon">₮</div>
+          <div>
+            <div class="tp-name" id="tpName">USDT</div>
+            <div class="tp-balance" id="tpBalance">1 250.50 USDT</div>
+          </div>
+          <svg class="tp-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- Address input -->
+        <label class="input-label">Получатель</label>
+        <div class="input-wrap" style="position:relative;">
+          <input class="input-field" id="recipientInput" placeholder="Адрес (0x...) или ник (@)" style="padding-right:54px;">
+          <button class="scan-btn" id="scanBtn" aria-label="Сканировать QR">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7v7h-7z"/></svg>
+          </button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-secondary btn-sm" id="pasteBtn" style="flex:1;">
+            <span class="icon-left"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+            Вставить
+          </button>
+        </div>
+
+        <!-- Recent recipients -->
+        <div class="recent-list">
+          <div class="rl-header">Недавние</div>
+          <button class="recent-item" data-recipient="@alice" data-name="Алиса" data-avatar="А">
+            <div class="ri-avatar">А</div>
+            <div class="ri-body">
+              <div class="ri-name">Алиса</div>
+              <div class="ri-addr">@alice · 0x4F2E…8B9C</div>
+            </div>
+          </button>
+          <button class="recent-item" data-recipient="@bob" data-name="Боб" data-avatar="Б">
+            <div class="ri-avatar">Б</div>
+            <div class="ri-body">
+              <div class="ri-name">Боб</div>
+              <div class="ri-addr">@bob · 0x7D1A…3E5F</div>
+            </div>
+          </button>
+          <button class="recent-item" data-recipient="@carl" data-name="Карл" data-avatar="К">
+            <div class="ri-avatar">К</div>
+            <div class="ri-body">
+              <div class="ri-name">Карл</div>
+              <div class="ri-addr">@carl · 0x9C8B…2A4D</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="next1" style="margin-top:12px;">Далее</button>
+    </div>
+
+    <!-- STEP 2: Amount -->
+    <div class="step-screen" data-step="2">
+      <div class="scroll-area">
+        <!-- Recipient summary -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--tile);border-radius:var(--r-lg);box-shadow:var(--shadow-inset);margin-bottom:8px;">
+          <div class="ri-avatar" style="width:32px;height:32px;font-size:13px;" id="sumAvatar">А</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--fs-label);font-weight:var(--fw-semibold);color:var(--text);" id="sumName">Алиса</div>
+            <div style="font-size:var(--fs-meta);color:var(--text2);font-family:var(--font-mono);" id="sumAddr">@alice</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="editRecipient" style="padding:6px 10px;">Изменить</button>
+        </div>
+
+        <!-- Amount input -->
+        <div class="amount-display">
+          <input class="ad-input" id="amountInput" type="text" inputmode="decimal" placeholder="0" value="">
+          <div class="ad-fiat">≈ <span id="fiatVal">$0.00</span></div>
+          <div class="ad-balance" id="maxBtn">
+            Доступно: <b>1 250.50</b> USDT
+          </div>
+        </div>
+
+        <!-- Quick amount buttons -->
+        <div class="amount-actions">
+          <button class="aa-btn" data-amount="25%">25%</button>
+          <button class="aa-btn" data-amount="50%">50%</button>
+          <button class="aa-btn" data-amount="75%">75%</button>
+          <button class="aa-btn" data-amount="max">MAX</button>
+        </div>
+
+        <!-- Fee preview -->
+        <div class="fee-preview">
+          <div class="fp-row">
+            <span class="fp-lbl">Комиссия сети</span>
+            <span class="fp-val" id="feeVal">0.1 USDT</span>
+          </div>
+          <div class="fp-row total">
+            <span class="fp-lbl">Итого</span>
+            <span class="fp-val" id="totalVal">0.00 USDT</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="next2" style="margin-top:12px;">Далее</button>
+    </div>
+
+    <!-- STEP 3: Confirm -->
+    <div class="step-screen" data-step="3">
+      <div class="scroll-area">
+        <div class="confirm-hero">
+          <div class="ch-icon" id="chIcon" style="background:#26A17B">₮</div>
+          <div class="ch-amount" id="chAmount">25.00 <span class="unit">USDT</span></div>
+          <div class="ch-fiat" id="chFiat">≈ $25.00</div>
+          <div class="ch-arrow"><svg viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+          <div class="ch-recipient" id="chRecipient">Алиса</div>
+          <div class="ch-addr" id="chAddr">@alice</div>
+        </div>
+
+        <div class="list-section">
+          <div class="list-item">
+            <div class="li-body">
+              <div class="li-title" style="font-size:var(--fs-label);">Отправитель</div>
+              <div class="li-sub" style="font-family:var(--font-mono);">@crazy-cherry · 0x8A9B…C1D2</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-body">
+              <div class="li-title" style="font-size:var(--fs-label);">Сеть</div>
+              <div class="li-sub">BNB Smart Chain</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-body">
+              <div class="li-title" style="font-size:var(--fs-label);">Сумма</div>
+              <div class="li-sub" style="font-family:var(--font-mono);color:var(--text);" id="confirmAmount">25.00 USDT</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-body">
+              <div class="li-title" style="font-size:var(--fs-label);">Комиссия</div>
+              <div class="li-sub" style="font-family:var(--font-mono);color:var(--text);" id="confirmFee">0.1 USDT</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="li-body">
+              <div class="li-title" style="font-size:var(--fs-label);">Итого к списанию</div>
+              <div class="li-sub" style="font-family:var(--font-mono);color:var(--accent);font-size:var(--fs-body-lg);font-weight:var(--fw-bold);" id="confirmTotal">25.10 USDT</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:var(--fs-meta);color:var(--text2);padding:12px 4px;line-height:var(--lh-relaxed);text-align:center;">
+          Проверьте детали. Транзакция необратима после подтверждения.
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="confirmBtn" style="margin-top:8px;">
+        Подтвердить и отправить
+      </button>
+    </div>
+
+    <!-- STEP 4: Result -->
+    <div class="step-screen" data-step="4">
+      <div class="result-screen">
+        <div class="result-icon-big success" id="resultIcon">
+          <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+        <div class="result-title">Отправлено</div>
+        <div class="result-amount" id="resultAmount">−25.00 USDT</div>
+        <div class="result-sub" id="resultSub">Алиса получит средства в течение нескольких секунд. Хэш транзакции сохранён в истории.</div>
+        <div class="result-actions">
+          <button class="btn btn-secondary btn-block" id="viewTxBtn">Посмотреть транзакцию</button>
+          <button class="btn btn-primary btn-block" id="doneBtn">Готово</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Notif zone -->
+  <div class="notif-zone" id="notifZone" style="position:absolute;bottom:0;left:0;right:0;height:0;pointer-events:none;">
+    <div class="notif-wave" id="notifWave"></div>
+    <div class="notif" id="notif">
+      <div class="notif-content">
+        <div class="notif-row">
+          <div class="notif-icon info" id="notifIcon"></div>
+          <div class="notif-body">
+            <div class="notif-title" id="notifTitle">Готово</div>
+            <div class="notif-sub" id="notifSub"></div>
+          </div>
+        </div>
+        <div class="notif-details">
+          <div class="notif-amount" id="notifAmount"></div>
+          <div class="notif-commission" id="notifCommission"></div>
+        </div>
+        <button class="notif-action" id="notifAction">Готово</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  // ============ STATE ============
+  const state = {
+    step: 1,
+    token: { name: 'USDT', icon: '₮', color: '#26A17B', balance: 1250.50, fiatRate: 1, commission: '0.1 USDT', commissionNum: 0.1 },
+    recipient: { name: '', addr: '', avatar: '' },
+    amount: 0,
+  };
+
+  // ============ STEP NAVIGATION ============
+  function goToStep(n) {
+    document.querySelectorAll('.step-screen').forEach(s => s.classList.toggle('active', +s.dataset.step === n));
+    document.querySelectorAll('.step-dot').forEach(d => {
+      const s = +d.dataset.step;
+      d.classList.toggle('active', s === n);
+      d.classList.toggle('done', s < n);
+    });
+    state.step = n;
+    // Update topbar title
+    const titles = { 1: 'Отправить', 2: 'Сумма', 3: 'Подтверждение', 4: 'Готово' };
+    document.getElementById('topbarTitle').textContent = titles[n];
+    // Hide steps indicator on result screen
+    document.getElementById('steps').style.display = n === 4 ? 'none' : 'flex';
+    // Update back button behavior
+    document.getElementById('backBtn').dataset.step = n;
+  }
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    if (state.step === 1) {
+      MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+    } else if (state.step === 4) {
+      // Result: back does nothing (or go to history)
+      MDAONotif.show({ type:'info', title:'Готово', sub:'На главный экран', pill:true, autoDismiss:1500 });
+    } else {
+      goToStep(state.step - 1);
+    }
+  });
+
+  // ============ STEP 1: Recipient ============
+  const recipientInput = document.getElementById('recipientInput');
+
+  function validateRecipient() {
+    const v = recipientInput.value.trim();
+    return v.length >= 3; // basic validation
+  }
+
+  document.querySelectorAll('.recent-item').forEach(item => {
+    item.addEventListener('click', () => {
+      state.recipient = {
+        name: item.dataset.name,
+        addr: item.dataset.recipient,
+        avatar: item.dataset.avatar
+      };
+      recipientInput.value = item.dataset.recipient;
+      // Auto-advance
+      setTimeout(() => goToStep(2), 200);
+      updateStep2();
+    });
+  });
+
+  document.getElementById('pasteBtn').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      recipientInput.value = text;
+      MDAONotif.show({ type:'success', title:'Вставлено', sub:'Из буфера обмена', pill:true });
+    } catch(e) {
+      MDAONotif.show({ type:'info', title:'Вставьте вручную', sub:'Буфер недоступен', pill:true });
+    }
+  });
+
+  document.getElementById('scanBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'QR-сканер', pill:true });
+  });
+
+  document.getElementById('next1').addEventListener('click', () => {
+    if (!validateRecipient()) {
+      MDAONotif.show({ type:'error', title:'Введите получателя', sub:'Адрес или ник (минимум 3 символа)', actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+    const v = recipientInput.value.trim();
+    if (!state.recipient.addr) {
+      // Manual entry — generate placeholder
+      state.recipient = {
+        name: v.startsWith('@') ? v.slice(1) : 'Получатель',
+        addr: v,
+        avatar: v.startsWith('@') ? v.slice(1, 2).toUpperCase() : '?'
+      };
+    }
+    goToStep(2);
+    updateStep2();
+  });
+
+  // ============ STEP 2: Amount ============
+  const amountInput = document.getElementById('amountInput');
+  const fiatVal = document.getElementById('fiatVal');
+  const feeVal = document.getElementById('feeVal');
+  const totalVal = document.getElementById('totalVal');
+
+  function updateAmount() {
+    const v = parseFloat(amountInput.value) || 0;
+    state.amount = v;
+    const fiat = (v * state.token.fiatRate).toFixed(2);
+    fiatVal.textContent = `$${fiat}`;
+    feeVal.textContent = state.token.commission;
+    const total = (v + state.token.commissionNum).toFixed(2);
+    totalVal.textContent = `${total} ${state.token.name}`;
+  }
+
+  function updateStep2() {
+    document.getElementById('sumAvatar').textContent = state.recipient.avatar;
+    document.getElementById('sumName').textContent = state.recipient.name;
+    document.getElementById('sumAddr').textContent = state.recipient.addr;
+    document.getElementById('maxBtn').innerHTML = `Доступно: <b>${state.token.balance.toFixed(2)}</b> ${state.token.name}`;
+    amountInput.focus();
+  }
+
+  amountInput.addEventListener('input', () => {
+    // Sanitize: digits + dot only
+    amountInput.value = amountInput.value.replace(/[^0-9.]/g, '');
+    updateAmount();
+  });
+
+  document.getElementById('maxBtn').addEventListener('click', () => {
+    amountInput.value = state.token.balance.toFixed(2);
+    updateAmount();
+  });
+
+  document.querySelectorAll('.aa-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const a = b.dataset.amount;
+      let v;
+      if (a === 'max') v = state.token.balance;
+      else v = state.token.balance * (parseFloat(a) / 100);
+      amountInput.value = v.toFixed(2);
+      updateAmount();
+      document.querySelectorAll('.aa-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      setTimeout(() => b.classList.remove('active'), 600);
+    });
+  });
+
+  document.getElementById('editRecipient').addEventListener('click', () => goToStep(1));
+
+  document.getElementById('next2').addEventListener('click', () => {
+    if (state.amount <= 0) {
+      MDAONotif.show({ type:'error', title:'Введите сумму', sub:'Сумма должна быть больше нуля', actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+    if (state.amount > state.token.balance) {
+      MDAONotif.show({ type:'error', title:'Недостаточно средств', sub:`Доступно: ${state.token.balance.toFixed(2)} ${state.token.name}`, actionLabel:'Понятно', actionPrimary:true });
+      return;
+    }
+    goToStep(3);
+    updateStep3();
+  });
+
+  // ============ STEP 3: Confirm ============
+  function updateStep3() {
+    document.getElementById('chIcon').textContent = state.token.icon;
+    document.getElementById('chIcon').style.background = state.token.color;
+    document.getElementById('chAmount').innerHTML = `${state.amount.toFixed(2)} <span class="unit">${state.token.name}</span>`;
+    document.getElementById('chFiat').textContent = `≈ $${(state.amount * state.token.fiatRate).toFixed(2)}`;
+    document.getElementById('chRecipient').textContent = state.recipient.name;
+    document.getElementById('chAddr').textContent = state.recipient.addr;
+    document.getElementById('confirmAmount').textContent = `${state.amount.toFixed(2)} ${state.token.name}`;
+    document.getElementById('confirmFee').textContent = state.token.commission;
+    const total = state.amount + state.token.commissionNum;
+    document.getElementById('confirmTotal').textContent = `${total.toFixed(2)} ${state.token.name}`;
+  }
+
+  document.getElementById('confirmBtn').addEventListener('click', () => {
+    // Simulate send
+    document.getElementById('confirmBtn').disabled = true;
+    document.getElementById('confirmBtn').textContent = 'Отправка…';
+    setTimeout(() => {
+      document.getElementById('confirmBtn').disabled = false;
+      document.getElementById('confirmBtn').textContent = 'Подтвердить и отправить';
+      goToStep(4);
+      document.getElementById('resultAmount').textContent = `−${state.amount.toFixed(2)} ${state.token.name}`;
+      document.getElementById('resultSub').textContent = `${state.recipient.name} получит средства в течение нескольких секунд. Хэш транзакции сохранён в истории.`;
+      // Show success notif
+      MDAONotif.show({
+        type: 'success',
+        title: 'Отправлено',
+        sub: `${state.amount.toFixed(2)} ${state.token.name} → ${state.recipient.name}`,
+        amount: `−${state.amount.toFixed(2)} ${state.token.name}`,
+        commission: state.token.commission,
+        autoDismiss: 6000
+      });
+    }, 1500);
+  });
+
+  // ============ STEP 4: Result ============
+  document.getElementById('viewTxBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'Экран транзакции', pill:true });
+  });
+
+  document.getElementById('doneBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'success', title:'Готово', sub:'На главный экран', pill:true, autoDismiss:1500 });
+    // Reset to step 1
+    setTimeout(() => {
+      state.amount = 0;
+      state.recipient = { name: '', addr: '', avatar: '' };
+      amountInput.value = '';
+      recipientInput.value = '';
+      updateAmount();
+      goToStep(1);
+    }, 1500);
+  });
+
+  // Init
+  updateAmount();
+})();
+</script>
+</body>
+</html>

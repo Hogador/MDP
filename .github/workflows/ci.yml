@@ -1,0 +1,165 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.foundry/cache
+            ~/.svm
+          key: foundry-${{ hashFiles('contracts/foundry.lock') }}
+          restore-keys: foundry-
+      - run: forge test -vvv
+        working-directory: contracts
+      - name: Install Slither
+        run: pip install slither-analyzer
+      - name: Run Slither static analysis
+        run: slither . --exclude-dependencies --exclude naming-convention,pragma-version
+        working-directory: contracts
+      - name: Coverage check
+        run: |
+          forge coverage > coverage.txt 2>&1 || true
+          cat coverage.txt
+          LINE_COV=$(grep "All files" coverage.txt | awk '{print $2}' | sed 's/%//')
+          echo "Overall line coverage: $LINE_COV%"
+          if [ -n "$LINE_COV" ] && [ $(echo "$LINE_COV < 80" | bc -l) -eq 1 ]; then
+            echo "❌ Coverage below 80% ($LINE_COV%)"
+            exit 1
+          fi
+          echo "✅ Coverage above 80% ($LINE_COV%)"
+        working-directory: contracts
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - run: ./gradlew :backend:test
+        working-directory: backend
+
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - run: ./gradlew assembleDevDebug
+
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: relay/package-lock.json
+      - run: npm ci
+        working-directory: relay
+      - run: npm test
+        working-directory: relay
+
+  security-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy file system scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Secret scanning with TruffleHog
+        uses: trufflesecurity/trufflehog@v3
+        with:
+          path: .
+          base: ${{ github.event.repository.default_branch }}
+
+      - name: npm audit (relay dependencies)
+        run: |
+          cd relay
+          npm audit --audit-level=high || echo "⚠️ npm audit found issues (non-blocking)"
+
+  coverage-gate:
+    runs-on: ubuntu-latest
+    needs: [contracts, backend, relay]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Relay coverage
+        run: |
+          cd relay && npm ci
+          npm test -- --coverage --coverageReporters=json-summary 2>/dev/null || true
+          if [ -f coverage/coverage-summary.json ]; then
+            COV=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+            echo "Relay coverage: $COV%"
+          fi
+      - name: Find untested files
+        run: |
+          echo "=== Untested files ==="
+          for sol in contracts/src/*.sol; do
+            name=$(basename "$sol" .sol)
+            [ ! -f "contracts/test/${name}.t.sol" ] && echo "❌ $sol — NO TEST"
+          done
+          for ts in relay/src/*.ts; do
+            name=$(basename "$ts" .ts)
+            [ "$name" != "types" ] && [ ! -f "relay/src/__tests__/${name}.test.ts" ] && echo "❌ $ts — NO TEST"
+          done

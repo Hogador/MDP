@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Уведомления</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .quiet-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+  }
+  .quiet-row .qr-time {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .quiet-row .qr-time .qt-lbl {
+    font-size: var(--fs-label); color: var(--text2); font-weight: var(--fw-semibold);
+  }
+  .quiet-row .qr-time .qt-val {
+    font-family: var(--font-mono); font-size: var(--fs-body-lg);
+    font-weight: var(--fw-bold); color: var(--text);
+    background: var(--tile); padding: 4px 10px; border-radius: var(--r-sm);
+    box-shadow: var(--shadow-inset);
+  }
+  .quiet-row .qr-arrow { color: var(--text3); font-size: 12px; }
+
+  .sound-row {
+    display: flex; gap: 8px; padding: 12px 16px;
+    overflow-x: auto;
+  }
+  .sound-row::-webkit-scrollbar { display: none; }
+  .sound-opt {
+    flex-shrink: 0;
+    background: var(--tile);
+    border: 2px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    color: var(--text2);
+    box-shadow: var(--shadow-inset);
+  }
+  .sound-opt.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .threshold-row {
+    padding: 14px 16px;
+  }
+  .threshold-row .tr-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .threshold-row .tr-lbl { font-size: var(--fs-body); color: var(--text); font-weight: var(--fw-semibold); }
+  .threshold-row .tr-val { font-family: var(--font-mono); font-size: var(--fs-body-lg); color: var(--accent); font-weight: var(--fw-bold); }
+  .threshold-row input[type="range"] { margin-bottom: 8px; }
+  .threshold-row .tr-hint { font-size: var(--fs-meta); color: var(--text2); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Уведомления</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Master toggle -->
+    <div class="list-section-header">Общие</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Push-уведомления</div>
+          <div class="li-sub">Главный переключатель</div>
+        </div>
+        <div class="toggle on" id="masterToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Звук</div>
+        </div>
+        <div class="toggle on" id="soundToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/><path d="M4 2L20 22" stroke="var(--text3)"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Без звука (только визуально)</div>
+        </div>
+        <div class="toggle" id="silentToggle" data-toggle></div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="list-section-header">Категории</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon success">
+          <svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Входящие транзакции</div>
+          <div class="li-sub">Когда получаете средства</div>
+        </div>
+        <div class="toggle on" id="incomingToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 7L7 17"/><path d="M17 17H7V7"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Исходящие транзакции</div>
+          <div class="li-sub">Подтверждения отправки</div>
+        </div>
+        <div class="toggle on" id="outgoingToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Обмены</div>
+          <div class="li-sub">Swap, DEX операции</div>
+        </div>
+        <div class="toggle on" id="swapsToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5 4 9 9 10 5-1 9-5 9-10V7l-9-5z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Безопасность</div>
+          <div class="li-sub">Входы, подозрительные действия</div>
+        </div>
+        <div class="toggle on" id="securityToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Новости MDAO</div>
+          <div class="li-sub">Анонсы, обновления</div>
+        </div>
+        <div class="toggle" id="newsToggle" data-toggle></div>
+      </div>
+    </div>
+
+    <!-- Price alerts -->
+    <div class="list-section-header">Цена токенов</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7h-4M21 7v4"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Уведомлять о росте</div>
+          <div class="li-sub">При изменении цены на N%</div>
+        </div>
+        <div class="toggle on" id="priceAlertToggle" data-toggle></div>
+      </div>
+      <div class="threshold-row">
+        <div class="tr-header">
+          <span class="tr-lbl">Порог изменения</span>
+          <span class="tr-val" id="thresholdVal">5%</span>
+        </div>
+        <input type="range" class="slider" id="thresholdSlider" min="1" max="20" value="5">
+        <div class="tr-hint">Уведомление приходит при изменении цены токена на указанный процент за 24 часа</div>
+      </div>
+    </div>
+
+    <!-- Quiet hours -->
+    <div class="list-section-header">Тихие часы</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Включить тихие часы</div>
+          <div class="li-sub">Без звука в указанное время</div>
+        </div>
+        <div class="toggle" id="quietToggle" data-toggle></div>
+      </div>
+      <div class="quiet-row">
+        <div class="qr-time">
+          <span class="qt-lbl">С</span>
+          <span class="qt-val">22:00</span>
+        </div>
+        <span class="qr-arrow">→</span>
+        <div class="qr-time">
+          <span class="qt-lbl">До</span>
+          <span class="qt-val">08:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sound -->
+    <div class="list-section-header">Звук уведомления</div>
+    <div class="list-section" style="padding: 0;">
+      <div class="sound-row">
+        <button class="sound-opt active" data-sound="default">По умолчанию</button>
+        <button class="sound-opt" data-sound="chime">Колокольчик</button>
+        <button class="sound-opt" data-sound="coin">Монета</button>
+        <button class="sound-opt" data-sound="pop">Поп</button>
+        <button class="sound-opt" data-sound="none">Без звука</button>
+      </div>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  let isNotifOpen = false;
+  let notifTimer = null;
+  let lastNotifAction = null;
+
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // Toggles
+  document.querySelectorAll('[data-toggle]').forEach(t => {
+    t.addEventListener('click', () => {
+      const on = t.classList.toggle('on');
+      const name = t.closest('.list-item').querySelector('.li-title').textContent;
+      showNotif({ type: on ? 'success' : 'info', title: name, sub: on ? 'Включено' : 'Выключено', pill:true });
+    });
+  });
+
+  // Price threshold slider
+  const slider = document.getElementById('thresholdSlider');
+  const val = document.getElementById('thresholdVal');
+  slider.addEventListener('input', () => {
+    val.textContent = slider.value + '%';
+  });
+  slider.addEventListener('change', () => {
+    showNotif({ type:'success', title:'Порог', sub: slider.value + '%', pill:true });
+  });
+
+  // Sound options
+  document.querySelectorAll('.sound-opt').forEach(o => {
+    o.addEventListener('click', () => {
+      document.querySelectorAll('.sound-opt').forEach(x => x.classList.remove('active'));
+      o.classList.add('active');
+      const labels = { default:'По умолчанию', chime:'Колокольчик', coin:'Монета', pop:'Поп', none:'Без звука' };
+      showNotif({ type:'success', title:'Звук', sub: labels[o.dataset.sound], pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  // Theme cycle
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

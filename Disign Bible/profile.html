@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Профиль</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .profile-hero {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-3xl);
+    padding: 24px 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .profile-hero .ph-avatar {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: linear-gradient(135deg, #FF6B00, #FF9A4D);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 38px; font-weight: var(--fw-bold); color: #fff;
+    box-shadow: 0 10px 24px -6px rgba(255,107,0,0.5), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.15);
+  }
+  .profile-hero .ph-name {
+    font-size: var(--fs-h1); font-weight: var(--fw-bold);
+    color: var(--text); letter-spacing: var(--ls-tight);
+  }
+  .profile-hero .ph-nick {
+    font-size: var(--fs-body-lg); color: var(--accent);
+    font-family: var(--font-mono); font-weight: var(--fw-semibold);
+  }
+  .profile-hero .ph-disc {
+    font-size: var(--fs-label); color: var(--text2);
+    margin-top: 4px;
+  }
+  .profile-hero .ph-disc b { color: var(--accent); font-family: var(--font-mono); font-weight: var(--fw-bold); }
+
+  .qr-block {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 18px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .qr-block .qb-label {
+    font-size: var(--fs-meta); font-weight: var(--fw-bold); color: var(--text2);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    margin-bottom: 12px;
+  }
+  .qr-block .qb-qr {
+    width: 180px; height: 180px;
+    background: #fff;
+    border-radius: var(--r-lg);
+    margin: 0 auto 12px;
+    border: 1px solid var(--soft-border);
+    background-image:
+      linear-gradient(45deg, #0a0a0f 25%, transparent 25%),
+      linear-gradient(-45deg, #0a0a0f 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #0a0a0f 75%),
+      linear-gradient(-45deg, transparent 75%, #0a0a0f 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+    box-shadow: var(--shadow-inset);
+    position: relative;
+  }
+  .qr-block .qb-qr::after {
+    content: '◈';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px; height: 36px;
+    background: #fff;
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #FF6B00; font-weight: var(--fw-bold);
+    border: 2px solid #fff;
+  }
+  .qr-block .qb-hint {
+    font-size: var(--fs-label); color: var(--text2);
+    line-height: var(--lh-normal);
+  }
+
+  .address-block {
+    background: var(--tile);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+    cursor: pointer;
+    border: none; width: 100%;
+    font-family: inherit; text-align: left;
+  }
+  .address-block:active { transform: scale(0.985); }
+  .address-block .ab-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-wider);
+    margin-bottom: 6px;
+  }
+  .address-block .ab-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .address-block .ab-addr {
+    flex: 1; min-width: 0;
+    font-family: var(--font-mono); font-size: var(--fs-label);
+    color: var(--text); font-weight: var(--fw-medium);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .address-block .ab-copy {
+    background: var(--surface); border: none;
+    width: 34px; height: 34px; border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .address-block .ab-copy:active { transform: scale(0.9); box-shadow: var(--shadow-press); }
+  .address-block .ab-copy svg { stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .share-row {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .share-row .share-btn {
+    flex: 1; padding: 12px;
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    font-family: inherit;
+  }
+  .share-row .share-btn:active { transform: scale(0.96); box-shadow: var(--shadow-press); }
+  .share-row .share-btn svg {
+    stroke: var(--text); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px;
+  }
+  .share-row .share-btn .sb-lbl { font-size: var(--fs-caption); color: var(--text2); font-weight: var(--fw-semibold); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Профиль</div>
+    <button class="action-btn" id="editBtn" aria-label="Редактировать">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    </button>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Hero -->
+    <div class="profile-hero">
+      <div class="ph-avatar">А</div>
+      <div class="ph-name">Антон</div>
+      <div class="ph-nick">@crazy-cherry</div>
+      <div class="ph-disc">Дискриминатор: <b>#2215</b></div>
+    </div>
+
+    <!-- QR -->
+    <div class="qr-block">
+      <div class="qb-label">Ваш QR-код</div>
+      <div class="qb-qr"></div>
+      <div class="qb-hint">Покажите этот код отправителю,<br>чтобы получить перевод</div>
+    </div>
+
+    <!-- Address -->
+    <button class="address-block" id="addrBtn">
+      <div class="ab-label">Адрес кошелька (BNB Chain)</div>
+      <div class="ab-row">
+        <div class="ab-addr">0x8A9B3F2C7E4D1A6B5C8E9F0A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2</div>
+        <div class="ab-copy">
+          <svg width="16" height="16" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
+      </div>
+    </button>
+
+    <!-- Share -->
+    <div class="share-row">
+      <button class="share-btn" data-share="tg">
+        <svg viewBox="0 0 24 24"><path d="M21 5L2 12l5 2 2 6 3-4 5 4 4-15z"/></svg>
+        <span class="sb-lbl">Telegram</span>
+      </button>
+      <button class="share-btn" data-share="wa">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span class="sb-lbl">WhatsApp</span>
+      </button>
+      <button class="share-btn" data-share="link">
+        <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span class="sb-lbl">Ссылка</span>
+      </button>
+    </div>
+
+    <!-- Edit profile section -->
+    <div class="list-section-header">Управление</div>
+    <div class="list-section">
+      <button class="list-item" id="editNickBtn">
+        <div class="li-icon accent">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Изменить ник</div>
+          <div class="li-sub">@crazy-cherry</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+
+      <button class="list-item" id="changeAvatarBtn">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Сменить аватар</div>
+          <div class="li-sub">Загрузить изображение</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  let isNotifOpen = false;
+  let notifTimer = null;
+  let lastNotifAction = null;
+
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) {
+      dismissNotif();
+      setTimeout(() => showNotif(opts), 380);
+      return;
+    }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+
+    if (usePill) {
+      notif.classList.remove('has-details', 'has-action');
+    } else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) {
+          notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`;
+          notifAmount.style.display = 'flex';
+        } else notifAmount.style.display = 'none';
+        if (opts.commission) {
+          notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`;
+          notifCommission.style.display = 'flex';
+        } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+
+      if (!usePill && opts.actionLabel) {
+        notif.classList.add('has-action');
+        notifAction.textContent = opts.actionLabel;
+        notifAction.classList.toggle('primary', !!opts.actionPrimary);
+        lastNotifAction = opts.actionCb || null;
+      } else {
+        notif.classList.remove('has-action');
+        lastNotifAction = null;
+      }
+    }
+
+    notif.classList.remove('hide');
+    void notif.offsetWidth;
+    notif.classList.add('show');
+    notifWave.classList.remove('show');
+    void notifWave.offsetWidth;
+    notifWave.classList.add('show');
+    contentWrap.classList.add('shift');
+    isNotifOpen = true;
+
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show');
+    notif.classList.add('hide');
+    notifWave.classList.remove('show');
+    contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => {
+      if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); }
+    }, 420);
+  }
+  notif.addEventListener('click', (e) => {
+    if (e.target === notifAction || notifAction.contains(e.target)) return;
+    dismissNotif();
+  });
+  notifAction.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cb = lastNotifAction;
+    if (cb) cb();
+    else dismissNotif();
+  });
+
+  // ============ ACTIONS ============
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+
+  document.getElementById('editBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Редактирование', sub:'Скоро', pill:true });
+  });
+
+  document.getElementById('addrBtn').addEventListener('click', () => {
+    const addr = document.querySelector('.ab-addr').textContent;
+    try { navigator.clipboard.writeText(addr); } catch(e) {}
+    showNotif({ type:'success', title:'Скопировано', sub:'Адрес кошелька', pill:true });
+  });
+
+  document.getElementById('editNickBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Редактирование ника', pill:true });
+  });
+  document.getElementById('changeAvatarBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Скоро', sub:'Загрузка аватара', pill:true });
+  });
+
+  document.querySelectorAll('[data-share]').forEach(b => {
+    b.addEventListener('click', () => {
+      const k = b.dataset.share;
+      const labels = { tg: 'Telegram', wa: 'WhatsApp', link: 'Ссылка' };
+      showNotif({ type:'success', title:'Поделиться', sub: labels[k], pill:true });
+    });
+  });
+
+  // Theme cycle (for prototype)
+  let currentTheme = 'dark';
+  document.querySelector('.topbar .title').addEventListener('click', () => {
+    const themes = ['dark', 'light', 'amoled'];
+    const idx = themes.indexOf(currentTheme);
+    currentTheme = themes[(idx + 1) % themes.length];
+    phone.className = `phone theme-${currentTheme}`;
+  });
+})();
+</script>
+</body>
+</html>

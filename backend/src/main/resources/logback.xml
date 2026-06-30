@@ -1,0 +1,20 @@
+<configuration>
+    <!-- F-045: Structured JSON logging for log aggregation (ELK, Datadog, etc.) -->
+    <appender name="STDOUT-JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.mdaopay.paymaster.util.SimpleJsonLayout"/>
+        </encoder>
+    </appender>
+
+    <!-- Fallback plain-text for local dev (keep both, toggle via active) -->
+    <appender name="STDOUT-PLAIN" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern></encoder>
+    </appender>
+
+    <!-- Default: JSON. Override with -Dlogback.mode=plain for local dev -->
+    <root level="INFO">
+        <appender-ref ref="${logback.mode:-STDOUT-JSON}"/>
+    </root>
+
+    <logger name="org.web3j" level="WARN"/>
+</configuration>

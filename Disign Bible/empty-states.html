@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Empty States</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* Tab navigation between empty states */
+  .state-tabs {
+    display: flex; gap: 6px; padding: 3px;
+    background: var(--tile); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-inset);
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .state-tabs::-webkit-scrollbar { display: none; }
+  .state-tab {
+    flex-shrink: 0;
+    background: transparent; border: none;
+    color: var(--text2); font-family: inherit;
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    padding: 8px 12px; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background var(--d-quick), color var(--d-quick);
+  }
+  .state-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-soft); }
+
+  .state-screen { display: none; }
+  .state-screen.active { display: block; animation: fadeIn var(--d-quick) var(--ease-out); }
+
+  /* Empty state component */
+  .empty-state {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text2);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 360px;
+    justify-content: center;
+  }
+  .empty-state .es-icon {
+    width: 96px; height: 96px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+  }
+  .empty-state .es-icon::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 30%, var(--accent-soft), transparent 70%);
+  }
+  .empty-state .es-icon svg {
+    stroke: var(--accent); stroke-width: 1.8; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 44px; height: 44px;
+    position: relative; z-index: 1;
+  }
+  .empty-state .es-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: var(--ls-snug);
+  }
+  .empty-state .es-sub {
+    font-size: var(--fs-body); color: var(--text2);
+    line-height: var(--lh-relaxed);
+    max-width: 280px;
+    margin-bottom: 20px;
+  }
+  .empty-state .es-actions { display: flex; gap: 8px; flex-direction: column; width: 100%; max-width: 280px; }
+
+  /* Variant: muted icon (no accent) */
+  .empty-state.muted .es-icon svg { stroke: var(--text3); }
+  .empty-state.muted .es-icon::before { display: none; }
+
+  /* Variant: success-colored icon */
+  .empty-state.success .es-icon svg { stroke: var(--success); }
+  .empty-state.success .es-icon::before { background: radial-gradient(circle at 30% 30%, var(--success-soft), transparent 70%); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Empty States</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <div class="state-tabs" id="stateTabs">
+      <button class="state-tab active" data-state="tx">Нет транзакций</button>
+      <button class="state-tab" data-state="contacts">Нет контактов</button>
+      <button class="state-tab" data-state="search">Поиск пуст</button>
+      <button class="state-tab" data-state="tokens">Нет токенов</button>
+      <button class="state-tab" data-state="notifications">Нет уведомлений</button>
+      <button class="state-tab" data-state="offline">Оффлайн</button>
+    </div>
+
+    <!-- State: No transactions -->
+    <div class="state-screen active" data-state="tx">
+      <div class="empty-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        </div>
+        <div class="es-title">Пока нет транзакций</div>
+        <div class="es-sub">Здесь появятся все входящие и исходящие переводы. Отправьте или получите средства, чтобы начать.</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Отправить</button>
+          <button class="btn btn-secondary btn-block">Получить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: No contacts -->
+    <div class="state-screen" data-state="contacts">
+      <div class="empty-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/><path d="M19 8v6M22 11h-6"/></svg>
+        </div>
+        <div class="es-title">Контактов пока нет</div>
+        <div class="es-sub">Добавьте адреса получателей, чтобы быстро отправлять средства без ввода адреса каждый раз.</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Добавить контакт</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: Search no results -->
+    <div class="state-screen" data-state="search">
+      <div class="empty-state muted">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg>
+        </div>
+        <div class="es-title">Ничего не найдено</div>
+        <div class="es-sub">Попробуйте изменить запрос или проверить правильность ввода адреса / ника.</div>
+        <div class="es-actions">
+          <button class="btn btn-secondary btn-block">Сбросить поиск</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: No tokens -->
+    <div class="state-screen" data-state="tokens">
+      <div class="empty-state">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a2.5 2.5 0 0 1 0 5H9"/></svg>
+        </div>
+        <div class="es-title">Нет токенов</div>
+        <div class="es-sub">На этом аккаунте ещё нет токенов. Получите перевод или добавьте существующий токен по адресу контракта.</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Получить</button>
+          <button class="btn btn-secondary btn-block">Добавить токен</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: No notifications -->
+    <div class="state-screen" data-state="notifications">
+      <div class="empty-state success">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="es-title">Уведомлений нет</div>
+        <div class="es-sub">Вы всё прочитали. Здесь появятся уведомления о транзакциях, обменах и важных событиях.</div>
+        <div class="es-actions">
+          <button class="btn btn-secondary btn-block">Настройки уведомлений</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State: Offline -->
+    <div class="state-screen" data-state="offline">
+      <div class="empty-state muted">
+        <div class="es-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>
+        </div>
+        <div class="es-title">Нет соединения</div>
+        <div class="es-sub">Проверьте интернет-подключение. Балансы и транзакции обновятся автоматически при восстановлении сети.</div>
+        <div class="es-actions">
+          <button class="btn btn-primary btn-block">Повторить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  document.querySelectorAll('.state-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.state-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.state-screen').forEach(s => s.classList.toggle('active', s.dataset.state === t.dataset.state));
+    });
+  });
+
+  // All buttons in empty states show a notif
+  document.querySelectorAll('.empty-state .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      MDAONotif.show({ type:'info', title: b.textContent.trim(), sub:'Действие в прототипе', pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'В меню', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

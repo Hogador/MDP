@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Транзакция</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .tx-hero {
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 24px 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .tx-hero .th-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 18px -3px rgba(0,0,0,0.4);
+  }
+  .tx-hero .th-icon svg {
+    stroke: #fff; stroke-width: 3; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 36px; height: 36px;
+  }
+  .tx-hero.success .th-icon { background: var(--success); }
+  .tx-hero.pending .th-icon { background: var(--warning); }
+  .tx-hero.failed .th-icon { background: var(--danger); }
+  .tx-hero .th-status {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+  }
+  .tx-hero .th-amount {
+    font-family: var(--font-mono);
+    font-size: var(--fs-display); font-weight: var(--fw-bold);
+    color: var(--text); margin-top: 8px;
+    letter-spacing: -1.2px;
+  }
+  .tx-hero.success.send .th-amount { color: var(--danger); }
+  .tx-hero.success.receive .th-amount { color: var(--success); }
+  .tx-hero .th-amount .unit { font-size: var(--fs-h3); color: var(--text2); margin-left: 6px; font-family: var(--font-sans); }
+  .tx-hero .th-fiat { font-size: var(--fs-body-lg); color: var(--text2); margin-top: 4px; }
+  .tx-hero .th-time { font-size: var(--fs-label); color: var(--text2); margin-top: 12px; }
+
+  .party-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    background: var(--card); border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg); margin-bottom: 6px;
+    box-shadow: var(--shadow-soft);
+  }
+  .party-row .pr-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-weight: var(--fw-bold); font-size: 17px; color: #fff;
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  }
+  .party-row .pr-body { flex: 1; min-width: 0; }
+  .party-row .pr-label { font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: var(--ls-wider); }
+  .party-row .pr-name { font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text); margin-top: 2px; }
+  .party-row .pr-addr { font-size: var(--fs-meta); color: var(--text2); font-family: var(--font-mono); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .explorer-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid rgba(255,107,0,0.2);
+    border-radius: var(--r-lg); padding: 14px;
+    width: 100%; font-family: inherit;
+    font-size: var(--fs-body-lg); font-weight: var(--fw-bold);
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .explorer-btn:active { transform: scale(0.985); }
+  .explorer-btn svg { stroke: var(--accent); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; width: 18px; height: 18px; }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Транзакция</div>
+    <button class="action-btn" id="shareBtn" aria-label="Поделиться">
+      <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>
+    </button>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Hero -->
+    <div class="tx-hero success send">
+      <div class="th-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div class="th-status">Отправлено</div>
+      <div class="th-amount">−25.00 <span class="unit">USDT</span></div>
+      <div class="th-fiat">≈ $25.00</div>
+      <div class="th-time">22 июня 2026, 14:32 · BNB Smart Chain</div>
+    </div>
+
+    <!-- Parties -->
+    <div class="party-row">
+      <div class="pr-icon" style="background:linear-gradient(135deg,#FF6B00,#FF9A4D);">А</div>
+      <div class="pr-body">
+        <div class="pr-label">Отправитель</div>
+        <div class="pr-name">Антон</div>
+        <div class="pr-addr">@crazy-cherry · 0x8A9B…C1D2</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:18px;margin:4px 0;">↓</div>
+    <div class="party-row">
+      <div class="pr-icon" style="background:#26A17B;">А</div>
+      <div class="pr-body">
+        <div class="pr-label">Получатель</div>
+        <div class="pr-name">Алиса</div>
+        <div class="pr-addr">@alice · 0x4F2E…8B9C</div>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="list-section-header" style="margin-top:16px;">Детали</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Сумма</div></div>
+        <span class="li-value" style="font-family:var(--font-mono);">25.00 USDT</span>
+      </div>
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Комиссия сети</div></div>
+        <span class="li-value" style="font-family:var(--font-mono);">0.10 USDT</span>
+      </div>
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Итого</div></div>
+        <span class="li-value" style="font-family:var(--font-mono);color:var(--accent);font-weight:var(--fw-bold);">25.10 USDT</span>
+      </div>
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Сеть</div></div>
+        <span class="li-value">BNB Smart Chain</span>
+      </div>
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Блок</div></div>
+        <span class="li-value" style="font-family:var(--font-mono);">38,452,108</span>
+      </div>
+      <div class="list-item">
+        <div class="li-body"><div class="li-title" style="font-size:var(--fs-label);">Подтверждения</div></div>
+        <span class="li-value" style="color:var(--success);">12 / 12</span>
+      </div>
+      <button class="list-item" id="hashBtn">
+        <div class="li-body">
+          <div class="li-title" style="font-size:var(--fs-label);">Хэш транзакции</div>
+          <div class="li-sub" style="font-family:var(--font-mono);margin-top:4px;">0x9a3b…f7c2</div>
+        </div>
+        <svg class="li-chevron" viewBox="0 0 24 24" style="stroke:var(--text2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+
+    <!-- Explorer button -->
+    <button class="explorer-btn" id="explorerBtn">
+      <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+      Открыть в эксплорере
+    </button>
+
+    <div style="height:16px;"></div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'В историю', pill:true, autoDismiss:1500 });
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'success', title:'Скоро', sub:'Поделиться tx', pill:true });
+  });
+
+  document.getElementById('hashBtn').addEventListener('click', () => {
+    const hash = '0x9a3b7c5d8e1f4a2b6c9d3e5f7a8b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7c2';
+    try { navigator.clipboard.writeText(hash); } catch(e) {}
+    MDAONotif.show({ type:'success', title:'Скопировано', sub:'Хэш транзакции', pill:true });
+  });
+
+  document.getElementById('explorerBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'Открыть в bscscan.com', pill:true });
+  });
+})();
+</script>
+</body>
+</html>

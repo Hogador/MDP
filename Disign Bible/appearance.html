@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — Внешний вид</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .preview-card {
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-2xl);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft), var(--shadow-glow);
+    margin-bottom: 18px;
+  }
+  .preview-card .pc-label {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    margin-bottom: 12px;
+  }
+  .preview-card .pc-balance {
+    font-family: var(--font-mono);
+    font-size: 36px; font-weight: var(--fw-bold); color: var(--text);
+    letter-spacing: -1.2px; line-height: var(--lh-tight);
+  }
+  .preview-card .pc-balance .unit { font-size: 14px; color: var(--text2); font-family: var(--font-sans); margin-left: 6px; }
+  .preview-card .pc-fiat { font-size: var(--fs-label); color: var(--text2); margin-top: 4px; }
+  .preview-card .pc-row {
+    display: flex; gap: 10px; margin-top: 14px;
+  }
+  .preview-card .pc-btn {
+    flex: 1; height: 44px; border-radius: var(--r-xl);
+    background: var(--tile); color: var(--text);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: var(--fs-caption); font-weight: var(--fw-semibold);
+    font-family: inherit;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .preview-card .pc-btn.primary {
+    background: var(--accent-soft); color: var(--accent);
+    box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(255,107,0,0.18);
+  }
+
+  .theme-grid {
+    display: grid; grid-template-columns: 1fr; gap: 10px;
+  }
+  .theme-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; cursor: pointer;
+    background: var(--card); border: 2px solid var(--soft-border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-soft);
+    width: 100%; font-family: inherit; text-align: left;
+  }
+  .theme-card:active { transform: scale(0.985); }
+  .theme-card.active { border-color: var(--accent); box-shadow: var(--shadow-soft), 0 0 0 2px var(--accent-soft); }
+  .theme-card .tc-preview {
+    width: 56px; height: 56px; border-radius: var(--r-md);
+    flex-shrink: 0; position: relative; overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+  .theme-card .tc-preview.dark { background: linear-gradient(135deg, #0A0A0F 0%, #1A1A22 60%, #23232C 100%); }
+  .theme-card .tc-preview.light { background: linear-gradient(135deg, #E8EBF1 0%, #FBFCFE 60%, #E4E8EE 100%); }
+  .theme-card .tc-preview.amoled { background: linear-gradient(135deg, #000 0%, #0B0B0D 60%, #151518 100%); }
+  .theme-card .tc-preview::after {
+    content: ''; position: absolute;
+    bottom: 6px; left: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #FF6B00;
+  }
+  .theme-card .tc-body { flex: 1; }
+  .theme-card .tc-title { font-size: var(--fs-body-lg); font-weight: var(--fw-bold); color: var(--text); }
+  .theme-card .tc-sub { font-size: var(--fs-label); color: var(--text2); margin-top: 2px; line-height: var(--lh-normal); }
+  .theme-card .tc-check {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .theme-card.active .tc-check { border-color: var(--accent); background: var(--accent); }
+  .theme-card .tc-check svg {
+    stroke: #fff; stroke-width: 3; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 14px; height: 14px; opacity: 0; transition: opacity 0.2s;
+  }
+  .theme-card.active .tc-check svg { opacity: 1; }
+
+  .accent-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+  }
+  .accent-opt {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid var(--bg);
+    cursor: pointer;
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15);
+    position: relative;
+    transition: transform 0.2s var(--spring);
+  }
+  .accent-opt:active { transform: scale(0.9); }
+  .accent-opt.active::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .accent-opt[data-color="orange"] { background: #FF6B00; color: #FF6B00; }
+  .accent-opt[data-color="blue"] { background: #2D7FF9; color: #2D7FF9; }
+  .accent-opt[data-color="green"] { background: #00B377; color: #00B377; }
+  .accent-opt[data-color="purple"] { background: #7B4DFF; color: #7B4DFF; }
+  .accent-opt[data-color="pink"] { background: #F94D9E; color: #F94D9E; }
+
+  .font-size-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .font-opt {
+    background: var(--tile);
+    border: 2px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-inset);
+  }
+  .font-opt:active { transform: scale(0.96); }
+  .font-opt.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: var(--shadow-soft);
+  }
+  .font-opt .fo-sample { font-weight: var(--fw-bold); color: var(--text); line-height: 1; }
+  .font-opt[data-size="s"] .fo-sample { font-size: 18px; }
+  .font-opt[data-size="m"] .fo-sample { font-size: 22px; }
+  .font-opt[data-size="l"] .fo-sample { font-size: 26px; }
+  .font-opt.active .fo-sample { color: var(--accent); }
+  .font-opt .fo-lbl { font-size: var(--fs-caption); color: var(--text2); margin-top: 6px; font-weight: var(--fw-semibold); }
+  .font-opt.active .fo-lbl { color: var(--accent); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Внешний вид</div>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Live preview -->
+    <div class="preview-card">
+      <div class="pc-label">Предпросмотр</div>
+      <div class="pc-balance">1 250.50 <span class="unit">USDT</span></div>
+      <div class="pc-fiat">≈ $1 250.50</div>
+      <div class="pc-row">
+        <button class="pc-btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" style="stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+          Отправить
+        </button>
+        <button class="pc-btn">Получить</button>
+      </div>
+    </div>
+
+    <!-- Theme -->
+    <div class="list-section-header">Тема</div>
+    <div class="theme-grid" style="margin-bottom:16px;">
+      <button class="theme-card active" data-theme="dark">
+        <div class="tc-preview dark"></div>
+        <div class="tc-body">
+          <div class="tc-title">Тёмная</div>
+          <div class="tc-sub">Для низкого освещения, мягкие тени</div>
+        </div>
+        <div class="tc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+      </button>
+      <button class="theme-card" data-theme="light">
+        <div class="tc-preview light"></div>
+        <div class="tc-body">
+          <div class="tc-title">Светлая</div>
+          <div class="tc-sub">Классическая, для дневного света</div>
+        </div>
+        <div class="tc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+      </button>
+      <button class="theme-card" data-theme="amoled">
+        <div class="tc-preview amoled"></div>
+        <div class="tc-body">
+          <div class="tc-title">AMOLED</div>
+          <div class="tc-sub">Чёрный фон, экономия батареи</div>
+        </div>
+        <div class="tc-check"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+      </button>
+    </div>
+
+    <!-- Accent color -->
+    <div class="list-section-header">Акцентный цвет</div>
+    <div style="padding: 4px 4px 16px;">
+      <div class="accent-grid">
+        <button class="accent-opt active" data-color="orange" aria-label="Оранжевый"></button>
+        <button class="accent-opt" data-color="blue" aria-label="Синий"></button>
+        <button class="accent-opt" data-color="green" aria-label="Зелёный"></button>
+        <button class="accent-opt" data-color="purple" aria-label="Фиолетовый"></button>
+        <button class="accent-opt" data-color="pink" aria-label="Розовый"></button>
+      </div>
+      <div style="text-align:center;font-size:var(--fs-meta);color:var(--text2);margin-top:12px;font-weight:var(--fw-semibold);">
+        <span id="accentName">Оранжевый</span> · по умолчанию
+      </div>
+    </div>
+
+    <!-- Font size -->
+    <div class="list-section-header">Размер шрифта</div>
+    <div style="padding: 4px 4px 16px;">
+      <div class="font-size-grid">
+        <button class="font-opt" data-size="s">
+          <div class="fo-sample">A</div>
+          <div class="fo-lbl">S</div>
+        </button>
+        <button class="font-opt active" data-size="m">
+          <div class="fo-sample">A</div>
+          <div class="fo-lbl">M</div>
+        </button>
+        <button class="font-opt" data-size="l">
+          <div class="fo-sample">A</div>
+          <div class="fo-lbl">L</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Other -->
+    <div class="list-section-header">Дополнительно</div>
+    <div class="list-section">
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Анимации</div>
+          <div class="li-sub">Плавные переходы и эффекты</div>
+        </div>
+        <div class="toggle on" id="animToggle" data-toggle></div>
+      </div>
+      <div class="list-item">
+        <div class="li-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+        <div class="li-body">
+          <div class="li-title">Системная тема</div>
+          <div class="li-sub">Следовать настройкам устройства</div>
+        </div>
+        <div class="toggle" id="sysThemeToggle" data-toggle></div>
+      </div>
+    </div>
+
+    <!-- Notification zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  let isNotifOpen = false;
+  let notifTimer = null;
+  let lastNotifAction = null;
+
+  const phone = document.getElementById('phone');
+  const contentWrap = document.getElementById('contentWrap');
+  const notif = document.getElementById('notif');
+  const notifWave = document.getElementById('notifWave');
+  const notifIcon = document.getElementById('notifIcon');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifSub = document.getElementById('notifSub');
+  const notifAmount = document.getElementById('notifAmount');
+  const notifCommission = document.getElementById('notifCommission');
+  const notifAction = document.getElementById('notifAction');
+  const accentName = document.getElementById('accentName');
+
+  const ICONS = {
+    success: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    error:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2.4"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="#fff" stroke="none"/></svg>'
+  };
+
+  const ACCENT_COLORS = {
+    orange: { main:'#FF6B00', press:'#E55F00', soft:'rgba(255,107,0,0.10)', name:'Оранжевый' },
+    blue:   { main:'#2D7FF9', press:'#1F6FDD', soft:'rgba(45,127,249,0.10)', name:'Синий' },
+    green:  { main:'#00B377', press:'#009966', soft:'rgba(0,179,119,0.10)', name:'Зелёный' },
+    purple: { main:'#7B4DFF', press:'#6736E5', soft:'rgba(123,77,255,0.10)', name:'Фиолетовый' },
+    pink:   { main:'#F94D9E', press:'#DD3A87', soft:'rgba(249,77,158,0.10)', name:'Розовый' }
+  };
+
+  function showNotif(opts) {
+    if (isNotifOpen) { dismissNotif(); setTimeout(() => showNotif(opts), 380); return; }
+    const type = opts.type || 'info';
+    const usePill = opts.pill !== undefined ? opts.pill : (type === 'info' && !opts.amount && !opts.commission && !opts.actionLabel);
+    notifIcon.className = `notif-icon ${type}`;
+    notifIcon.innerHTML = ICONS[type] || ICONS.info;
+    notifTitle.textContent = opts.title || '';
+    notifSub.textContent = opts.sub || '';
+    notif.classList.toggle('pill', usePill);
+    if (usePill) { notif.classList.remove('has-details', 'has-action'); }
+    else {
+      if (opts.amount || opts.commission) {
+        notif.classList.add('has-details');
+        if (opts.amount) { notifAmount.innerHTML = `<span class="lbl">Сумма</span><span class="val">${opts.amount}</span>`; notifAmount.style.display = 'flex'; } else notifAmount.style.display = 'none';
+        if (opts.commission) { notifCommission.innerHTML = `<span class="lbl">Комиссия</span><span class="val">${opts.commission}</span>`; notifCommission.style.display = 'flex'; } else notifCommission.style.display = 'none';
+      } else notif.classList.remove('has-details');
+      if (!usePill && opts.actionLabel) { notif.classList.add('has-action'); notifAction.textContent = opts.actionLabel; notifAction.classList.toggle('primary', !!opts.actionPrimary); lastNotifAction = opts.actionCb || null; } else { notif.classList.remove('has-action'); lastNotifAction = null; }
+    }
+    notif.classList.remove('hide'); void notif.offsetWidth; notif.classList.add('show');
+    notifWave.classList.remove('show'); void notifWave.offsetWidth; notifWave.classList.add('show');
+    contentWrap.classList.add('shift'); isNotifOpen = true;
+    const defaultDelay = usePill ? 2600 : (type === 'error' ? 0 : 4000);
+    const delay = opts.autoDismiss !== undefined ? opts.autoDismiss : defaultDelay;
+    clearTimeout(notifTimer);
+    if (delay > 0) notifTimer = setTimeout(dismissNotif, delay);
+  }
+  function dismissNotif() {
+    if (!isNotifOpen) return;
+    clearTimeout(notifTimer);
+    notif.classList.remove('show'); notif.classList.add('hide');
+    notifWave.classList.remove('show'); contentWrap.classList.remove('shift');
+    isNotifOpen = false;
+    setTimeout(() => { if (!isNotifOpen) { notif.classList.remove('hide'); notif.classList.remove('show'); } }, 420);
+  }
+  notif.addEventListener('click', (e) => { if (e.target === notifAction || notifAction.contains(e.target)) return; dismissNotif(); });
+  notifAction.addEventListener('click', (e) => { e.stopPropagation(); const cb = lastNotifAction; if (cb) cb(); else dismissNotif(); });
+
+  // ============ THEME SWITCH ============
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const theme = card.dataset.theme;
+      document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      phone.className = `phone theme-${theme}`;
+      const names = { dark: 'Тёмная', light: 'Светлая', amoled: 'AMOLED' };
+      showNotif({ type:'success', title:'Тема', sub: names[theme], pill:true });
+    });
+  });
+
+  // ============ ACCENT COLOR ============
+  document.querySelectorAll('.accent-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const color = opt.dataset.color;
+      document.querySelectorAll('.accent-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      const c = ACCENT_COLORS[color];
+      document.documentElement.style.setProperty('--accent', c.main);
+      document.documentElement.style.setProperty('--accent-press', c.press);
+      document.documentElement.style.setProperty('--accent-soft', c.soft);
+      accentName.textContent = c.name;
+      showNotif({ type:'success', title:'Акцент', sub: c.name, pill:true });
+    });
+  });
+
+  // ============ FONT SIZE ============
+  document.querySelectorAll('.font-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.font-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      const size = opt.dataset.size;
+      const labels = { s:'Маленький', m:'Средний', l:'Большой' };
+      showNotif({ type:'success', title:'Размер шрифта', sub: labels[size], pill:true });
+    });
+  });
+
+  // ============ TOGGLES ============
+  ['animToggle', 'sysThemeToggle'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) t.addEventListener('click', () => {
+      const on = t.classList.toggle('on');
+      const name = t.closest('.list-item').querySelector('.li-title').textContent;
+      showNotif({ type: on ? 'success' : 'info', title: name, sub: on ? 'Включено' : 'Выключено', pill:true });
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    showNotif({ type:'info', title:'Назад', sub:'В настройки', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>

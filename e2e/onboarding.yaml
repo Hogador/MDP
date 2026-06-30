@@ -1,0 +1,9 @@
+appId: com.mdaopay.app
+---
+- launchApp
+- assertVisible: "Привет"
+- tapOn: "Начать"
+- tapOn: "Пропустить"  # Skip biometric for E2E
+- inputText: "testuser"
+- tapOn: "Далее"
+- assertVisible: "Готово"

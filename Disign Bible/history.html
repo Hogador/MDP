@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MDAOPay — История</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="transitions.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .filter-bar {
+    display: flex; gap: 6px;
+    padding: 4px 0 14px;
+    overflow-x: auto;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    flex-shrink: 0;
+    background: var(--tile); color: var(--text2);
+    border: 1px solid var(--soft-border);
+    padding: 7px 14px; border-radius: var(--r-pill);
+    font-size: var(--fs-label); font-weight: var(--fw-semibold);
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .filter-chip.active {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 4px 10px -2px rgba(255,107,0,0.4);
+  }
+
+  .date-section {
+    font-size: var(--fs-meta); color: var(--text2); font-weight: var(--fw-bold);
+    text-transform: uppercase; letter-spacing: var(--ls-uppercase);
+    padding: 14px 4px 8px;
+  }
+  .date-section:first-child { padding-top: 0; }
+
+  .tx-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--soft-border);
+    border-radius: var(--r-lg);
+    margin-bottom: 6px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    width: 100%; font-family: inherit; text-align: left;
+  }
+  .tx-item:active { transform: scale(0.985); box-shadow: var(--shadow-press); }
+  .tx-item .ti-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft);
+  }
+  .tx-item .ti-icon svg {
+    stroke: currentColor; stroke-width: 2.4; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 20px; height: 20px;
+  }
+  .tx-item.send .ti-icon { background: var(--danger-soft); color: var(--danger); }
+  .tx-item.receive .ti-icon { background: var(--success-soft); color: var(--success); }
+  .tx-item.swap .ti-icon { background: var(--accent-soft); color: var(--accent); }
+  .tx-item.pending .ti-icon { background: var(--warning-soft); color: var(--warning); }
+  .tx-item.failed .ti-icon { background: var(--danger-soft); color: var(--danger); }
+
+  .tx-item .ti-body { flex: 1; min-width: 0; }
+  .tx-item .ti-top {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 2px;
+  }
+  .tx-item .ti-title { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--text); }
+  .tx-item .ti-badge {
+    font-size: var(--fs-caption); font-weight: var(--fw-bold);
+    padding: 2px 7px; border-radius: var(--r-pill);
+  }
+  .tx-item .ti-badge.pending { background: var(--warning-soft); color: var(--warning); }
+  .tx-item .ti-badge.failed { background: var(--danger-soft); color: var(--danger); }
+  .tx-item .ti-sub {
+    font-size: var(--fs-meta); color: var(--text2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tx-item .ti-sub .ts-token {
+    width: 14px; height: 14px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+  }
+  .tx-item .ti-amount {
+    text-align: right; flex-shrink: 0;
+  }
+  .tx-item .ti-amount .ta-val {
+    font-family: var(--font-mono); font-size: var(--fs-body-lg); font-weight: var(--fw-bold);
+  }
+  .tx-item.send .ti-amount .ta-val { color: var(--danger); }
+  .tx-item.receive .ti-amount .ta-val { color: var(--success); }
+  .tx-item .ti-amount .ta-fiat {
+    font-size: var(--fs-meta); color: var(--text2); margin-top: 1px;
+  }
+
+  .empty-state {
+    text-align: center; padding: 60px 24px;
+    color: var(--text2);
+  }
+  .empty-state .es-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+  }
+  .empty-state .es-icon svg {
+    stroke: var(--text3); stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    width: 32px; height: 32px;
+  }
+  .empty-state .es-title {
+    font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty-state .es-sub { font-size: var(--fs-body); line-height: var(--lh-relaxed); }
+</style>
+</head>
+<body class="theme-dark">
+<div class="phone theme-dark" id="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">История</div>
+    <button class="action-btn" id="searchBtn" aria-label="Поиск">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </button>
+  </div>
+
+  <div class="scroll-area content-wrap" id="contentWrap">
+
+    <!-- Filter chips -->
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-chip active" data-filter="all">Все</button>
+      <button class="filter-chip" data-filter="send">Отправленные</button>
+      <button class="filter-chip" data-filter="receive">Полученные</button>
+      <button class="filter-chip" data-filter="swap">Обмены</button>
+      <button class="filter-chip" data-filter="pending">В обработке</button>
+    </div>
+
+    <!-- Today -->
+    <div class="date-section" data-section="today">Сегодня</div>
+    <button class="tx-item receive" data-tx="1">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">От @bob</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#26A17B"></span> USDT · 14:32</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">+150.00 USDT</div>
+        <div class="ta-fiat">≈ $150.00</div>
+      </div>
+    </button>
+    <button class="tx-item send" data-tx="2">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">→ @alice</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#6D4AFF"></span> MDAO · 11:08</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−50.00 MDAO</div>
+        <div class="ta-fiat">≈ $18.30</div>
+      </div>
+    </button>
+    <button class="tx-item pending" data-tx="3">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">→ @carl</span><span class="ti-badge pending">В обработке</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#F0B90B"></span> BNB · 09:45</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−0.05 BNB</div>
+        <div class="ta-fiat">≈ $29.85</div>
+      </div>
+    </button>
+
+    <!-- Yesterday -->
+    <div class="date-section">Вчера</div>
+    <button class="tx-item swap" data-tx="4">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">Обмен USDT → MDAO</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#26A17B"></span> → <span class="ts-token" style="background:#6D4AFF"></span> · 22:14</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−100.00 USDT</div>
+        <div class="ta-fiat">≈ $100.00</div>
+      </div>
+    </button>
+    <button class="tx-item receive" data-tx="5">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">От @alice</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#2775CA"></span> USDC · 18:50</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">+500.00 USDC</div>
+        <div class="ta-fiat">≈ $500.00</div>
+      </div>
+    </button>
+    <button class="tx-item failed" data-tx="6">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">→ @bob</span><span class="ti-badge failed">Не удалось</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#26A17B"></span> USDT · 12:20</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−25.00 USDT</div>
+        <div class="ta-fiat">возврат</div>
+      </div>
+    </button>
+
+    <!-- This week -->
+    <div class="date-section">На этой неделе</div>
+    <button class="tx-item send" data-tx="7">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">→ @carl</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#26A17B"></span> USDT · 19 июня</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−300.00 USDT</div>
+        <div class="ta-fiat">≈ $300.00</div>
+      </div>
+    </button>
+    <button class="tx-item receive" data-tx="8">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">От @bob</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#F0B90B"></span> BNB · 17 июня</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">+0.25 BNB</div>
+        <div class="ta-fiat">≈ $149.25</div>
+      </div>
+    </button>
+    <button class="tx-item send" data-tx="9">
+      <div class="ti-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div class="ti-body">
+        <div class="ti-top"><span class="ti-title">→ @alice</span></div>
+        <div class="ti-sub"><span class="ts-token" style="background:#2775CA"></span> USDC · 15 июня</div>
+      </div>
+      <div class="ti-amount">
+        <div class="ta-val">−75.50 USDC</div>
+        <div class="ta-fiat">≈ $75.50</div>
+      </div>
+    </button>
+
+    <div style="text-align:center;padding:20px;color:var(--text3);font-size:var(--fs-meta);">
+      Загрузить ещё
+    </div>
+
+    <!-- Notif zone -->
+    <div class="notif-zone" id="notifZone">
+      <div class="notif-wave" id="notifWave"></div>
+      <div class="notif" id="notif">
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-icon info" id="notifIcon"></div>
+            <div class="notif-body">
+              <div class="notif-title" id="notifTitle">Готово</div>
+              <div class="notif-sub" id="notifSub"></div>
+            </div>
+          </div>
+          <div class="notif-details">
+            <div class="notif-amount" id="notifAmount"></div>
+            <div class="notif-commission" id="notifCommission"></div>
+          </div>
+          <button class="notif-action" id="notifAction">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="notif.js"></script>
+<script>
+(function(){
+  'use strict';
+  MDAONotif.init();
+  const phone = document.getElementById('phone');
+  MDAONotif.bindThemeCycle(phone);
+
+  // Filters
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      const f = c.dataset.filter;
+      // Filter items
+      document.querySelectorAll('.tx-item').forEach(item => {
+        const show = f === 'all' || item.classList.contains(f);
+        item.style.display = show ? 'flex' : 'none';
+      });
+      // Hide empty date sections
+      document.querySelectorAll('.date-section').forEach(s => {
+        let next = s.nextElementSibling;
+        let hasVisible = false;
+        while (next && !next.classList.contains('date-section')) {
+          if (next.classList.contains('tx-item') && next.style.display !== 'none') {
+            hasVisible = true; break;
+          }
+          next = next.nextElementSibling;
+        }
+        s.style.display = hasVisible ? 'block' : 'none';
+      });
+    });
+  });
+
+  // Tx item click
+  document.querySelectorAll('.tx-item').forEach(item => {
+    item.addEventListener('click', () => {
+      MDAONotif.show({ type:'info', title:'Скоро', sub:'Детали транзакции', pill:true });
+    });
+  });
+
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Скоро', sub:'Поиск по истории', pill:true });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    MDAONotif.show({ type:'info', title:'Назад', sub:'На главный экран', pill:true, autoDismiss:1500 });
+  });
+})();
+</script>
+</body>
+</html>
