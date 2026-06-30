@@ -67,12 +67,19 @@
 **Purpose:** ECDSA-based trust provider
 - verify() L19
 
-## Backend (19 .kt files)
+## Backend (20 .kt files)
+
+### PaymasterSigner.kt (80 lines) — NEW F-129
+**Purpose:** Signing abstraction for paymaster key
+- `PaymasterSigner` interface — `signDigest(digest): Triple<v,r,s>` (F-001)
+- `LocalPaymasterSigner` — Bouncy Castle ECDSASigner (dev/testnet only)
+- `KmsPaymasterSigner` — GCP Cloud KMS (⚠️ requires google-cloud-kms dependency)
 
 ### PaymasterService.kt (250 lines)
 - sign() L40 ⚠️ F-022
 - MAX_NONCE_GAP L25 ⚠️ F-016
 - fallbackPrices L114 ⚠️ F-017
+- Uses `PaymasterSigner` instead of raw `ECKeyPair` (F-129)
 
 ### AuthService.kt (180 lines)
 - hashPassword() L135 — PBKDF2 600k
@@ -93,12 +100,15 @@
 ### Application.kt (250 lines)
 - /sign route L160, /etherscan proxy L200 ⚠️ F-056
 - /auth/login, /auth/register L276-337 ⚠️ F-054 (no rate limit)
+- Paymaster signer factory L162 — `when { kmsKeyName → KmsPaymasterSigner, allowLocalSigning → LocalPaymasterSigner }` (F-129)
 
 ### RedisClient.kt, Database.kt
 - Over-sanitized error logs
 
 ### AppConfig.kt (100 lines)
 - Single RPC URL ⚠️ F-025
+- `kmsKeyName: String?` — GCP Cloud KMS key path (F-129)
+- `allowLocalSigning` prod guard — `init` throws if `!isTestnet && allowLocalSigning` (F-111)
 
 ## Relay (5 .ts files)
 
@@ -144,6 +154,17 @@
 
 ### BiometricManager.kt (40 lines)
 - BIOMETRIC_WEAK allowed ⚠️ F-062
+
+### GuardianUserOpBuilder.kt (554 lines)
+- applyPaymaster() L436 — `mdaoMaxAmount = 10_000 MDAO` for sponsored guardian ops (N-5)
+- acceptInviteAndRegister, approveRecovery, vetoRecovery
+
+### RecoveryUserOpBuilder.kt (280 lines)
+- buildRecoveryWithPaymaster — uses `signUserOp` (N-7: backend-signed, not local encode)
+
+### PaymasterClient.kt (230 lines)
+- signUserOp() L66 — full SignRequest to backend (F-130)
+- encodePaymasterAndData() L201 — deprecated, kept for compat (N-7 fixed)
 
 ### relay/Dockerfile
 - CMD wrangler dev ⚠️ F-042 (dev server in production)

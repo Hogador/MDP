@@ -36,6 +36,8 @@ data class AppConfig(
     val swapPrivateKey: String,
     // F-111: dev-only flag; production must use KMS
     val allowLocalSigning: Boolean = false,
+    // D-1 / F-129: GCP Cloud KMS key resource path
+    val kmsKeyName: String? = null,
 ) {
     init {
         // F-110: enforce Base64-encoded 256-bit key (44 chars minimum)
@@ -96,6 +98,11 @@ data class AppConfig(
             val swapPrivateKey = env["SWAP_PRIVATE_KEY"] ?: error("SWAP_PRIVATE_KEY is required — do not reuse PAYMASTER_PRIVATE_KEY for swap operations")
 
             val allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
+            val kmsKeyName = env["KMS_KEY_NAME"]
+
+            if (kmsKeyName != null && allowLocalSigning) {
+                throw IllegalStateException("KMS_KEY_NAME and ALLOW_LOCAL_SIGNING cannot both be set. Choose one.")
+            }
 
             if (trustedSigner.isNotBlank() && !ADDRESS_REGEX.matches(trustedSigner)) {
                 error("Invalid TRUSTED_SIGNER format: must be 0x-prefixed 40-char hex")
@@ -147,6 +154,7 @@ data class AppConfig(
                 relaySecret = relaySecret,
                 swapPrivateKey = Numeric.cleanHexPrefix(swapPrivateKey),
                 allowLocalSigning = allowLocalSigning,
+                kmsKeyName = kmsKeyName,
             )
         }
     }

@@ -78,7 +78,7 @@ private val ERC20_ALLOWANCE_SELECTOR = FunctionEncoder.encode(
 class PaymasterService(
     private val config: AppConfig,
     private val rpcManager: RpcProviderManager,
-    private val key: ECKeyPair,
+    private val signer: PaymasterSigner,
     private val priceOracle: PriceOracle,
 ) {
     private val log = LoggerFactory.getLogger(PaymasterService::class.java)
@@ -262,11 +262,11 @@ class PaymasterService(
             chainId = config.expectedChainId,
             verifyingContract = config.paymasterAddress
         )
-        // F-001: Sign the 32-byte EIP-712 digest directly using raw ECDSA.
+        // F-001: Sign the 32-byte EIP-712 digest using the configured signer.
         // Do NOT use Sign.signMessage() — it applies Hash.sha3() internally even
         // with needToHash=false, producing a signature over sha3(digest) instead of digest,
         // which is incompatible with Solidity's ecrecover.
-        val (v, r, s) = signEIP712Digest(hash, key)
+        val (v, r, s) = signer.signDigest(hash)
         val sigData = Numeric.toHexString(byteArrayOf(v) + r + s).removePrefix("0x")
         val magic = "22e325a297439656"
         val lenHex = Integer.toHexString(sigData.length / 2).padStart(4, '0')
@@ -306,39 +306,7 @@ class PaymasterService(
         return Hash.sha3(byteArrayOf(0x19, 0x01) + domainSeparator + structHash)
     }
 
-    // F-001: Sign a 32-byte EIP-712 digest directly using Bouncy Castle ECDSASigner.
-    // Returns (v, r, s) where v is 0 or 1 (not 27/28 — caller adjusts for Ethereum).
-    // ECDSASigner.generateSignature() does NOT hash the input, making it suitable for
-    // signing an already-hashed EIP-712 digest.
-    // F-001: Use Sign.CURVE_PARAMS (public) instead of Sign.CURVE (package-private in web3j 4.12.3).
-    private val curveParams = Sign.CURVE_PARAMS
-    private val domainParams = org.bouncycastle.crypto.params.ECDomainParameters(
-        curveParams.curve, curveParams.g, curveParams.n, curveParams.h
-    )
-
-    // F-001: Sign a 32-byte EIP-712 digest directly using Bouncy Castle ECDSASigner.
-    // Returns (v, r, s) where v is 27 or 28 (Ethereum-style recovery ID + 27).
-    // ECDSASigner.generateSignature() does NOT hash the input, making it suitable for
-    // signing an already-hashed EIP-712 digest.
-    internal fun signEIP712Digest(digest: ByteArray, k: ECKeyPair): Triple<Byte, ByteArray, ByteArray> {
-        val signer = ECDSASigner()
-        val privKey = ECPrivateKeyParameters(k.privateKey, domainParams)
-        signer.init(true, privKey)
-        val (r, s) = signer.generateSignature(digest)
-        val rBytes = Numeric.toBytesPadded(r, 32)
-        val sBytes = Numeric.toBytesPadded(s, 32)
-        // Determine recId (recovery ID, 0 or 1) by trying both possibilities
-        // ponytail: Use Web3j's Sign.recoverFromSignature (does NOT re-hash) instead of
-        // reimplementing EC point recovery ourselves.
-        val recId = (0..1).firstOrNull { rec ->
-            try {
-                val recoveredKey = Sign.recoverFromSignature(rec, ECDSASignature(r, s), digest)
-                recoveredKey == k.publicKey
-            } catch (_: RuntimeException) { false }
-        } ?: error("Cannot determine recovery ID for signature")
-        // Return Ethereum-style v (27 + recId) to match the paymasterAndData format
-        return Triple((27 + recId).toByte(), rBytes, sBytes)
-    }
+    // F-001 signing logic moved to LocalPaymasterSigner (PaymasterSigner.kt)
 
     // F-034: read quoteNonces[sender] from paymaster contract
     private suspend fun getQuoteNonce(sender: String): BigInteger = withWeb3j { web3j ->

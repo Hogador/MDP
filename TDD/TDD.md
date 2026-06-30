@@ -100,11 +100,11 @@ Signs a UserOperation for ERC-4337 gas sponsorship. Validates chain ID, nonce, D
 4. **Gas cost calculation** — `totalGas = verificationGasLimit + callGasLimit + preVerificationGas`; `gasCostWei = maxFeePerGas * totalGas`; `gasCostUsd = gasCostWei * bnbUsd / 1e18`
 5. **MDAO attempt** — parallel `eth_call` for balance + allowance (via `coroutineScope { async {} }`); if sufficient, sign with MDAO
 6. **USDT fallback** — if MDAO insufficient, check balance/allowance for USDT (done in same parallel batch)
-7. **Signing** — SHA3 hash of packed UserOp fields → **KMS remote signing** (key never materialized in app memory) → append to paymasterAndData
+7. **Signing** — `PaymasterSigner.signDigest()` — ECDSA signing abstracted via interface (F-129). Production: `KmsPaymasterSigner` (GCP Cloud KMS, key never materialized). Dev/test: `LocalPaymasterSigner` (ECKeyPair, only with `ALLOW_LOCAL_SIGNING=true` on non-mainnet). The interface returns (v, r, s) without double-hashing (F-001).
 
 Steps 3-6 are parallelized via `coroutineScope { async {} }`, reducing RPC hops from ~5 sequential to ~1 (parallel batch of `eth_call` for balances + allowances). JSON-RPC batching further combines 4 `eth_call` requests into 1 HTTP round-trip.
 
-> **Key security:** `PAYMASTER_PRIVATE_KEY` must use KMS remote signing (GCP Cloud KMS or AWS KMS). The private key never exists in application memory or environment variables. The signing service calls `kms.sign()` via gRPC/HTTP API. Fallback: env-var signing for non-production environments only, with explicit `ALLOW_LOCAL_SIGNING=true` flag.
+> **Key security:** `PAYMASTER_PRIVATE_KEY` must use KMS remote signing (GCP Cloud KMS or AWS KMS). The private key never exists in application memory or environment variables. The signing service calls `kms.sign()` via gRPC/HTTP API. Fallback: `LocalPaymasterSigner` for non-production environments only, with explicit `ALLOW_LOCAL_SIGNING=true` flag. `AppConfig.init` throws if `!isTestnet && allowLocalSigning` (F-111). `AppConfig.fromEnv()` rejects `KMS_KEY_NAME + ALLOW_LOCAL_SIGNING` together.
 
 **Error responses:**
 ```json

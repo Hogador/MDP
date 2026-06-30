@@ -106,10 +106,11 @@ class RecoveryUserOpBuilder @Inject constructor(
         }
     }
 
+    // N-7: use signUserOp (backend-signed) instead of encodePaymasterAndData (unsigned)
     suspend fun buildRecoveryWithPaymaster(
         smartAccountAddress: String,
-        token: String,
-        maxTokenAmount: BigInteger
+        mdaoMaxAmount: BigInteger? = null,
+        usdtMaxAmount: BigInteger? = null,
     ): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         try {
             val walletData = walletManager.getWalletData()
@@ -145,11 +146,6 @@ class RecoveryUserOpBuilder @Inject constructor(
 
             val initCode: ByteArray = if (deployed) ByteArray(0) else buildInitCode(keyPair)
 
-            val paymasterAndData = paymasterClient.encodePaymasterAndData(
-                token = token,
-                maxTokenAmount = maxTokenAmount
-            )
-
             var callGasLimit = BigInteger.valueOf(200_000)
             var verificationGasLimit = BigInteger.valueOf(150_000)
             var preVerificationGas = BigInteger.valueOf(50_000)
@@ -164,7 +160,7 @@ class RecoveryUserOpBuilder @Inject constructor(
                 preVerificationGas = preVerificationGas,
                 maxFeePerGas = BigInteger.valueOf(1_500_000_000),
                 maxPriorityFeePerGas = BigInteger.valueOf(1_000_000_000),
-                paymasterAndData = paymasterAndData
+                paymasterAndData = ByteArray(0)
             )
 
             val gasEstimate = bundlerClient.estimateUserOperationGas(userOp, NetworkConfig.ENTRY_POINT)
@@ -174,11 +170,31 @@ class RecoveryUserOpBuilder @Inject constructor(
                 preVerificationGas = gas.preVerificationGas
             }
 
-            val finalOp = userOp.copy(
+            val signed = paymasterClient.signUserOp(
+                sender = userOp.sender,
+                nonce = userOp.nonce,
+                initCode = userOp.initCode,
+                callData = userOp.callData,
+                verificationGasLimit = verificationGasLimit,
+                callGasLimit = callGasLimit,
+                preVerificationGas = preVerificationGas,
+                maxPriorityFeePerGas = userOp.maxPriorityFeePerGas,
+                maxFeePerGas = userOp.maxFeePerGas,
+                mdaoMaxAmount = mdaoMaxAmount,
+                usdtMaxAmount = usdtMaxAmount,
+            )
+
+            val finalOp = UserOperation(
+                sender = userOp.sender,
+                nonce = userOp.nonce,
+                initCode = userOp.initCode,
+                callData = userOp.callData,
                 callGasLimit = callGasLimit,
                 verificationGasLimit = verificationGasLimit,
                 preVerificationGas = preVerificationGas,
-                paymasterAndData = paymasterAndData
+                maxFeePerGas = userOp.maxFeePerGas,
+                maxPriorityFeePerGas = userOp.maxPriorityFeePerGas,
+                paymasterAndData = Numeric.hexStringToByteArray(signed.paymasterAndData)
             )
 
             val userOpHash = finalOp.computeUserOpHash(NetworkConfig.ENTRY_POINT, NetworkConfig.CHAIN_ID)

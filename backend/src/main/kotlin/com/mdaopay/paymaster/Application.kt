@@ -159,7 +159,24 @@ fun main() {
         }
     }
 
-    val paymasterKey = ECKeyPair.create(Numeric.hexStringToByteArray(config.privateKey))
+    val paymasterSigner: PaymasterSigner = when {
+        config.kmsKeyName != null -> {
+            log.info("D-1: Initializing KmsPaymasterSigner with key={}", config.kmsKeyName)
+            // ponytail: KMS client requires google-cloud-kms dependency.
+            // When implemented, replace with: KmsPaymasterSigner(kmsClient, config.kmsKeyName)
+            throw UnsupportedOperationException(
+                "KMS signing not yet implemented. Add com.google.cloud:google-cloud-kms dependency and implement KmsPaymasterSigner."
+            )
+        }
+        config.allowLocalSigning -> {
+            log.warn("D-1: Using LocalPaymasterSigner — only safe for testnets!")
+            val pkBytes = Numeric.hexStringToByteArray(config.privateKey)
+            val key = ECKeyPair.create(pkBytes)
+            java.util.Arrays.fill(pkBytes, 0.toByte())
+            LocalPaymasterSigner(key)
+        }
+        else -> error("Either KMS_KEY_NAME or ALLOW_LOCAL_SIGNING=true must be set")
+    }
 
     val priceSources = listOf(
         DexScreenerSource(config.wbnbAddress, config.usdtAddress, config.mdaoAddress),
@@ -171,7 +188,7 @@ fun main() {
         priceOracle.close()
         rpcManager.close()
     })
-    val service = PaymasterService(config, rpcManager, paymasterKey, priceOracle)
+    val service = PaymasterService(config, rpcManager, paymasterSigner, priceOracle)
 
     NicknameService.loadFromRedis()
 

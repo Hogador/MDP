@@ -435,6 +435,9 @@ class GuardianUserOpBuilder @Inject constructor(
      */
     private suspend fun applyPaymaster(userOp: UserOperation): UserOperation {
         return try {
+            // N-5: Guardian ops are sponsored by the project treasury.
+            // Pass generous maxAmount so backend can sign regardless of guardian's balance.
+            val sponsoredMax = BigInteger.valueOf(10_000).multiply(BigInteger.TEN.pow(18))
             val response = paymasterClient.signUserOp(
                 sender = userOp.sender,
                 nonce = userOp.nonce,
@@ -445,7 +448,7 @@ class GuardianUserOpBuilder @Inject constructor(
                 preVerificationGas = userOp.preVerificationGas,
                 maxPriorityFeePerGas = userOp.maxPriorityFeePerGas,
                 maxFeePerGas = userOp.maxFeePerGas,
-                mdaoMaxAmount = null,
+                mdaoMaxAmount = sponsoredMax,
                 usdtMaxAmount = null,
             )
             userOp.copy(paymasterAndData = Numeric.hexStringToByteArray(response.paymasterAndData))

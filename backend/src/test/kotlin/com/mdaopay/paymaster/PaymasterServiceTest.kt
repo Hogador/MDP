@@ -48,7 +48,8 @@ class PaymasterServiceTest {
     private val rpcManager: RpcProviderManager = mockk()
     private val priceOracle: PriceOracle = mockk()
     private val key: ECKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(config.privateKey))
-    private val service = PaymasterService(config, rpcManager, key, priceOracle)
+    private val signer: PaymasterSigner = LocalPaymasterSigner(key)
+    private val service = PaymasterService(config, rpcManager, signer, priceOracle)
 
     @AfterEach
     fun tearDown() {
@@ -262,11 +263,11 @@ class PaymasterServiceTest {
         assertEquals(expectedAddress.lowercase(), recoveredAddress.lowercase(), "EIP-712 signature must recover to trusted signer")
     }
 
-    // F-022: Verify that signEIP712Digest + Sign.recoverFromSignature are consistent
+    // F-022: Verify that LocalPaymasterSigner.signDigest + Sign.recoverFromSignature are consistent
     @Test
     fun `testSignAndVerifyHashConsistency`() {
         val digest = Hash.sha3("test data for hash consistency check".toByteArray())
-        val (v, r, s) = service.signEIP712Digest(digest, key)
+        val (v, r, s) = signer.signDigest(digest)
         val recoveredKey = Sign.recoverFromSignature(v.toInt() - 27, ECDSASignature(BigInteger(1, r), BigInteger(1, s)), digest)
         assertEquals(key.publicKey, recoveredKey, "Sign.recoverFromSignature should return the original public key")
     }
