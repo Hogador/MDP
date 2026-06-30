@@ -1,60 +1,91 @@
+# ——— IDE ———
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+
+# ——— Android / Kotlin ———
+.gradle/
+build/
+app/build/
+backend/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
 local.properties
+*.kotlin_module
 
-# Database and project backups
-backups/
-.backup/
+# ——— Backend (Kotlin/Gradle) ———
+backend/.kotlin/
+backend/out/
 
-# Forge broadcast artifacts
+# ——— Foundry / Solidity ———
+contracts/out/
+contracts/cache/
 contracts/broadcast/
 
-# Third-party agent skills (antigravity, external)
-.agents/
-
-# Environment files — secrets
-.env
-.env.*
-*.env
-
-# Firebase config (generated per-environment)
-google-services.json
-app/google-services.json
-
-# Build artifacts
-build/
-out/
-cache/
-
-# Node.js
+# ——— Node.js ———
 node_modules/
 relay/node_modules/
 
-# Foundry
-contracts/out/
-contracts/cache/
+# ——— Secrets & Config ———
+.env
+.env.*
+*.env
+google-services.json
+app/google-services.json
+secrets/
+*.key
+*.pem
+*.jks
+*.keystore
+*.p12
 
-# OS
+# ——— Logs & Temp ———
+*.log
+*.tmp
+*.swp
+*.swo
+*.hprof
+crashlytics-*
+*.crash
+
+# ——— Docker ———
+docker-compose.override.yml
+
+# ——— Python ———
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ——— OS ———
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# IDE
-.idea/
+# —── Backups ———
+backups/
+.backup/
+*.bak
 
-# OpenCode config (contains API tokens)
+# ——— OpenCode (AI config) ———
 .config/opencode/
 .opencode/opencode-swarm.json
-backend/.kotlin/
-*.bak
+.opencode/*.bak
+
+# ——— Misc ———
+out/
+cache/
+.terraform/
+*.tfstate
+*.tfstate.backup
+.history/
