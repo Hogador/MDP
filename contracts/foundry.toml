@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+solc = "0.8.28"
 fuzz_runs = 10000
 invariant_runs = 1000
 invariant_depth = 100

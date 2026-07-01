@@ -132,11 +132,12 @@ fun main() {
 
     config.databaseUrl?.let { url ->
         runMigrations(url)
-        val ds = createDataSource(url)
+        val poolSize = System.getenv("DB_POOL_SIZE")?.toIntOrNull() ?: 25
+        val ds = createDataSource(url, poolSize)
         appMetrics.dataSource = ds
         NicknameService.repo = NicknameRepository(ds)
         authService = AuthService(AuthRepository(ds), config.jwtSecret)
-        log.info("Database connected and migrated")
+        log.info("Database connected and migrated (pool=$poolSize)")
     }
 
     config.nicknameRegistryAddress?.let { addr ->
@@ -181,8 +182,9 @@ fun main() {
     val priceSources = listOf(
         DexScreenerSource(config.wbnbAddress, config.usdtAddress, config.mdaoAddress),
         CoinGeckoSource(),
+        BinancePriceSource(),
     )
-    val priceOracle = PriceOracle(priceSources)
+    val priceOracle = PriceOracle(priceSources, isTestnet = config.isTestnet)
     Runtime.getRuntime().addShutdownHook(Thread {
         log.info("Shutting down — closing resources")
         priceOracle.close()

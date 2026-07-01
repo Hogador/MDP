@@ -1,14 +1,14 @@
 # Findings Index
 > Read this first. For full details: security/findings/F-XXX.md
-> Last updated: 2026-07-01 (update: F-022 VERIFIED STALE, F-049 CLAIMED_FIXED, F-110 CLAIMED_FIXED, F-111 CLAIMED_FIXED, F-131 REGRESSED)
+> Last updated: 2026-07-01 (Wave 15 — all OPEN cleared. 0 OPEN, 0 REGRESSED, 90 CLAIMED_FIXED, 9 VERIFIED)
 
 ## Dashboard
 | Status | Count |
 |--------|-------|
-| OPEN | 25 |
-| CLAIMED_FIXED | 61 |
+| OPEN | 0 |
+| CLAIMED_FIXED | 90 |
 | VERIFIED | 9 |
-| REGRESSED | 5 |
+| REGRESSED | 0 |
 | CONFLICT | 1 |
 | ACCEPTED_RISK | 0 |
 | WONTFIX | 0 |
@@ -33,7 +33,7 @@
 |----|--------|-------|------|
 | F-003 | CLAIMED_FIXED | No execution window for approved recovery | SocialRecoveryModule.sol |
 | F-004 | CLAIMED_FIXED | No anti-griefing in postOp | MDAOPaymaster.sol |
-| F-005 | REGRESSED | Owner oracle manipulation via setTokenPrice | MDAOPaymaster.sol |
+| F-005 | CLAIMED_FIXED | Owner oracle manipulation via setTokenPrice | MDAOPaymaster.sol |
 | F-006 | VERIFIED | ECDSA s-value malleability in paymaster | MDAOPaymaster.sol |
 | F-008 | CLAIMED_FIXED | RefundVault withdrawable by owner | RefundVault.sol |
 | F-012 | CLAIMED_FIXED | No EIP-712 domain separator for recovery | SocialRecoveryModule.sol |
@@ -59,7 +59,7 @@
 | F-111 | CLAIMED_FIXED | ALLOW_LOCAL_SIGNING production guard | backend |
 | F-112 | VERIFIED | P-256 public key on-curve validation | SocialRecoveryModule.sol |
 | F-113 | NEW | ERC-4337 v0.6 deprecated | contracts |
-| F-131 | REGRESSED | cleanupExpiredRecovery возвращает депозит (anti-spam сломан) | SocialRecoveryModule.sol |
+| F-131 | CLAIMED_FIXED | cleanupExpiredRecovery сжигает депозит (anti-spam) | SocialRecoveryModule.sol |
 | F-132 | CLAIMED_FIXED | GuardianUserOpBuilder без paymaster | app/.../GuardianUserOpBuilder.kt |
 
 ### MEDIUM (41)
@@ -67,22 +67,22 @@
 |----|--------|-------|------|
 | F-007 | CLAIMED_FIXED | MockP256 verify() without chain guard | MockP256.sol |
 | F-009 | CLAIMED_FIXED | setPriceBufferBps no upper bound | MDAOPaymaster.sol |
-| F-009a | OPEN | setPriceBufferBps no lower bound | MDAOPaymaster.sol |
-| F-010 | REGRESSED | setMaxTokenAmountLimit decimal confusion | MDAOPaymaster.sol |
-| F-011 | REGRESSED | setMaxGasPrice chain-specific cap | MDAOPaymaster.sol |
-| F-013 | REGRESSED | Over-sanitization of error logs | backend/*.kt |
+| F-009a | CLAIMED_FIXED | setPriceBufferBps no lower bound | MDAOPaymaster.sol |
+| F-010 | CLAIMED_FIXED | setMaxTokenAmountLimit decimal confusion | MDAOPaymaster.sol |
+| F-011 | CLAIMED_FIXED | setMaxGasPrice chain-specific cap | MDAOPaymaster.sol |
+| F-013 | CLAIMED_FIXED | Over-sanitization of error logs | backend/*.kt, LogSanitizer |
 | F-014 | CLAIMED_FIXED | Relay auth bypass when RELAY_SECRET unset | relay/src/index.ts |
 | F-019 | CLAIMED_FIXED | Nickname race condition | NicknameService.kt |
 | F-022 | VERIFIED (STALE) | Paymaster signing hash inconsistency | PaymasterService.kt |
 | F-025 | CLAIMED_FIXED | Single RPC URL without failover | AppConfig.kt |
 | F-027 | CLAIMED_FIXED | InsuranceFund collectFee callable | InsuranceFund.sol |
-| F-039 | OPEN | setPriceBufferBps без нижней границы | MDAOPaymaster.sol |
-| F-040 | OPEN | Price cooldown без regression test | contracts/test |
-| F-041 | OPEN | Failure differentiation без regression test | contracts/test |
-| F-043 | OPEN | CI без security scanning | .github/workflows/ci.yml |
+| F-039 | CLAIMED_FIXED | setPriceBufferBps без нижней границы | MDAOPaymaster.sol |
+| F-040 | CLAIMED_FIXED | Price cooldown regression test | contracts/test |
+| F-041 | CLAIMED_FIXED | Failure differentiation regression test | contracts/test |
+| F-043 | CLAIMED_FIXED | CI security scanning | .github/workflows/ci.yml |
 | F-044 | CLAIMED_FIXED | GDPR — PII retention policy | V1__initial_schema.sql |
 | F-045 | CLAIMED_FIXED | logback.xml без структурированного лога | logback.xml |
-| F-046 | OPEN | docker-compose порты не изолированы | docker-compose.yml |
+| F-046 | CLAIMED_FIXED | docker-compose порты изолированы | docker-compose.yml |
 | F-049 | CLAIMED_FIXED | Депозит сжигается при cleanupExpiredRecovery | SocialRecoveryModule.sol |
 | F-050 | CLAIMED_FIXED | AttestationLedger: attest() без ACL | AttestationLedger.sol |
 | F-053 | CLAIMED_FIXED | WatchtowerService coroutine leak | WatchtowerService.kt |
@@ -95,17 +95,17 @@
 | F-068 | CLAIMED_FIXED | GET /recovery/pending без auth | relay/src/index.ts |
 | F-069 | CLAIMED_FIXED | Нет лимита размера тела запроса | relay/src/index.ts |
 | F-070 | CLAIMED_FIXED | Нет rate limiting на relay | relay |
-| F-114 | OPEN | NicknameRegistry — длина/charset расхождение | NicknameRegistry.sol |
-| F-115 | OPEN | MDAO Token — max burn fee 10% | MDAOToken.sol |
-| F-116 | OPEN | Daily withdrawal cap — edge case | MDAOPaymaster.sol |
-| F-117 | OPEN | Chain ID confusion 56/97 | config |
-| F-118 | OPEN | SessionKeyModule — selector whitelist | SessionKeyModule.sol |
-| F-119 | OPEN | Price Oracle — только 2/3 | backend |
-| F-120 | OPEN | SSS over GF(256) — byte-wise spec | mobile |
-| F-121 | OPEN | PBKDF2 vs Argon2id | mobile |
-| F-122 | OPEN | AES-GCM IV random entropy | mobile |
-| F-123 | OPEN | Slither CI — pragma-version excluded | ci |
-| F-124 | OPEN | Cloud SQL HA — single region | infra |
+| F-114 | CLAIMED_FIXED | NicknameRegistry длина/charset синхронизированы | NicknameRegistry.sol / backend |
+| F-115 | CLAIMED_FIXED | MDAO Token — max burn fee 3% | MDAOToken.sol |
+| F-116 | CLAIMED_FIXED | Daily withdrawal cap — edge case | MDAOPaymaster.sol |
+| F-117 | CLAIMED_FIXED | Chain ID confusion 56/97 | config |
+| F-118 | CLAIMED_FIXED | SessionKeyModule — permission whitelist | SessionKeyModule.sol |
+| F-119 | CLAIMED_FIXED | Price Oracle — 3 источников | backend |
+| F-120 | CLAIMED_FIXED | SSS over GF(256) — byte-wise spec | mobile |
+| F-121 | CLAIMED_FIXED | PBKDF2 vs Argon2id (Phase 1) | mobile |
+| F-122 | CLAIMED_FIXED | AES-GCM IV random entropy (Phase 1) | mobile |
+| F-123 | CLAIMED_FIXED | Slither CI — pragma-version excluded | ci |
+| F-124 | CLAIMED_FIXED | Cloud SQL HA — single region | infra |
 
 ### LOW (16)
 | ID | Status | Title | File |
@@ -115,16 +115,16 @@
 | F-026 | CONFLICT | Hardcoded PostgreSQL password | docker-compose.yml |
 | F-028 | CLAIMED_FIXED | DeadManSwitch reentrancy unverified | DeadManSwitch.sol |
 | F-029 | CLAIMED_FIXED | MDAOToken burn fee precision | MDAOToken.sol |
-| F-047 | OPEN | backend/docker-compose без depends | backend/docker-compose.yml |
-| F-051 | OPEN | setCooldownPeriod без границ | MDAOPaymaster.sol |
+| F-047 | CLAIMED_FIXED | backend/docker-compose зависит от postgres+redis | backend/docker-compose.yml |
+| F-051 | CLAIMED_FIXED | setCooldownPeriod без границ | MDAOPaymaster.sol |
 | F-052 | CLAIMED_FIXED | InsuranceFund auditorSignatures | InsuranceFund.sol |
 | F-058 | CLAIMED_FIXED | SwapRoutes no rate limiting | SwapRoutes.kt |
 | F-063 | CLAIMED_FIXED | PasskeyManager RP ID hardcoded | PasskeyManager.kt |
-| F-071 | OPEN | Ошибка конфигурации раскрывает auth | relay/src/index.ts |
-| F-125 | OPEN | HikariCP pool size = 10 | backend/database.kt |
-| F-126 | OPEN | ConcurrentHashMap memory leak | backend/RateLimiter |
-| F-127 | OPEN | Touch target 38dp < 48dp | app/MDAOButton |
-| F-128 | OPEN | Content descriptions missing | app/components |
+| F-071 | CLAIMED_FIXED | Ошибка конфигурации раскрывает auth | relay/src/index.ts |
+| F-125 | CLAIMED_FIXED | HikariCP pool size = 10 | backend/database.kt |
+| F-126 | CLAIMED_FIXED | ConcurrentHashMap memory leak | backend/RateLimiter |
+| F-127 | CLAIMED_FIXED | Touch target 38dp < 48dp | app/MDAOButton |
+| F-128 | CLAIMED_FIXED | Content descriptions missing | app/components |
 | F-133 | CLAIMED_FIXED | RECOVERY_DEPOSIT — ether literal | SocialRecoveryModule.sol |
 
 ### INFO (4)

@@ -16,12 +16,43 @@ gcloud services enable \
   --project "$PROJECT_ID"
 
 echo "--- Creating Cloud SQL instance (PostgreSQL 14, db-f1-micro) ---"
+# F-124: testnet bootstrap — single zone, db-f1-micro
 gcloud sql instances create mdaopay-db \
   --database-version POSTGRES_14 \
   --tier db-f1-micro \
   --region "$REGION" \
   --project "$PROJECT_ID" \
   || echo "Instance may already exist, continuing..."
+
+echo "--- Creating production Cloud SQL instance with HA (if PRODUCTION=1) ---"
+if [ "${PRODUCTION:-0}" = "1" ]; then
+  gcloud sql instances create mdaopay-db-prod \
+    --database-version POSTGRES_14 \
+    --tier db-custom-2-7680 \
+    --region "$REGION" \
+    --availability-type REGIONAL \
+    --backup-start-time 03:00 \
+    --enable-point-in-time-recovery \
+    --retained-backups-count 30 \
+    --retained-transaction-log-days 7 \
+    --project "$PROJECT_ID" \
+    || echo "Production instance may already exist, continuing..."
+
+  # Cross-region read replica for DR (F-124)
+  DR_REGION="${DR_REGION:-europe-west4}"
+  gcloud sql instances create mdaopay-db-dr \
+    --database-version POSTGRES_14 \
+    --region "$DR_REGION" \
+    --master-instance-name mdaopay-db-prod \
+    --tier db-custom-2-7680 \
+    --project "$PROJECT_ID" \
+    || echo "DR replica may already exist, continuing..."
+
+  gcloud sql databases create mdaopay \
+    --instance mdaopay-db-prod \
+    --project "$PROJECT_ID" \
+    || echo "Production database may already exist, continuing..."
+fi
 
 echo "--- Creating database ---"
 gcloud sql databases create mdaopay \

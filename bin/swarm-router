@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# swarm-router — запуск Swarm v9.0 через opencode TUI
+# Coordinator — primary агент, вызывается по умолчанию
+
+set -euo pipefail
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Если без аргументов — открываем TUI с Coordinator'ом
+if [ $# -eq 0 ]; then
+  echo "Запуск opencode TUI с Coordinator'ом (primary агент)..."
+  echo ""
+  echo "В TUI вы можете:"
+  echo "  - Описать задачу Coordinator'у напрямую (он сам роутит)"
+  echo "  - Указать режим: 'audit scope=full', 'feature F-102', 'roadmap target=testnet'"
+  echo ""
+  if command -v opencode >/dev/null 2>&1; then
+    exec opencode
+  else
+    echo "Ошибка: opencode не установлен"
+    echo "Установка: curl -fsSL https://opencode.ai/install | bash"
+    exit 1
+  fi
+fi
+
+# Парсинг аргументов для CLI-режима (не TUI)
+MODE=""
+SCOPE=""
+TASK=""
+TASK_ID=""
+TARGET=""
+ACTION=""
+DRY_RUN=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --mode=*)     MODE="${arg#*=}" ;;
+    --scope=*)    SCOPE="${arg#*=}" ;;
+    --task=*)     TASK="${arg#*=}" ;;
+    --task-id=*)  TASK_ID="${arg#*=}" ;;
+    --target=*)   TARGET="${arg#*=}" ;;
+    --action=*)   ACTION="${arg#*=}" ;;
+    --dry-run)    DRY_RUN=1 ;;
+    --help|-h)
+      cat <<USAGE
+Swarm v9.0 — запуск через opencode TUI
+
+ПРОСТОЙ СПОСОБ: запустите 'opencode' и пишите Coordinator'у на русском:
+  "привет"                          → покажет меню
+  "аудит смарт-контрактов"          → запустит аудит
+  "внедри OAuth"                    → запустит feature
+  "почини reentrancy в Payment"     → запустит bug
+  "объясни Payment.sol"             → запустит explain
+  "что осталось до testnet?"        → запустит roadmap
+
+CLI СПОСОБ (этот скрипт):
+
+ИСПОЛЬЗОВАНИЕ:
+  swarm-router                    # открыть TUI с Coordinator'ом (по умолчанию)
+  swarm-router --mode=<mode> [опции]  # CLI-режим
+
+РЕЖИМЫ (передаются в Coordinator как первая фраза):
+  --mode=audit       Внешний аудит (5 Researcher параллельно)
+  --mode=feature     Внедрение новой функции
+  --mode=bug         Исправление бага
+  --mode=explain     Объяснение существующего кода
+  --mode=roadmap     Gap-анализ до стадии
+  --mode=lessons     Принудительный lessons-learned
+  --mode=evolution   Принудительный evolution-manager
+
+ОПЦИИ:
+  --scope=full|smart-contracts|crypto|mobile|devops  (для audit)
+  --task="<описание>"                                (для feature/bug)
+  --task-id=F-NNN                                    (опционально)
+  --target=localnet|testnet|mainnet                  (для roadmap)
+  --action=gap-analysis|add|next                     (для roadmap)
+  --dry-run                                          показать план
+
+ПРИМЕРЫ:
+  swarm-router                                          # TUI
+  swarm-router --mode=audit --scope=full                # CLI: полный аудит
+  swarm-router --mode=feature --task="Добавить OAuth"   # CLI: фича
+  swarm-router --mode=roadmap --target=testnet --action=gap-analysis
+
+В TUI можно просто писать Coordinator'у:
+  "сделай полный аудит"
+  "внедри F-102 PaymentSplitter"
+  "что осталось до testnet?"
+  "объясни contracts/Payment.sol"
+USAGE
+      exit 0
+      ;;
+    *) echo "Неизвестный аргумент: $arg"; exit 1 ;;
+  esac
+done
+
+if [ -z "$MODE" ]; then
+  echo "Запуск TUI..."
+  exec opencode
+fi
+
+# Формируем промт для Coordinator'а в CLI-режиме
+PROMPT=""
+case "$MODE" in
+  audit)
+    [ -z "$SCOPE" ] && SCOPE="full"
+    PROMPT="Запусти режим audit со scope=$SCOPE"
+    ;;
+  feature)
+    if [ -z "$TASK" ]; then echo "Ошибка: --task обязателен для feature"; exit 1; fi
+    PROMPT="Запусти режим feature для задачи: $TASK"
+    [ -n "$TASK_ID" ] && PROMPT="$PROMPT (ID: $TASK_ID)"
+    ;;
+  bug)
+    if [ -z "$TASK" ]; then echo "Ошибка: --task обязателен для bug"; exit 1; fi
+    PROMPT="Запусти режим bug для проблемы: $TASK"
+    [ -n "$TASK_ID" ] && PROMPT="$PROMPT (ID: $TASK_ID)"
+    ;;
+  explain)
+    if [ -z "$TARGET" ]; then echo "Ошибка: --target обязателен для explain"; exit 1; fi
+    PROMPT="Запусти режим explain для: $TARGET"
+    ;;
+  roadmap)
+    if [ -z "$TARGET" ] || [ -z "$ACTION" ]; then
+      echo "Ошибка: --target и --action обязательны для roadmap"; exit 1
+    fi
+    PROMPT="Запусти режим roadmap target=$TARGET action=$ACTION"
+    [ -n "$TASK" ] && PROMPT="$PROMPT задача: $TASK"
+    ;;
+  lessons)
+    PROMPT="Запусти режим lessons (принудительный lessons-learned)"
+    ;;
+  evolution)
+    PROMPT="Запусти режим evolution (принудительный evolution-manager)"
+    ;;
+  *)
+    echo "Неизвестный режим: $MODE"; exit 1
+    ;;
+esac
+
+if [ "$DRY_RUN" = "1" ]; then
+  echo "[dry-run] Координатор получил бы промт:"
+  echo ""
+  echo "  $PROMPT"
+  echo ""
+  exit 0
+fi
+
+# Реальный запуск opencode с промтом для Coordinator'а
+if command -v opencode >/dev/null 2>&1; then
+  exec opencode run "$PROMPT"
+else
+  echo "Ошибка: opencode не установлен"
+  echo "Установка: curl -fsSL https://opencode.ai/install | bash"
+  exit 1
+fi

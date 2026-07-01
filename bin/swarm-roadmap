@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# swarm-roadmap — shorthand для swarm-router --mode=roadmap
+set -euo pipefail
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/swarm-router" --mode=roadmap "$@"

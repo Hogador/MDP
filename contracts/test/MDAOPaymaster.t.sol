@@ -400,6 +400,38 @@ contract MDAOPaymasterTest is Test {
         paymaster.deposit{value: 0.5 ether}();
     }
 
+    // F-009a/F-039: MIN_PRICE_BUFFER_BPS = 100 reverts below
+    function test_SetPriceBufferBpsBelowMinimumReverts() public {
+        vm.prank(paymaster.owner());
+        vm.expectRevert(MDAOPaymaster.PriceBufferTooLow.selector);
+        paymaster.setPriceBufferBps(99);
+    }
+
+    function test_SetPriceBufferBpsAtMinimumSucceeds() public {
+        vm.prank(paymaster.owner());
+        paymaster.setPriceBufferBps(100);
+        assertEq(paymaster.priceBufferBps(), 100);
+    }
+
+    // F-051: bound checks on setCooldownPeriod
+    function test_SetCooldownPeriodBelowMinimumReverts() public {
+        vm.prank(paymaster.owner());
+        vm.expectRevert(MDAOPaymaster.CooldownOutOfBounds.selector);
+        paymaster.setCooldownPeriod(30); // 30 seconds < 1 minute
+    }
+
+    function test_SetCooldownPeriodAboveMaximumReverts() public {
+        vm.prank(paymaster.owner());
+        vm.expectRevert(MDAOPaymaster.CooldownOutOfBounds.selector);
+        paymaster.setCooldownPeriod(8 days); // 8 days > 7 days
+    }
+
+    function test_SetCooldownPeriodAtMinimumSucceeds() public {
+        vm.prank(paymaster.owner());
+        paymaster.setCooldownPeriod(1 minutes);
+        assertEq(paymaster.cooldownPeriod(), 1 minutes);
+    }
+
     function test_SetPermitSupport() public {
         mdao.mint(alice, 1000e18);
         (uint8 v, bytes32 r, bytes32 s) = _signPermit(alice, ALICE_KEY, address(paymaster), 1000e18, block.timestamp + 1 hours);
@@ -1236,6 +1268,54 @@ contract MDAOPaymasterTest is Test {
         vm.prank(paymaster.owner());
         vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.PriceChangeTooHigh.selector));
         paymaster.setTokenPrice(newToken, bigPrice);
+    }
+
+    // F-005 regression: cooldown prevents compound price manipulation
+    function test_RevertWhen_PriceUpdateCooldownActive() public {
+        address tk = makeAddr("testToken");
+        uint256 p = 1000e18;
+
+        vm.prank(paymaster.owner());
+        paymaster.setTokenPrice(tk, p);
+        assertEq(paymaster.tokenPrice(tk), p);
+
+        // Immediate second update should revert (cooldown not elapsed)
+        vm.prank(paymaster.owner());
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.PriceCooldownActive.selector));
+        paymaster.setTokenPrice(tk, p + 1);
+
+        // After cooldown, update succeeds
+        vm.warp(block.timestamp + paymaster.PRICE_COOLDOWN() + 1);
+        vm.prank(paymaster.owner());
+        paymaster.setTokenPrice(tk, p + 1);
+        assertEq(paymaster.tokenPrice(tk), p + 1);
+    }
+
+    // F-040 regression: price cooldown enforced (exact name match)
+    function testPriceUpdateCooldownEnforced() public {
+        address tk = makeAddr("cooldownToken");
+        vm.prank(paymaster.owner());
+        paymaster.setTokenPrice(tk, 1000e18);
+        vm.prank(paymaster.owner());
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.PriceCooldownActive.selector));
+        paymaster.setTokenPrice(tk, 1000e18 + 1);
+    }
+
+    // F-040 regression: compound price change per day
+    function testCompoundPriceChangePerDay() public {
+        address tk = makeAddr("compoundTest");
+        uint256 p = 1000e18;
+        vm.startPrank(paymaster.owner());
+        paymaster.setTokenPrice(tk, p);
+        uint256 maxChangePerUpdate = p * paymaster.MAX_PRICE_CHANGE_BPS() / 10000;
+        uint256 maxDay = maxChangePerUpdate;
+        for (uint256 i = 0; i < 24; i++) {
+            vm.warp(block.timestamp + paymaster.PRICE_COOLDOWN() + 1);
+            paymaster.setTokenPrice(tk, paymaster.tokenPrice(tk) + maxChangePerUpdate);
+        }
+        // After 24 cooldown cycles (6h total), price should be bounded
+        assertLe(paymaster.tokenPrice(tk), p + 24 * maxDay, "compound price growth bounded");
+        vm.stopPrank();
     }
 
     // ══════════════════════════════════════════════════════════════════

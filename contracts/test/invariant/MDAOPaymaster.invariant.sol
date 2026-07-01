@@ -32,7 +32,7 @@ contract MDAOPaymasterInvariant is Test {
 
         bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = paymaster.setMinimumDeadlineBuffer.selector;
-        selectors[1] = paymaster.setMaxTokenAmountLimit.selector;
+        selectors[1] = paymaster.setMaxTokenAmountLimit.selector; // will be fuzzed with random token addr
         selectors[2] = paymaster.setMaxGasPrice.selector;
         selectors[3] = paymaster.setTokenPrice.selector;
         selectors[4] = paymaster.setPriceBufferBps.selector;
@@ -40,8 +40,12 @@ contract MDAOPaymasterInvariant is Test {
     }
 
     function invariant_maxTokenAmountLimit() public view {
-        assertLe(paymaster.maxTokenAmountLimit(), type(uint256).max);
-        assertGe(paymaster.maxTokenAmountLimit(), 0);
+        address mdao = paymaster.mdaoToken();
+        address usdt = paymaster.usdtToken();
+        assertLe(paymaster.maxTokenAmountLimit(mdao), type(uint256).max);
+        assertGe(paymaster.maxTokenAmountLimit(mdao), 0);
+        assertLe(paymaster.maxTokenAmountLimit(usdt), type(uint256).max);
+        assertGe(paymaster.maxTokenAmountLimit(usdt), 0);
     }
 
     function invariant_maxGasPrice() public view {

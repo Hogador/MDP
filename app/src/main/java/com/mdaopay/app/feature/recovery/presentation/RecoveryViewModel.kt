@@ -578,8 +578,12 @@ class RecoveryViewModel @Inject constructor(
     }
 }
 
+// F-121: PBKDF2-HMAC-SHA256 with 600k iterations (OWASP 2023 minimum)
+// ponytail: Argon2id migration planned (Phase 1) — see security/findings/F-121.md
+private const val PBKDF2_ITERATIONS = 600_000
+
 private fun String.pbkdf2Hash(salt: ByteArray): String {
-    val spec = PBEKeySpec(this.toCharArray(), salt, 600_000, 256)
+    val spec = PBEKeySpec(this.toCharArray(), salt, PBKDF2_ITERATIONS, 256)
     val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
     return factory.generateSecret(spec).encoded.joinToString("") { "%02x".format(it) }
 }

@@ -345,7 +345,7 @@ private fun ProductCard(
             }
             Icon(
                 imageVector = Icons.Rounded.Link,
-                contentDescription = null,
+                contentDescription = "Открыть",
                 tint = d.text2.copy(alpha = 0.5f),
                 modifier = Modifier.size(20.dp)
             )

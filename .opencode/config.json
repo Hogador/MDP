@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "swarm_version": "9.0",
+  "hive_config": ".hive/config.json",
+
+  "primary_agent": "coordinator",
+
+  "agents_order": [
+    "coordinator",
+    "context-resolver",
+    "product-gate",
+    "researcher",
+    "architect",
+    "implementer",
+    "code-reviewer",
+    "verifier",
+    "adr-writer",
+    "lessons-learned",
+    "evolution-manager"
+  ],
+
+  "modes": {
+    "audit": {
+      "description": "Внешний аудит (5 Researcher параллельно)",
+      "entry": "coordinator",
+      "args": "--mode=audit"
+    },
+    "feature": {
+      "description": "Внедрение новой функции",
+      "entry": "coordinator",
+      "args": "--mode=feature"
+    },
+    "bug": {
+      "description": "Исправление бага",
+      "entry": "coordinator",
+      "args": "--mode=bug"
+    },
+    "explain": {
+      "description": "Объяснение существующего кода",
+      "entry": "coordinator",
+      "args": "--mode=explain"
+    },
+    "roadmap": {
+      "description": "Gap-анализ до стадии",
+      "entry": "coordinator",
+      "args": "--mode=roadmap"
+    }
+  },
+
+  "language": "ru",
+
+  "notes": [
+    "Все агенты общаются только на русском языке",
+    "Coordinator — единственный, кто вызывает task tool",
+    "Subagents НЕ имеют task tool — общаются через файлы и через coordinator",
+    "Промты хранятся в .hive/prompts/<agent>/system.md — это источник истины",
+    ".opencode/agent/*.md — копии промтов с frontmatter для opencode TUI",
+    "Для пересинхронизации промтов запустите: ./scripts/swarm-sync-prompts.sh"
+  ]
+}

@@ -125,10 +125,18 @@ object Redis {
 
 class RedisRateLimiter(private val prefix: String = "ratelimit") {
     private val fallbackMap = ConcurrentHashMap<String, RateLimitEntry>()
+    private var accessCounter = 0
 
     private data class RateLimitEntry(val count: Long, val expiresAt: Long)
 
     private val rateLimitLog = LoggerFactory.getLogger("RedisRateLimiter")
+
+    // F-126: scavenge expired entries every 100th access
+    private fun scavenge() {
+        if (++accessCounter % 100 != 0) return
+        val now = System.currentTimeMillis()
+        fallbackMap.entries.removeIf { (_, entry) -> now > entry.expiresAt }
+    }
 
     suspend fun isLimited(key: String, maxRequests: Int, windowSec: Long): Boolean {
         val redisKey = "$prefix:$key"
@@ -142,6 +150,7 @@ class RedisRateLimiter(private val prefix: String = "ratelimit") {
     }
 
     private fun isLimitedInMemory(key: String, maxRequests: Int, windowSec: Long): Boolean {
+        scavenge()
         val now = System.currentTimeMillis()
         val entry = fallbackMap[key]
         if (entry == null || now > entry.expiresAt) {
@@ -157,8 +166,16 @@ class RedisRateLimiter(private val prefix: String = "ratelimit") {
 
 class RedisReplayCache(private val prefix: String = "replay") {
     private val fallbackMap = ConcurrentHashMap<String, Long>()
+    private var accessCounter = 0
 
     private val replayLog = LoggerFactory.getLogger("RedisReplayCache")
+
+    // F-126: scavenge expired entries every 100th access
+    private fun scavenge() {
+        if (++accessCounter % 100 != 0) return
+        val now = System.currentTimeMillis()
+        fallbackMap.entries.removeIf { (_, expiresAt) -> now > expiresAt }
+    }
 
     suspend fun isUsed(key: String, ttlSec: Long = 300): Boolean {
         val redisKey = "$prefix:$key"
@@ -170,6 +187,7 @@ class RedisReplayCache(private val prefix: String = "replay") {
     }
 
     private fun isUsedInMemory(key: String, ttlSec: Long): Boolean {
+        scavenge()
         val now = System.currentTimeMillis()
         val expiresAt = fallbackMap[key]
         if (expiresAt != null && now < expiresAt) return true

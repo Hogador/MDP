@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 /// @notice Identity Connect: scoped session keys with permissions, spending limits, and expiry.
 /// @dev Standalone contract (no inheritance). Keys are owned by wallet addresses.
 ///      Only the owner can create, revoke keys. External callers validate + use.
+///      F-118: Permission whitelist prevents arbitrary permission assignment.
 contract SessionKeyModule {
     error SessionKeyExpired();
     error SessionKeyRevoked();
@@ -12,6 +13,7 @@ contract SessionKeyModule {
     error SpendingLimitExceeded();
     error Unauthorized();
     error InvalidKey();
+    error PermissionNotAllowed();
 
     struct SessionKey {
         address owner;
@@ -42,6 +44,30 @@ contract SessionKeyModule {
     );
     event SessionKeyRevokedEv(bytes32 indexed keyId, address indexed owner);
     event SessionKeyUsed(bytes32 indexed keyId, bytes32 indexed permission, uint256 amount);
+    event PermissionAllowedSet(bytes32 indexed permission, bool allowed);
+
+    address public owner;
+    mapping(bytes32 => bool) public allowedPermissions;
+    uint256 public allowedPermissionCount;
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert Unauthorized();
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /// @notice Allow or disallow a permission for session keys (F-118).
+    /// @dev Only callable by module owner. When whitelist is empty, all permissions are allowed.
+    function setPermissionAllowed(bytes32 permission, bool allowed) external onlyOwner {
+        if (allowedPermissions[permission] == allowed) return;
+        allowedPermissions[permission] = allowed;
+        if (allowed) allowedPermissionCount++;
+        else allowedPermissionCount--;
+        emit PermissionAllowedSet(permission, allowed);
+    }
 
     /// @notice Create a new session key. Only callable by the wallet owner (msg.sender).
     /// @param dapp         The dApp this key grants access to.
@@ -59,6 +85,13 @@ contract SessionKeyModule {
     ) external returns (bytes32 keyId) {
         if (dapp == address(0) || validUntil <= block.timestamp) revert InvalidKey();
         if (riskTier > 2) revert InvalidKey();
+
+        // F-118: validate permissions against whitelist when non-empty
+        if (allowedPermissionCount > 0) {
+            for (uint256 i = 0; i < permissions.length; i++) {
+                if (!allowedPermissions[permissions[i]]) revert PermissionNotAllowed();
+            }
+        }
 
         keyCount[msg.sender]++;
 

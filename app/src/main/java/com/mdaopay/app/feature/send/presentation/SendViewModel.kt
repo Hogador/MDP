@@ -112,7 +112,7 @@ class SendViewModel @Inject constructor(
             return
         }
 
-        if (nickname.length < 3 || !nickname.matches(Regex("^[a-zA-Z0-9_-]+$"))) {
+        if (nickname.length < 3 || nickname.length > 20 || !nickname.matches(Regex("^[a-zA-Z0-9_-]+$"))) {
             _state.value = SendState.RecipientInput(
                 nickname = nickname,
                 error = "Введите @username, адрес Ethereum (0x...) или выберите контакт"

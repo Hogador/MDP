@@ -78,7 +78,7 @@ export default {
     const requireAuth = async (bodyText: string): Promise<Response | null> => {
       // ponytail: fail-closed — missing RELAY_SECRET means auth is bypassed, reject all requests
       if (!env.RELAY_SECRET) {
-        console.error('RELAY_SECRET not set — all requests rejected')
+        console.error('Server misconfigured — all requests rejected')
         return err('Internal server error', 500)
       }
       const ts = request.headers.get('X-Timestamp') || ''
@@ -305,8 +305,8 @@ export default {
 
       return err('Not found', 404)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Internal error'
-      return err(msg, 500)
+      console.error('Request handler error:', e instanceof Error ? e.message : 'unknown')
+      return err('Internal server error', 500)
     }
   },
 } satisfies ExportedHandler<Env>

@@ -350,7 +350,7 @@ private fun RecipientStep(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Person,
-                contentDescription = null,
+                contentDescription = "Получатель",
                 tint = a,
                 modifier = Modifier.size(28.dp)
             )

@@ -80,9 +80,6 @@ backups/
 
 # ——— OpenCode (AI config) ———
 .config/opencode/
-.opencode/opencode-swarm.json
-.opencode/*.bak*
-.opencode/*.save
 
 # ——— Misc ———
 out/
@@ -95,7 +92,6 @@ ci.yml.additions
 
 # ——— Agent config (не часть проекта) ———
 .agents/
-.opencode/
 .hive/
 ponytail/
 
@@ -111,3 +107,21 @@ README.md
 backup-restore.sh
 docker-compose.yml
 gradlew.bat
+
+# === Swarm v9.0 — runtime artifacts (не коммитить) ===
+.hive/state.json
+.hive/escalations/
+.hive/audit/
+.hive/verifications/
+.hive/impact/
+.hive/reports/
+.hive/daily/
+
+# === Swarm v9.0 — коммитим (source of truth) ===
+# .hive/config.json       ← коммитим
+# .hive/prompts/          ← коммитим
+# .hive/memories.jsonl    ← коммитим (Tier 2 — знания)
+# docs/VISION.md          ← коммитим
+# docs/ROADMAP.md         ← коммитим
+# docs/adr/               ← коммитим
+# security/               ← коммитим

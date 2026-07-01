@@ -166,7 +166,7 @@ fun OnboardingGuardianScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = null,
+                            contentDescription = "Guardian добавлен",
                             tint = MDAOPurple,
                             modifier = Modifier.size(22.dp)
                         )
@@ -212,7 +212,7 @@ fun OnboardingGuardianScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
-                            contentDescription = null,
+                            contentDescription = "Добавить guardian",
                             tint = MDAOPurple,
                             modifier = Modifier.size(20.dp)
                         )

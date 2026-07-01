@@ -241,7 +241,7 @@ fun OnboardingNicknameScreen(
 
                     ScenarioCard(
                         selected = scenario == "standard",
-                        icon = { Icon(Icons.Rounded.People, null, tint = MDAOPurple, modifier = Modifier.size(20.dp)) },
+                        icon = { Icon(Icons.Rounded.People, "С guardian'ами", tint = MDAOPurple, modifier = Modifier.size(20.dp)) },
                         title = "С guardian'ами",
                         subtitle = "SSS 3-of-4. Доверенные лица помогут восстановить кошелёк.",
                         onClick = { viewModel.setScenario("standard") }
@@ -249,7 +249,7 @@ fun OnboardingNicknameScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     ScenarioCard(
                         selected = scenario == "hermit",
-                        icon = { Icon(Icons.Rounded.PersonOff, null, tint = MDAOPurple, modifier = Modifier.size(20.dp)) },
+                        icon = { Icon(Icons.Rounded.PersonOff, "Без guardian'ов", tint = MDAOPurple, modifier = Modifier.size(20.dp)) },
                         title = "Без guardian'ов",
                         subtitle = "SSS 2-of-3. Только телефон + passkey + холодное устройство.",
                         onClick = { viewModel.setScenario("hermit") }
@@ -329,7 +329,7 @@ private fun ScenarioCard(
             if (selected) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
+                    contentDescription = "Выбрано",
                     tint = MDAOPurple,
                     modifier = Modifier.size(20.dp)
                 )

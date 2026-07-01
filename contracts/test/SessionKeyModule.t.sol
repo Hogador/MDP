@@ -337,6 +337,69 @@ contract SessionKeyModuleTest is Test {
         assertEq(successCount, 0);
     }
 
+    // ── 22. Permission whitelist (F-118) — empty whitelist allows all ─
+
+    function test_PermissionWhitelist_EmptyAllowsAll() public {
+        bytes32[] memory perms = new bytes32[](1);
+        perms[0] = PERM_PAY;
+        _createKey(dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+        // whitelist empty (allowedPermissionCount == 0), create should pass
+    }
+
+    // ── 23. Permission whitelist (F-118) — non-empty whitelist rejects unlisted ─
+
+    function test_PermissionWhitelist_RevertWhenNotAllowed() public {
+        vm.prank(owner);
+        module.setPermissionAllowed(PERM_PAY, true);
+
+        bytes32[] memory perms = new bytes32[](1);
+        perms[0] = PERM_READ; // not in whitelist
+
+        vm.prank(owner);
+        vm.expectRevert(SessionKeyModule.PermissionNotAllowed.selector);
+        module.createSessionKey(dApp, block.timestamp + 1 days, perms, 1 ether, 0);
+    }
+
+    // ── 24. Permission whitelist (F-118) — allowed permissions succeed ─
+
+    function test_PermissionWhitelist_AllowedSucceeds() public {
+        vm.prank(owner);
+        module.setPermissionAllowed(PERM_PAY, true);
+        vm.prank(owner);
+        module.setPermissionAllowed(PERM_READ, true);
+
+        bytes32[] memory perms = new bytes32[](2);
+        perms[0] = PERM_PAY;
+        perms[1] = PERM_READ;
+
+        vm.prank(owner);
+        bytes32 keyId = module.createSessionKey(dApp, block.timestamp + 1 days, perms, 1 ether, 0);
+        (address o,,,,,,,,,,,) = module.getSessionKey(keyId);
+        assertEq(o, owner);
+    }
+
+    // ── 25. Permission whitelist (F-118) — owner can add/remove ─────
+
+    function test_PermissionWhitelist_OwnerCanToggle() public {
+        assertFalse(module.allowedPermissions(PERM_PAY));
+
+        vm.prank(owner);
+        module.setPermissionAllowed(PERM_PAY, true);
+        assertTrue(module.allowedPermissions(PERM_PAY));
+
+        vm.prank(owner);
+        module.setPermissionAllowed(PERM_PAY, false);
+        assertFalse(module.allowedPermissions(PERM_PAY));
+    }
+
+    // ── 26. Permission whitelist (F-118) — non-owner can't modify ───
+
+    function test_PermissionWhitelist_NonOwnerCannotModify() public {
+        vm.prank(alice);
+        vm.expectRevert(SessionKeyModule.Unauthorized.selector);
+        module.setPermissionAllowed(PERM_PAY, true);
+    }
+
     // ── 21. Time-decay increments effective successCount daily ───
 
     function test_TimeDecayIncrementsDaily() public {

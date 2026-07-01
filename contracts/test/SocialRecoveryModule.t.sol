@@ -532,13 +532,11 @@ contract SocialRecoveryModuleTest is Test {
         assertEq(started, 0);
         assertEq(recovery.recoveryDeposit(alice), 0);
 
-        // Deposit returned to initiator (minus burn fee on transfer)
-        // Fee = deposit * burnFeeBps / 10000 = 50bps of deposit
-        uint256 fee = actualDeposit * 50 / 10000;
-        if (fee == 0 && actualDeposit > 0) fee = 1; // minimum 1 wei (F-029)
-        assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore + actualDeposit - fee);
-        // Total supply unchanged (tokens at BURN_ADDRESS, not _burn())
-        assertEq(mdaoToken.totalSupply(), totalSupplyBefore);
+        // Deposit burned on expiry (F-131: anti-spam)
+        assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore, "initiator should NOT get deposit back");
+        assertEq(recovery.recoveryDeposit(alice), 0, "deposit cleared");
+        // Total supply unchanged (tokens at address(0), not _burn())
+        assertEq(mdaoToken.totalSupply(), totalSupplyBefore, "total supply unchanged");
     }
 
     function test_RevertWhen_CleanupNotExpired() public {

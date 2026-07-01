@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# swarm-bug — shorthand для swarm-router --mode=bug
+set -euo pipefail
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/swarm-router" --mode=bug "$@"

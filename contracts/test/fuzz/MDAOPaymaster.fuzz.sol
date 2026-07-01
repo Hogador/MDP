@@ -75,7 +75,7 @@ contract MDAOPaymasterFuzz is Test {
         bytes memory pmAndData = abi.encode(address(paymaster), customData);
         UserOperation memory op = _op(alice, pmAndData);
 
-        if (amount > paymaster.maxTokenAmountLimit()) {
+        if (amount > paymaster.maxTokenAmountLimit(address(usdt))) {
             vm.prank(ENTRY_POINT);
             vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.AmountTooHigh.selector));
             paymaster.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);

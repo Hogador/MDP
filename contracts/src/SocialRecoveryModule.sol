@@ -330,9 +330,9 @@ contract SocialRecoveryModule is Ownable {
         recoveryDeposit[wallet] = 0;
         delete pendingRecovery[wallet];
 
-        // Return deposit to initiator (F-049, ponytail: anti-spam via 0.01 MDAO cost + 96h wait)
-        if (deposit > 0 && initiator != address(0)) {
-            mdaoToken.transfer(initiator, deposit);
+        // F-131: burn deposit on expiry (anti-spam — attacker loses 0.01 MDAO per spam cycle)
+        if (deposit > 0) {
+            mdaoToken.transfer(0x000000000000000000000000000000000000dEaD, deposit);
         }
 
         emit RecoveryCleanedUp(wallet, deposit);

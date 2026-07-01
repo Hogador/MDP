@@ -33,6 +33,24 @@ contract MDAOTokenTest is Test {
         token.setBurnFeeBps(1001);
     }
 
+    // F-115: MAX_BURN_FEE_BPS = 300 — boundary check
+    function test_RevertWhen_FeeAboveMaxBoundary() public {
+        vm.prank(owner);
+        vm.expectRevert(MDAOToken.FeeTooHigh.selector);
+        token.setBurnFeeBps(301);
+    }
+
+    function test_SetBurnFeeBps_AtMaxBoundary() public {
+        // Incremental: 50→100→150→200→250→300 (each step ≤ 50 change)
+        vm.startPrank(owner);
+        for (uint256 f = 50 + 50; f <= 300; f += 50) {
+            vm.warp(block.timestamp + 1 hours);
+            token.setBurnFeeBps(f);
+        }
+        assertEq(token.burnFeeBps(), 300);
+        vm.stopPrank();
+    }
+
     function test_RevertWhen_UpdateTooSoon() public {
         vm.startPrank(owner);
         token.setBurnFeeBps(100);

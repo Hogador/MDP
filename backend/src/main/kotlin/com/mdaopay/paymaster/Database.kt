@@ -9,11 +9,11 @@ import javax.sql.DataSource
 
 private val dbLog = LoggerFactory.getLogger("Database")
 
-fun createDataSource(databaseUrl: String): DataSource {
+fun createDataSource(databaseUrl: String, poolSize: Int = 25): DataSource {
     val config = HikariConfig().apply {
         jdbcUrl = databaseUrl
-        maximumPoolSize = 25
-        minimumIdle = 2
+        maximumPoolSize = poolSize
+        minimumIdle = minOf(2, poolSize / 4)
         idleTimeout = 30_000
         connectionTimeout = 5_000
         maxLifetime = 600_000

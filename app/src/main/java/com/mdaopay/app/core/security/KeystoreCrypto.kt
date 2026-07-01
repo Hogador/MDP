@@ -67,6 +67,8 @@ object KeystoreCrypto {
 
     fun hasAlias(alias: String): Boolean = keystore.containsAlias(alias)
 
+    // F-122: Random 12-byte IV (Android Keystore default). Collision prob ~2^-96.
+    // ponytail: counter-based IV planned (Phase 1) for deterministic uniqueness — see F-122.md
     fun encrypt(keyAlias: String, plaintext: ByteArray): ByteArray {
         val key = getOrCreateBiometricKey(keyAlias)
         val cipher = Cipher.getInstance(AES_GCM)

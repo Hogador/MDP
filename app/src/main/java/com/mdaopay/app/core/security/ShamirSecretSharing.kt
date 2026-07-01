@@ -33,6 +33,15 @@ data class Share(
     }
 }
 
+/// F-120: Byte-wise SSS over GF(2⁸) — 32 parallel field elements for 256-bit secret.
+///
+/// A 256-bit secret is treated as 32 independent bytes. Each byte is an element
+/// of GF(2⁸) (irreducible poly 0x11B). For each byte position, we evaluate a
+/// polynomial P_j(x) = secret[j] + a₁x + a₂x² + ... + a_{k-1}x^{k-1} over GF(2⁸)
+/// at x = 1..n (share indices). This gives each share n bytes.
+///
+/// Lagrange interpolation over GF(2⁸) recovers all 32 bytes independently.
+/// No cross-byte operations — fully parallelizable.
 object ShamirSecretSharing {
 
     private val random = SecureRandom()

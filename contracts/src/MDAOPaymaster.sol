@@ -107,7 +107,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
     uint256 public deprecationTimestamp;
 
     uint256 public minimumDeadlineBuffer = 300;
-    uint256 public maxTokenAmountLimit = 10_000 * 10**18;
+    mapping(address => uint256) public maxTokenAmountLimit;
     uint256 public maxGasPrice = 200 gwei;
 
     // C-4: failure threshold increased from 3 to 5 per PRD §3.3
@@ -158,7 +158,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
 
     event EmergencyAdminUpdated(address indexed oldAdmin, address indexed newAdmin);
     event MinimumDeadlineBufferUpdated(uint256 oldValue, uint256 newValue);
-    event MaxTokenAmountLimitUpdated(uint256 oldValue, uint256 newValue);
+    event MaxTokenAmountLimitUpdated(address indexed token, uint256 oldValue, uint256 newValue);
     event MaxGasPriceUpdated(uint256 oldValue, uint256 newValue);
     event SenderBlocked(address indexed sender, uint256 blockedUntil);
     event SenderUnblocked(address indexed sender);
@@ -181,6 +181,9 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
     TokenConfig public mdaoConfig;
     TokenConfig public usdtConfig;
 
+    function mdaoToken() external view returns (address) { return address(mdaoConfig.token); }
+    function usdtToken() external view returns (address) { return address(usdtConfig.token); }
+
     event GasPaid(address indexed user, IERC20 indexed token, uint256 amount, uint256 gasCost);
 
     // ──────────────────────────────────────────────
@@ -191,6 +194,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
     uint256 public priceBufferBps = 500; // 5% max over oracle price
     uint256 public constant MAX_PRICE_CHANGE_BPS = 200; // 2% max price change per update
     uint256 public constant maxDeviationBps = 1000; // 10% max price deviation per update (F-005, REGRESSED)
+    uint256 public constant MIN_PRICE_BUFFER_BPS = 100; // F-009a: 1% minimum buffer
 
     // F-12: event now includes oldPrice
     event PriceUpdated(address indexed token, uint256 oldPrice, uint256 newPrice);
@@ -214,6 +218,9 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
         mdaoConfig = TokenConfig(IERC20(_mdao), true);
         usdtConfig = TokenConfig(IERC20(_usdt), false);
         trustedSigner = _trustedSigner;
+        // F-010: per-token max amount limits (10k whole tokens)
+        maxTokenAmountLimit[_mdao] = 10_000 * (10 ** _tokenDecimals(_mdao));
+        maxTokenAmountLimit[_usdt] = 10_000 * (10 ** _tokenDecimals(_usdt));
     }
 
     modifier onlyEntryPoint() {
@@ -271,20 +278,20 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
         minimumDeadlineBuffer = newBuffer;
     }
 
-    // SEC-25-02: cap at 1M tokens prevents unbounded per-operation charges
-    // F-010: minimum 1e6 prevents decimal confusion (e.g. setting 0.1 USDT = 1e5 vs 1e17)
-    function setMaxTokenAmountLimit(uint256 newLimit) external onlyOwner {
-        if (newLimit > 1_000_000 * 10**18) revert AmountTooHigh();
-        if (newLimit < 1e6) revert AmountTooHigh();           // ponytail: ≥ 1 USDT with 6 decimals
-        emit MaxTokenAmountLimitUpdated(maxTokenAmountLimit, newLimit);
-        maxTokenAmountLimit = newLimit;
+    function setMaxTokenAmountLimit(address token, uint256 newLimit) external onlyOwner {
+        uint8 dec = _tokenDecimals(token);
+        uint256 maxLimit = 10_000 * (10 ** dec);
+        if (newLimit > maxLimit) revert AmountTooHigh();
+        emit MaxTokenAmountLimitUpdated(token, maxTokenAmountLimit[token], newLimit);
+        maxTokenAmountLimit[token] = newLimit;
     }
 
     // SEC-25-03: cap at 1000 gwei prevents owner from disabling gas price protection
-    // F-011: minimum 1 gwei prevents accidental zero-gas config; max ≤ 5000 gwei for EVM chain compatibility
+    // F-011: BSC cap 100 gwei, ETH/L2 cap 5000 gwei
     function setMaxGasPrice(uint256 newMaxGasPrice) external onlyOwner {
-        if (newMaxGasPrice < 1 gwei) revert GasPriceTooHigh();   // ponytail: min 1 gwei
-        if (newMaxGasPrice > 5000 gwei) revert GasPriceTooHigh(); // ponytail: max 5000 gwei per all EVM chains
+        if (newMaxGasPrice < 1 gwei) revert GasPriceTooHigh();
+        uint256 cap = block.chainid == 56 ? 100 gwei : 5000 gwei;
+        if (newMaxGasPrice > cap) revert GasPriceTooHigh();
         emit MaxGasPriceUpdated(maxGasPrice, newMaxGasPrice);
         maxGasPrice = newMaxGasPrice;
     }
@@ -310,9 +317,9 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
     }
 
     // SEC-25-01: max 20% buffer prevents owner from disabling price protection
-    // F-009a: minimum 1 bps (0.01%) prevents zero-buffer exploits
+    // F-009a: MIN_PRICE_BUFFER_BPS (1%) prevents overly tight buffer
     function setPriceBufferBps(uint256 newBuffer) external onlyOwner {
-        if (newBuffer < 1) revert PriceBufferTooLow();       // ponytail: ≥ 1 bps minimum
+        if (newBuffer < MIN_PRICE_BUFFER_BPS) revert PriceBufferTooLow();
         if (newBuffer > 2000) revert PriceChangeTooHigh();
         emit PriceBufferUpdated(priceBufferBps, newBuffer);
         priceBufferBps = newBuffer;
@@ -382,6 +389,12 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
         revert InvalidToken();
     }
 
+    function _tokenDecimals(address token) internal view returns (uint8) {
+        (bool success, bytes memory data) = token.staticcall(abi.encodeWithSelector(0x313ce567));
+        if (success && data.length == 32) return abi.decode(data, (uint8));
+        return 18;
+    }
+
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
@@ -443,7 +456,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
         TokenConfig storage cfg = _getTokenConfig(address(extra.token));
         if (block.timestamp > extra.quoteDeadline) revert QuoteExpired();
         if (extra.quoteDeadline < block.timestamp + minimumDeadlineBuffer) revert DeadlineTooSoon();
-        if (extra.maxTokenAmount > maxTokenAmountLimit) revert AmountTooHigh();
+        if (extra.maxTokenAmount > maxTokenAmountLimit[address(extra.token)]) revert AmountTooHigh();
         if (maxFeePerGas_ > maxGasPrice) revert GasPriceTooHigh();
         if (IEntryPointView(entryPoint).balanceOf(address(this)) < maxCost) revert InsufficientDeposit();
 

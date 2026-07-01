@@ -180,6 +180,7 @@ class CircuitBreakerOpenException(message: String) : Exception(message)
 class PriceOracle(
     private val sources: List<PriceSource>,
     private val circuitBreaker: CircuitBreaker = CircuitBreaker(),
+    private val isTestnet: Boolean = false,
 ) {
     private val log = LoggerFactory.getLogger(PriceOracle::class.java)
     private val json = Json { ignoreUnknownKeys = true }
@@ -231,9 +232,20 @@ class PriceOracle(
         val usdtValues = allResults.mapNotNull { it.usdtUsd.takeIf { v -> v > 0.0 && DexPrices.saneUsdt(v) } }
         val mdaoValues = allResults.mapNotNull { it.mdaoUsd.takeIf { v -> v > 0.0 && DexPrices.saneMdao(v) } }
 
-        if (bnbValues.isEmpty()) throw PriceOracleException("No valid BNB price from any source")
-        if (usdtValues.isEmpty()) throw PriceOracleException("No valid USDT price from any source")
-        if (mdaoValues.isEmpty()) throw PriceOracleException("No valid MDAO price from any source")
+        if (bnbValues.isEmpty() || usdtValues.isEmpty() || mdaoValues.isEmpty()) {
+            if (isTestnet) {
+                log.warn("FALLBACK_PRICES used — sources returned no valid data on testnet (bnb={} usdt={} mdao={})",
+                    bnbValues.isEmpty(), usdtValues.isEmpty(), mdaoValues.isEmpty())
+                appMetrics.errorsTotal++
+                return DexPrices.fallbackPrices()
+            }
+            val missing = buildList {
+                if (bnbValues.isEmpty()) add("BNB")
+                if (usdtValues.isEmpty()) add("USDT")
+                if (mdaoValues.isEmpty()) add("MDAO")
+            }
+            throw PriceOracleException("No valid price from any source for: ${missing.joinToString(", ")}")
+        }
 
         val medianBnb = median(bnbValues)
         val medianUsdt = median(usdtValues)
@@ -286,6 +298,7 @@ class PriceOracle(
             when (source) {
                 is DexScreenerSource -> source.close()
                 is CoinGeckoSource -> source.close()
+                is BinancePriceSource -> source.close()
                 else -> { /* OnChainTWAPSource has no resources */ }
             }
         }

@@ -140,4 +140,35 @@ class PriceOracleTest {
         assertEquals(0.001, prices.mdaoUsd)
         assertEquals(1.0, prices.usdtUsd)
     }
+
+    @Test
+    fun `BinancePriceSource has correct name and reliability`() {
+        val source = BinancePriceSource()
+        assertEquals("binance", source.name)
+        assertEquals(0.85, source.reliability)
+    }
+
+    @Test
+    fun `getPrices returns fallback on testnet when all sources fail`() = runBlocking {
+        val oracle = PriceOracle(listOf(FailingPriceSource()), isTestnet = true)
+        val result = oracle.getPrices()
+        assertEquals(DexPrices.fallbackPrices().bnbUsd, result.bnbUsd, 0.001)
+        assertEquals(DexPrices.fallbackPrices().mdaoUsd, result.mdaoUsd, 0.001)
+        assertEquals(DexPrices.fallbackPrices().usdtUsd, result.usdtUsd, 0.001)
+    }
+
+    @Test
+    fun `getPrices throws on mainnet when all sources fail`() = runBlocking {
+        val oracle = PriceOracle(listOf(FailingPriceSource()), isTestnet = false)
+        assertFailsWith<PriceOracleException> {
+            oracle.getPrices()
+        }
+    }
+}
+
+/** Source that always returns null to simulate total failure. */
+class FailingPriceSource : PriceSource {
+    override val name = "failing"
+    override val reliability = 0.0
+    override suspend fun getPrices(tokenAddresses: Map<String, String>): DexPrices? = null
 }

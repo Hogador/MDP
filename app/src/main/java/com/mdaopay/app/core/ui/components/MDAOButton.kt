@@ -64,8 +64,8 @@ fun MDAOButton(
     }
 
     val buttonHeight = when (size) {
-        MDAOButtonSize.Sm -> 38.dp
-        MDAOButtonSize.Md -> 44.dp
+        MDAOButtonSize.Sm -> 48.dp
+        MDAOButtonSize.Md -> 48.dp
         MDAOButtonSize.Lg -> 54.dp
     }
 

@@ -42,7 +42,7 @@ fun OfflineBanner(
         ) {
             Icon(
                 imageVector = Icons.Rounded.WifiOff,
-                contentDescription = null,
+                contentDescription = "Нет сети",
                 tint = ErrorRed,
                 modifier = Modifier.padding(end = 8.dp)
             )
