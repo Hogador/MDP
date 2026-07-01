@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate chain ID (F-117)
         run: |
           ENV="${{ vars.DEPLOY_ENV }}"
@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 20
     environment: ${{ vars.DEPLOY_ENV }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: auth
         uses: google-github-actions/auth@v2
         with:
