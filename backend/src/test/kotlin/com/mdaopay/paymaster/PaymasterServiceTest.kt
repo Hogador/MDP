@@ -36,13 +36,13 @@ class PaymasterServiceTest {
         wbnbAddress = "0x0000000000000000000000000000000000000003",
         expectedChainId = 56L,
         redisUrl = "redis://localhost:6379",
-        jwtSecret = "test-jwt-secret-at-least-44-chars-base64-encoded-256-bit!!",
+        jwtSecret = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
         trustedSigner = "0x0000000000000000000000000000000000000000",
         isTestnet = true,
         relaySecret = "test-relay-secret-at-least-32-chars!!",
         swapPrivateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        allowLocalSigning = true, // testnet — allowed
     )
+    init { config.allowLocalSigning = true } // testnet — allowed
 
     private val web3j: Web3j = mockk()
     private val rpcManager: RpcProviderManager = mockk()

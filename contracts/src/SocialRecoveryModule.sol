@@ -326,12 +326,13 @@ contract SocialRecoveryModule is Ownable {
         if (block.timestamp <= req.startedAt + TIMELOCK + EXECUTION_WINDOW) revert ErrNoExpiredRecovery();
 
         uint256 deposit = recoveryDeposit[wallet];
+        address initiator = req.initiator; // capture before delete
         recoveryDeposit[wallet] = 0;
         delete pendingRecovery[wallet];
 
-        // Burn deposit instead of returning (anti-spam)
-        if (deposit > 0) {
-            MDAOToken(address(mdaoToken)).burn(deposit);
+        // Return deposit to initiator (F-049, ponytail: anti-spam via 0.01 MDAO cost + 96h wait)
+        if (deposit > 0 && initiator != address(0)) {
+            mdaoToken.transfer(initiator, deposit);
         }
 
         emit RecoveryCleanedUp(wallet, deposit);

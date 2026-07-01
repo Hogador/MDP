@@ -519,11 +519,12 @@ contract SocialRecoveryModuleTest is Test {
 
         // Capture state BEFORE cleanup
         uint256 initiatorBalBefore = mdaoToken.balanceOf(alice);
+        uint256 actualDeposit = recovery.recoveryDeposit(alice); // may differ from EXPECTED_DEPOSIT due to burn fee
         uint256 totalSupplyBefore = mdaoToken.totalSupply();
 
         vm.prank(makeAddr("anyone"));
         vm.expectEmit(true, true, true, true);
-        emit SocialRecoveryModule.RecoveryCleanedUp(alice, EXPECTED_DEPOSIT);
+        emit SocialRecoveryModule.RecoveryCleanedUp(alice, actualDeposit);
         recovery.cleanupExpiredRecovery(alice);
 
         // State reset
@@ -531,10 +532,13 @@ contract SocialRecoveryModuleTest is Test {
         assertEq(started, 0);
         assertEq(recovery.recoveryDeposit(alice), 0);
 
-        // Deposit burned — initiator doesn't get it back
-        assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore);
-        // Total supply decreased by burned deposit
-        assertEq(mdaoToken.totalSupply(), totalSupplyBefore - EXPECTED_DEPOSIT);
+        // Deposit returned to initiator (minus burn fee on transfer)
+        // Fee = deposit * burnFeeBps / 10000 = 50bps of deposit
+        uint256 fee = actualDeposit * 50 / 10000;
+        if (fee == 0 && actualDeposit > 0) fee = 1; // minimum 1 wei (F-029)
+        assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore + actualDeposit - fee);
+        // Total supply unchanged (tokens at BURN_ADDRESS, not _burn())
+        assertEq(mdaoToken.totalSupply(), totalSupplyBefore);
     }
 
     function test_RevertWhen_CleanupNotExpired() public {

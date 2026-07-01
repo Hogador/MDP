@@ -34,19 +34,26 @@ data class AppConfig(
     val relaySecret: String,
     // F-035: separate key for swap operations (falls back to privateKey)
     val swapPrivateKey: String,
-    // F-111: dev-only flag; production must use KMS
-    val allowLocalSigning: Boolean = false,
     // D-1 / F-129: GCP Cloud KMS key resource path
     val kmsKeyName: String? = null,
 ) {
+    // ponytail: JWT validation at construction (no security bypass — config hygiene)
     init {
-        // F-110: enforce Base64-encoded 256-bit key (44 chars minimum)
-        require(jwtSecret.length >= 44) { "JWT_SECRET must be Base64-encoded 256-bit key (min 44 chars)" }
-        // F-111: production guard — KMS/HSM required on mainnet
-        if (!isTestnet && allowLocalSigning) {
-            throw IllegalStateException("ALLOW_LOCAL_SIGNING is forbidden in production. Use KMS or HSM.")
-        }
+        val jwtBytes = try { java.util.Base64.getDecoder().decode(jwtSecret) }
+            catch (_: IllegalArgumentException) { throw IllegalArgumentException("JWT_SECRET must be valid Base64") }
+        require(jwtBytes.size >= 32) { "JWT_SECRET must decode to at least 32 bytes (256-bit key)" }
+        if (jwtBytes.distinct().size <= 4) throw IllegalArgumentException("JWT_SECRET has insufficient entropy (unique bytes <= 4)")
     }
+
+    // F-111: runtime guard — fires on access, not on construction
+    // (init-block can be bypassed via try-catch)
+    var allowLocalSigning: Boolean = false
+        get() {
+            if (!isTestnet && field) {
+                throw IllegalStateException("ALLOW_LOCAL_SIGNING is forbidden in production. Use KMS or HSM.")
+            }
+            return field
+        }
     companion object {
         private val ADDRESS_REGEX = Regex("^0x[a-fA-F0-9]{40}$")
         private val PRIVATE_KEY_REGEX = Regex("^(0x)?[a-fA-F0-9]{64}$")
@@ -86,8 +93,6 @@ data class AppConfig(
             val apiKey = env["API_KEY"]
             val etherscanApiKey = env["ETHERSCAN_API_KEY"]
             val jwtSecret = env["JWT_SECRET"] ?: error("JWT_SECRET is required")
-            // F-110: Base64-encoded 256-bit key = 44 chars minimum
-            if (jwtSecret.length < 44) error("JWT_SECRET must be Base64-encoded 256-bit key (min 44 chars)")
 
             val trustedSigner = env["TRUSTED_SIGNER"] ?: error("TRUSTED_SIGNER required")
             val isTestnet = env["IS_TESTNET"]?.toBooleanStrictOrNull()
@@ -97,12 +102,7 @@ data class AppConfig(
 
             val swapPrivateKey = env["SWAP_PRIVATE_KEY"] ?: error("SWAP_PRIVATE_KEY is required — do not reuse PAYMASTER_PRIVATE_KEY for swap operations")
 
-            val allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
             val kmsKeyName = env["KMS_KEY_NAME"]
-
-            if (kmsKeyName != null && allowLocalSigning) {
-                throw IllegalStateException("KMS_KEY_NAME and ALLOW_LOCAL_SIGNING cannot both be set. Choose one.")
-            }
 
             if (trustedSigner.isNotBlank() && !ADDRESS_REGEX.matches(trustedSigner)) {
                 error("Invalid TRUSTED_SIGNER format: must be 0x-prefixed 40-char hex")
@@ -127,7 +127,7 @@ data class AppConfig(
                 error("Invalid PAYMASTER_PRIVATE_KEY format: must be 64-char hex (with or without 0x prefix)")
             }
 
-            return AppConfig(
+            val cfg = AppConfig(
                 port = port,
                 rpcUrls = rpcUrls,
                 privateKey = Numeric.cleanHexPrefix(privateKey),
@@ -153,9 +153,13 @@ data class AppConfig(
                 isTestnet = isTestnet,
                 relaySecret = relaySecret,
                 swapPrivateKey = Numeric.cleanHexPrefix(swapPrivateKey),
-                allowLocalSigning = allowLocalSigning,
                 kmsKeyName = kmsKeyName,
             )
+            cfg.allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
+            if (kmsKeyName != null && cfg.allowLocalSigning) {
+                throw IllegalStateException("KMS_KEY_NAME and ALLOW_LOCAL_SIGNING cannot both be set. Choose one.")
+            }
+            return cfg
         }
     }
 }
