@@ -11,7 +11,6 @@ import org.web3j.abi.FunctionReturnDecoder
 import org.web3j.abi.TypeReference
 import org.web3j.abi.datatypes.*
 import org.web3j.abi.datatypes.generated.Uint256
-import org.web3j.crypto.ECDSASignature
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Hash
 import org.web3j.crypto.Sign
@@ -19,8 +18,7 @@ import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.request.Transaction
 import org.web3j.utils.Numeric
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters
-import org.bouncycastle.crypto.signers.ECDSASigner
+import com.mdaopay.paymaster.signing.PaymasterSigner
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -263,11 +261,8 @@ class PaymasterService(
             verifyingContract = config.paymasterAddress
         )
         // F-001: Sign the 32-byte EIP-712 digest using the configured signer.
-        // Do NOT use Sign.signMessage() — it applies Hash.sha3() internally even
-        // with needToHash=false, producing a signature over sha3(digest) instead of digest,
-        // which is incompatible with Solidity's ecrecover.
-        val (v, r, s) = signer.signDigest(hash)
-        val sigData = Numeric.toHexString(byteArrayOf(v) + r + s).removePrefix("0x")
+        val sig = signer.signDigest(hash)
+        val sigData = Numeric.toHexString(sig.v + sig.r + sig.s).removePrefix("0x")
         val magic = "22e325a297439656"
         val lenHex = Integer.toHexString(sigData.length / 2).padStart(4, '0')
         return addPaymasterSuffix(req.paymasterAndData, sigData, lenHex, magic)

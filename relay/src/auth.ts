@@ -1,5 +1,5 @@
 // ponytail: hex decode — avoids Buffer dependency, works in CF Workers
-function hexToBytes(hex: string): Uint8Array {
+export function hexToBytes(hex: string): Uint8Array {
   hex = hex.replace(/^0x/i, '')
   if (hex.length % 2 !== 0) hex = '0' + hex
   const bytes = new Uint8Array(hex.length / 2)

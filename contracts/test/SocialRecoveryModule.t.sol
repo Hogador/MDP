@@ -100,7 +100,7 @@ contract SocialRecoveryModuleTest is Test {
     }
 
     function test_RevertWhen_AddMaxGuardians() public {
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < 5; i++) {
             bytes32 id = keccak256(abi.encode(i));
             vm.prank(alice);
             recovery.addGuardian(alice, id, bytes32(uint256(i * 10 + 1)), bytes32(uint256(i * 10 + 2)));
@@ -535,8 +535,8 @@ contract SocialRecoveryModuleTest is Test {
         // Deposit burned on expiry (F-131: anti-spam)
         assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore, "initiator should NOT get deposit back");
         assertEq(recovery.recoveryDeposit(alice), 0, "deposit cleared");
-        // Total supply unchanged (tokens at address(0), not _burn())
-        assertEq(mdaoToken.totalSupply(), totalSupplyBefore, "total supply unchanged");
+        // Total supply reduced by burn amount
+        assertEq(mdaoToken.totalSupply(), totalSupplyBefore - actualDeposit, "total supply reduced by burn");
     }
 
     function test_RevertWhen_CleanupNotExpired() public {

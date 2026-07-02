@@ -14,7 +14,7 @@ import {SessionKeyModule} from "../src/SessionKeyModule.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TrustProviderRegistry} from "../src/TrustProviderRegistry.sol";
 import {EcdsaVerifier} from "../src/EcdsaVerifier.sol";
-import {MockP256} from "../test/mocks/MockP256.sol";
+import {FCLP256Verifier} from "../src/helpers/FCLP256Verifier.sol";
 
 contract Deploy is Script {
     function run() external {
@@ -25,8 +25,8 @@ contract Deploy is Script {
         require(chainId == 56 || chainId == 97, "Unsupported chain ID (56=BSC, 97=BSC Testnet)");
         console.log("Chain ID:", chainId);
 
-        // ── P-256 Precompile check (F-108) ──
-        // RIP-7212 may not be available on BSC Testnet (97); fallback to MockP256
+        // ── P-256 Precompile check (F-108, F-138) ──
+        // RIP-7212 is NOT available on BSC (56/97); fallback to FCLP256Verifier (pure-Solidity P-256)
         (bool precompileOk, bytes memory precompileData) = address(0x100).staticcall(
             abi.encodePacked(bytes32(0), bytes32(0), bytes32(0), bytes32(0), bytes32(0))
         );
@@ -38,10 +38,10 @@ contract Deploy is Script {
             console.log("Using RIP-7212 P-256 precompile at 0x100");
         } else {
             vm.startBroadcast(deployer);
-            MockP256 mockP256 = new MockP256();
+            FCLP256Verifier fclVerifier = new FCLP256Verifier();
             vm.stopBroadcast();
-            p256Verifier = address(mockP256);
-            console.log("RIP-7212 not available, deployed MockP256 at:", address(mockP256));
+            p256Verifier = address(fclVerifier);
+            console.log("RIP-7212 not available, deployed FCLP256Verifier at:", address(fclVerifier));
         }
 
         // ── MDAOToken ──

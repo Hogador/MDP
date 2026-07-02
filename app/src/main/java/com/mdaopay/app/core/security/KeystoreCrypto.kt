@@ -18,6 +18,7 @@ object KeystoreCrypto {
     private const val GCM_IV_LEN = 12
     private const val GCM_TAG_LEN = 128
     private const val AUTH_DURATION_SEC = 300
+    private const val HIGH_RISK_AUTH_DURATION_SEC = 30
 
     private val keystore by lazy { KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) } }
 
@@ -25,7 +26,15 @@ object KeystoreCrypto {
         if (keystore.containsAlias(alias)) {
             return keystore.getKey(alias, null) as SecretKey
         }
-        return generateKey(alias, requireAuth = true)
+        return generateKey(alias, requireAuth = true, authDurationSec = AUTH_DURATION_SEC)
+    }
+
+    fun getOrCreateHighRiskKey(alias: String): SecretKey {
+        val hrAlias = "hr_$alias"
+        if (keystore.containsAlias(hrAlias)) {
+            return keystore.getKey(hrAlias, null) as SecretKey
+        }
+        return generateKey(hrAlias, requireAuth = true, authDurationSec = HIGH_RISK_AUTH_DURATION_SEC)
     }
 
     fun getOrCreateKey(alias: String): SecretKey {
@@ -35,7 +44,7 @@ object KeystoreCrypto {
         return generateKey(alias, requireAuth = false)
     }
 
-    private fun generateKey(alias: String, requireAuth: Boolean): SecretKey {
+    private fun generateKey(alias: String, requireAuth: Boolean, authDurationSec: Int = AUTH_DURATION_SEC): SecretKey {
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
         val specBuilder = KeyGenParameterSpec.Builder(
             alias,
@@ -51,13 +60,13 @@ object KeystoreCrypto {
                 .setInvalidatedByBiometricEnrollment(true)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 specBuilder.setUserAuthenticationParameters(
-                    AUTH_DURATION_SEC,
+                    authDurationSec,
                     BiometricManager.Authenticators.BIOMETRIC_STRONG
                         or BiometricManager.Authenticators.DEVICE_CREDENTIAL
                 )
             } else {
                 @Suppress("DEPRECATION")
-                specBuilder.setUserAuthenticationValidityDurationSeconds(AUTH_DURATION_SEC)
+                specBuilder.setUserAuthenticationValidityDurationSeconds(authDurationSec)
             }
         }
 
@@ -71,6 +80,15 @@ object KeystoreCrypto {
     // ponytail: counter-based IV planned (Phase 1) for deterministic uniqueness — see F-122.md
     fun encrypt(keyAlias: String, plaintext: ByteArray): ByteArray {
         val key = getOrCreateBiometricKey(keyAlias)
+        val cipher = Cipher.getInstance(AES_GCM)
+        cipher.init(Cipher.ENCRYPT_MODE, key)
+        val ciphertext = cipher.doFinal(plaintext)
+        return cipher.iv + ciphertext
+    }
+
+    /** Encrypt with biometric key that has shorter auth validity (30s) for high-risk operations */
+    fun encryptHighRisk(keyAlias: String, plaintext: ByteArray): ByteArray {
+        val key = getOrCreateHighRiskKey(keyAlias)
         val cipher = Cipher.getInstance(AES_GCM)
         cipher.init(Cipher.ENCRYPT_MODE, key)
         val ciphertext = cipher.doFinal(plaintext)

@@ -34,7 +34,10 @@ data class AppConfig(
     val relaySecret: String,
     // F-035: separate key for swap operations (falls back to privateKey)
     val swapPrivateKey: String,
-    // D-1 / F-129: GCP Cloud KMS key resource path
+    // D-1 / F-129: AWS KMS key ID (key ID, ARN, or alias ARN) for production signing
+    // F-134: GCP KMS does NOT support secp256k1 — AWS KMS with ECC_SECG_P256K1 is required
+    val kmsKeyId: String? = null,
+    // Backward compat: old GCP KMS_KEY_NAME (used as fallback if KMS_KEY_ID not set)
     val kmsKeyName: String? = null,
 ) {
     // ponytail: JWT validation at construction (no security bypass — config hygiene)
@@ -102,6 +105,7 @@ data class AppConfig(
 
             val swapPrivateKey = env["SWAP_PRIVATE_KEY"] ?: error("SWAP_PRIVATE_KEY is required — do not reuse PAYMASTER_PRIVATE_KEY for swap operations")
 
+            val kmsKeyId = env["KMS_KEY_ID"] ?: env["KMS_KEY_NAME"] // fallback to old name
             val kmsKeyName = env["KMS_KEY_NAME"]
 
             if (trustedSigner.isNotBlank() && !ADDRESS_REGEX.matches(trustedSigner)) {
@@ -153,11 +157,12 @@ data class AppConfig(
                 isTestnet = isTestnet,
                 relaySecret = relaySecret,
                 swapPrivateKey = Numeric.cleanHexPrefix(swapPrivateKey),
+                kmsKeyId = kmsKeyId,
                 kmsKeyName = kmsKeyName,
             )
             cfg.allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
-            if (kmsKeyName != null && cfg.allowLocalSigning) {
-                throw IllegalStateException("KMS_KEY_NAME and ALLOW_LOCAL_SIGNING cannot both be set. Choose one.")
+            if ((kmsKeyId != null || kmsKeyName != null) && cfg.allowLocalSigning) {
+                throw IllegalStateException("KMS_KEY_ID/KMS_KEY_NAME and ALLOW_LOCAL_SIGNING cannot both be set. Choose one.")
             }
             return cfg
         }

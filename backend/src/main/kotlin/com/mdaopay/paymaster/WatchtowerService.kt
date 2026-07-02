@@ -26,6 +26,7 @@ data class WatchtowerConfig(
     val webhookUrl: String? = null,
     val pollIntervalSec: Long = 60,
     val balanceDropThreshold: Double = 0.5,
+    val approvalThreshold: Int = 2,
 )
 
 data class RecoveryEvent(
@@ -196,7 +197,7 @@ class WatchtowerService(
                 } else {
                     val approvals = (result[2] as Uint256).value
                     val deadline = (result[6] as Uint256).value
-                    if (approvals >= BigInteger.valueOf(3)) {
+                    if (approvals >= BigInteger.valueOf(config.approvalThreshold.toLong())) {
                         watchLog.info("Recovery approvals threshold reached wallet={} approvals={}", walletShort, approvals)
                     }
                     notifyWebhook("recovery_pending", mapOf(

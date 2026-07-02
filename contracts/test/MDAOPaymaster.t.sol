@@ -510,11 +510,11 @@ contract MDAOPaymasterTest is Test {
 
     function test_RevertWhen_WithdrawToExceedsDailyCap() public {
         usdt.mint(address(paymaster), 1000e18);
-        // 5% of 1000e18 = 50e18 per day (default cap)
+        // 50% of 1000e18 = 500e18 per day (default cap)
 
         vm.prank(paymaster.owner());
-        paymaster.withdrawTo(address(usdt), alice, 50e18);
-        assertEq(paymaster.dailyWithdrawnToday(), 50e18);
+        paymaster.withdrawTo(address(usdt), alice, 500e18);
+        assertEq(paymaster.dailyWithdrawnToday(), 500e18);
 
         vm.prank(paymaster.owner());
         vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.DailyCapExceeded.selector));
@@ -1324,11 +1324,11 @@ contract MDAOPaymasterTest is Test {
 
     function test_RevertWhen_DailyCapExceeded() public {
         usdt.mint(address(paymaster), 1000e18);
-        // 5% of 1000e18 = 50e18 per day
+        // 50% of 1000e18 = 500e18 per day (default cap)
 
         vm.prank(paymaster.owner());
-        paymaster.withdrawTo(address(usdt), alice, 50e18);
-        assertEq(paymaster.dailyWithdrawnToday(), 50e18);
+        paymaster.withdrawTo(address(usdt), alice, 500e18);
+        assertEq(paymaster.dailyWithdrawnToday(), 500e18);
 
         // Second withdrawal of 1 wei exceeds cap
         vm.prank(paymaster.owner());

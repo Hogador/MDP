@@ -23,7 +23,11 @@ import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Numeric
 import org.slf4j.LoggerFactory
+import com.mdaopay.paymaster.signing.KmsPaymasterSigner
+import com.mdaopay.paymaster.signing.LocalPaymasterSigner
+import com.mdaopay.paymaster.signing.PaymasterSigner
 import com.mdaopay.paymaster.util.LogSanitizer
+import software.amazon.awssdk.services.kms.KmsClient
 import java.lang.management.ManagementFactory
 import java.net.InetAddress
 import java.security.MessageDigest
@@ -161,13 +165,10 @@ fun main() {
     }
 
     val paymasterSigner: PaymasterSigner = when {
-        config.kmsKeyName != null -> {
-            log.info("D-1: Initializing KmsPaymasterSigner with key={}", config.kmsKeyName)
-            // ponytail: KMS client requires google-cloud-kms dependency.
-            // When implemented, replace with: KmsPaymasterSigner(kmsClient, config.kmsKeyName)
-            throw UnsupportedOperationException(
-                "KMS signing not yet implemented. Add com.google.cloud:google-cloud-kms dependency and implement KmsPaymasterSigner."
-            )
+        config.kmsKeyId != null -> {
+            log.info("D-1: Initializing KmsPaymasterSigner with key={}", config.kmsKeyId)
+            val kmsClient = KmsClient.builder().build()
+            KmsPaymasterSigner(kmsClient, config.kmsKeyId)
         }
         config.allowLocalSigning -> {
             log.warn("D-1: Using LocalPaymasterSigner — only safe for testnets!")
@@ -176,7 +177,7 @@ fun main() {
             java.util.Arrays.fill(pkBytes, 0.toByte())
             LocalPaymasterSigner(key)
         }
-        else -> error("Either KMS_KEY_NAME or ALLOW_LOCAL_SIGNING=true must be set")
+        else -> error("Either KMS_KEY_ID or ALLOW_LOCAL_SIGNING=true must be set")
     }
 
     val priceSources = listOf(

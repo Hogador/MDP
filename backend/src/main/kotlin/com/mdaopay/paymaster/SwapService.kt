@@ -62,8 +62,8 @@ class SwapService(
     private val routerAbi = """
         [{"constant":true,"inputs":[{"name":"amountOut","type":"uint256"},{"name":"path","type":"address[]"}],"name":"getAmountsIn","outputs":[{"name":"amounts","type":"uint256[]"}],"type":"function"},
          {"constant":true,"inputs":[{"name":"amountIn","type":"uint256"},{"name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"name":"amounts","type":"uint256[]"}],"type":"function"},
-         {"constant":false,"inputs":[{"name":"amountOutMin","type":"uint256"},{"name":"path","type":"address[]"},{"name":"to","type":"address"},{"name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[],"type":"function"},
-         {"constant":false,"inputs":[{"name":"amountOutMin","type":"uint256"},{"name":"path","type":"address[]"},{"name":"to","type":"address"},{"name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[],"type":"function"}]
+         {"constant":false,"inputs":[{"name":"amountIn","type":"uint256"},{"name":"amountOutMin","type":"uint256"},{"name":"path","type":"address[]"},{"name":"to","type":"address"},{"name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[],"type":"function"},
+          {"constant":false,"inputs":[{"name":"amountIn","type":"uint256"},{"name":"amountOutMin","type":"uint256"},{"name":"path","type":"address[]"},{"name":"to","type":"address"},{"name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[],"type":"function"}]
     """.trimIndent()
 
     suspend fun getQuote(request: SwapQuoteRequest): Result<SwapQuoteResponse> {
@@ -105,6 +105,7 @@ class SwapService(
                     "swapExactTokensForETH" else "swapExactTokensForTokens",
                 listOf(
                     Uint256(amountIn),
+                    Uint256(minAmountOut),
                     DynamicArray(Address::class.java, path.map { Address(it) }),
                     Address(request.recipient),
                     Uint256(deadline),

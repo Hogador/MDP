@@ -1,21 +1,21 @@
 # Findings Index
 > Read this first. For full details: security/findings/F-XXX.md
-> Last updated: 2026-07-01 (Wave 15 — all OPEN cleared. 0 OPEN, 0 REGRESSED, 90 CLAIMED_FIXED, 9 VERIFIED)
+> Last updated: 2026-07-01 (Wave 16 — corrections from external audit. 4 OPEN, 5 REGRESSED)
 
 ## Dashboard
 | Status | Count |
 |--------|-------|
-| OPEN | 0 |
-| CLAIMED_FIXED | 90 |
-| VERIFIED | 9 |
-| REGRESSED | 0 |
+| OPEN | 5 |
+| CLAIMED_FIXED | 87 |
+| VERIFIED | 8 |
+| REGRESSED | 4 |
 | CONFLICT | 1 |
 | ACCEPTED_RISK | 0 |
 | WONTFIX | 0 |
 
 ## Findings by Severity
 
-### CRITICAL (9)
+### CRITICAL (11)
 | ID | Status | Title | File |
 |----|--------|-------|------|
 | F-001 | CLAIMED_FIXED | Backend signature not verified by paymaster contract | MDAOPaymaster.sol |
@@ -24,11 +24,13 @@
 | F-035 | CLAIMED_FIXED | SwapService uses PAYMASTER_PRIVATE_KEY without authentication | backend/.../SwapRoutes.kt |
 | F-036 | CLAIMED_FIXED | OnChainRegistryClient computes wrong identityHash | backend/.../OnChainRegistryClient.kt |
 | F-100 | CLAIMED_FIXED | Paymaster не используется в send-флоу | SendRepository.kt |
-| F-108 | VERIFIED | P-256 Precompile (RIP-7212) на BSC Testnet | SocialRecoveryModule.sol |
-| F-129 | CLAIMED_FIXED | KMS для paymaster ключа не реализован | backend/.../PaymasterSigner |
+| F-108 | REGRESSED | P-256 Precompile (RIP-7212) на BSC — нет — требуется FCL | SocialRecoveryModule.sol |
+| F-129 | REGRESSED | KMS — GCP KMS не поддерживает secp256k1 (F-134) | backend/.../PaymasterSigner |
 | F-130 | CLAIMED_FIXED | PaymasterClient API не соответствует SignRequest | app/.../PaymasterClient.kt |
+| F-134 | NEW | GCP KMS не поддерживает secp256k1 | backend/.../KmsPaymasterSigner |
+| F-135 | NEW | SIWE auth отсутствует — Web3 gasless flow недоступен | relay/src/routes/auth.ts |
 
-### HIGH (30)
+### HIGH (32)
 | ID | Status | Title | File |
 |----|--------|-------|------|
 | F-003 | CLAIMED_FIXED | No execution window for approved recovery | SocialRecoveryModule.sol |
@@ -41,7 +43,7 @@
 | F-018 | CLAIMED_FIXED | Owner can steal refunds via withdrawTokens | MDAOPaymaster.sol |
 | F-020 | CLAIMED_FIXED | P-256 format doesn't match WebAuthn | SocialRecoveryModule.sol |
 | F-023 | CLAIMED_FIXED | Public RPC for mobile app | RpcProviderManager.kt |
-| F-024 | CLAIMED_FIXED | No certificate pinning | app |
+| F-024 | CLAIMED_FIXED | No certificate pinning — hasRealPins() guard | app |
 | F-032 | VERIFIED | Redis fail-open rate-limiting | RedisClient.kt |
 | F-033 | VERIFIED | Redis fail-open replay-protection | RedisClient.kt |
 | F-037 | CLAIMED_FIXED | MoonPay API key exposed in widget URL | backend/.../FiatOnrampService.kt |
@@ -49,9 +51,9 @@
 | F-042 | CLAIMED_FIXED | relay/Dockerfile — wrangler dev в production | relay/Dockerfile |
 | F-048 | CLAIMED_FIXED | DeadManSwitch: pooled ETH accounting | DeadManSwitch.sol |
 | F-054 | CLAIMED_FIXED | Auth endpoints без rate limiting | Application.kt |
-| F-059 | CLAIMED_FIXED | Ethereum JS Bridge exposes wallet signing | EthereumProviderInjector.kt |
+| F-059 | REGRESSED | Ethereum JS Bridge — dApp integration non-functional | EthereumProviderInjector.kt |
 | F-060 | VERIFIED | Play Integrity verdict client-side без JWT | DeviceIntegrityManager.kt |
-| F-062 | CLAIMED_FIXED | BIOMETRIC_WEAK в recovery (authenticateHighRisk не вызывается) | RecoveryScreen.kt |
+| F-062 | REGRESSED | BIOMETRIC_WEAK + 300s window для high-risk | RecoveryScreen.kt |
 | F-065 | CLAIMED_FIXED | FCM push-уведомления сломаны | fcm.ts |
 | F-102 | CLAIMED_FIXED | vetoRecovery — transfer(BURN_ADDRESS) вместо burn() | SocialRecoveryModule.sol |
 | F-109 | VERIFIED | WebAuthn DER→raw signature conversion | SocialRecoveryModule.sol |
@@ -61,6 +63,8 @@
 | F-113 | NEW | ERC-4337 v0.6 deprecated | contracts |
 | F-131 | CLAIMED_FIXED | cleanupExpiredRecovery сжигает депозит (anti-spam) | SocialRecoveryModule.sol |
 | F-132 | CLAIMED_FIXED | GuardianUserOpBuilder без paymaster | app/.../GuardianUserOpBuilder.kt |
+| F-136 | NEW | WatchtowerService threshold hardcoded 3 | WatchtowerService.kt |
+| F-137 | NEW | SwapService minAmountOut не в calldata (100% MEV) | SwapService.kt |
 
 ### MEDIUM (41)
 | ID | Status | Title | File |

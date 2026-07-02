@@ -13,6 +13,7 @@ import {
 } from './storage'
 import { sendPushNotification } from './fcm'
 import { verifySignature, verifyP256Signature } from './auth'
+import { verifySiweSignature, issueJwt } from './siwe'
 import type {
   AcceptInviteRequest,
   ApiResponse,
@@ -301,6 +302,41 @@ export default {
         )
 
         return json({ notified: tokens.length })
+      }
+
+      // POST /auth/siwe — SIWE (EIP-4361) authentication, no X-Signature required
+      if (method === 'POST' && path === '/auth/siwe') {
+        let text: string
+        try {
+          text = await request.text()
+        } catch {
+          return err('Failed to read body', 400)
+        }
+
+        let body: { message?: string; signature?: string }
+        try {
+          body = JSON.parse(text)
+        } catch {
+          return err('Invalid JSON', 400)
+        }
+
+        const { message, signature } = body
+        if (!message || !signature) return err('Missing message or signature', 400)
+
+        // ponytail: SIWE messages are <10KB, signatures <2KB
+        if (message.length > 10000 || signature.length > 2000) {
+          return err('Payload too large', 413)
+        }
+
+        const recoveredAddress = verifySiweSignature(message, signature)
+        if (!recoveredAddress) return err('Signature verification failed', 401)
+
+        const jwt = await issueJwt(
+          { sub: recoveredAddress, method: 'siwe', iat: Math.floor(Date.now() / 1000) },
+          env.RELAY_SECRET,
+        )
+
+        return json({ token: jwt })
       }
 
       return err('Not found', 404)

@@ -8,9 +8,20 @@ contract DeploySocialRecoveryModule is Script {
     function run() external {
         address deployer = vm.rememberKey(vm.envUint("DEPLOYER_PRIVATE_KEY"));
 
-        // EIP-7951 P256_VERIFY precompile (address 0x100)
-        // Use vm.envAddress for testnets where mock is needed
-        address p256Verifier = 0x0000000000000000000000000000000000000100;
+        // P-256 verifier: override via env or default to RIP-7212 precompile (0x100)
+        // BSC (56/97) does NOT have RIP-7212; deploy FCLP256Verifier and pass its address
+        address p256Verifier = vm.envOr("P256_VERIFIER", address(0x100));
+
+        // Warn if using precompile on BSC (RIP-7212 confirmed absent)
+        uint256 chainId = block.chainid;
+        if (chainId == 56 || chainId == 97) {
+            if (p256Verifier == address(0x100)) {
+                console.log("WARNING: BSC chain detected, RIP-7212 precompile is NOT available.");
+                console.log("Set P256_VERIFIER env to deployed FCLP256Verifier address.");
+            } else {
+                console.log("Using custom P256_VERIFIER:", p256Verifier);
+            }
+        }
 
         vm.startBroadcast(deployer);
         // MDAO token must be deployed first — pass its address here

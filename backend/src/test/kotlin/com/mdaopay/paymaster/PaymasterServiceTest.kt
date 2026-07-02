@@ -10,10 +10,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.web3j.crypto.ECDSASignature
 import org.web3j.crypto.ECKeyPair
 import org.web3j.crypto.Hash
 import org.web3j.crypto.Keys
-import org.web3j.crypto.ECDSASignature
 import org.web3j.crypto.Sign
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.Request
@@ -21,6 +21,8 @@ import org.web3j.protocol.core.methods.response.EthCall
 import org.web3j.protocol.core.methods.response.EthChainId
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount
 import org.web3j.utils.Numeric
+import com.mdaopay.paymaster.signing.LocalPaymasterSigner
+import com.mdaopay.paymaster.signing.PaymasterSigner
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 
@@ -267,8 +269,12 @@ class PaymasterServiceTest {
     @Test
     fun `testSignAndVerifyHashConsistency`() {
         val digest = Hash.sha3("test data for hash consistency check".toByteArray())
-        val (v, r, s) = signer.signDigest(digest)
-        val recoveredKey = Sign.recoverFromSignature(v.toInt() - 27, ECDSASignature(BigInteger(1, r), BigInteger(1, s)), digest)
+        val sig = signer.signDigest(digest)
+        val recoveredKey = Sign.recoverFromSignature(
+            sig.v[0].toInt() - 27,
+            ECDSASignature(BigInteger(1, sig.r), BigInteger(1, sig.s)),
+            digest
+        )
         assertEquals(key.publicKey, recoveredKey, "Sign.recoverFromSignature should return the original public key")
     }
 }

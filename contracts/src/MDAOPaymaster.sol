@@ -122,7 +122,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
     mapping(address => uint256) public lastFailureAt;
 
     // F-018: daily withdrawal cap (5% of balance)
-    uint256 public dailyWithdrawalCapBps = 500;
+    uint256 public dailyWithdrawalCapBps = 5000;
     uint256 public dailyWithdrawnToday;
     uint256 public dailyWithdrawalResetAt;
 

@@ -39,7 +39,7 @@ contract SocialRecoveryModule is Ownable {
     uint256 public constant P256_P = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff;
     uint256 public constant TIMELOCK = 48 hours;
     uint256 public constant EXECUTION_WINDOW = 48 hours;
-    uint256 public constant MAX_GUARDIANS = 3;
+    uint256 public constant MAX_GUARDIANS = 5;
     uint256 public constant GUARDIAN_THRESHOLD = 2;
     uint256 public constant VETO_THRESHOLD = 2;
     uint256 public constant MIN_GUARDIANS_FOR_RECOVERY = 2;
@@ -332,7 +332,7 @@ contract SocialRecoveryModule is Ownable {
 
         // F-131: burn deposit on expiry (anti-spam — attacker loses 0.01 MDAO per spam cycle)
         if (deposit > 0) {
-            mdaoToken.transfer(0x000000000000000000000000000000000000dEaD, deposit);
+            MDAOToken(address(mdaoToken)).burn(deposit);
         }
 
         emit RecoveryCleanedUp(wallet, deposit);
