@@ -116,6 +116,55 @@ class AuthRepository(private val dataSource: DataSource) {
         }
     }
 
+    // ── SIWE nonce methods ──
+
+    fun storeSiweNonce(nonce: String, walletAddress: String, expiresAt: Instant) {
+        val sql = "INSERT INTO siwe_nonces (nonce, wallet_address, expires_at, created_at) VALUES (?, ?, ?, ?)"
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, nonce)
+                stmt.setString(2, walletAddress)
+                stmt.setTimestamp(3, Timestamp.from(expiresAt))
+                stmt.setTimestamp(4, Timestamp.from(Instant.now()))
+                stmt.executeUpdate()
+            }
+        }
+    }
+
+    fun findAndDeleteSiweNonce(nonce: String): String? {
+        val selectSql = "SELECT wallet_address, expires_at FROM siwe_nonces WHERE nonce = ?"
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(selectSql).use { stmt ->
+                stmt.setString(1, nonce)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        val wallet = rs.getString("wallet_address")
+                        val expiresAt = rs.getTimestamp("expires_at").toInstant()
+                        if (Instant.now().isAfter(expiresAt)) {
+                            // Expired — delete and return null
+                            deleteSiweNonce(nonce)
+                            return null
+                        }
+                        // Delete and return wallet address
+                        deleteSiweNonce(nonce)
+                        return wallet
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun deleteSiweNonce(nonce: String) {
+        val sql = "DELETE FROM siwe_nonces WHERE nonce = ?"
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, nonce)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
     private fun rowToUser(rs: java.sql.ResultSet) = AuthUser(
         id = rs.getString("id"),
         email = rs.getString("email"),

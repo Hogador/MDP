@@ -14,11 +14,11 @@ import {SessionKeyModule} from "../src/SessionKeyModule.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {TrustProviderRegistry} from "../src/TrustProviderRegistry.sol";
 import {EcdsaVerifier} from "../src/EcdsaVerifier.sol";
-import {FCLP256Verifier} from "../src/helpers/FCLP256Verifier.sol";
+import {P256Verifier} from "../src/helpers/P256Verifier.sol";
 
 contract Deploy is Script {
     function run() external {
-        address deployer = vm.rememberKey(vm.envUint("DEPLOYER_PRIVATE_KEY"));
+        address deployer = msg.sender;
 
         // ── Chain ID validation (F-117) ──
         uint256 chainId = block.chainid;
@@ -26,7 +26,7 @@ contract Deploy is Script {
         console.log("Chain ID:", chainId);
 
         // ── P-256 Precompile check (F-108, F-138) ──
-        // RIP-7212 is NOT available on BSC (56/97); fallback to FCLP256Verifier (pure-Solidity P-256)
+        // RIP-7212 is NOT available on BSC (56/97); fallback to Daimo P256Verifier (pure-Solidity P-256)
         (bool precompileOk, bytes memory precompileData) = address(0x100).staticcall(
             abi.encodePacked(bytes32(0), bytes32(0), bytes32(0), bytes32(0), bytes32(0))
         );
@@ -37,21 +37,21 @@ contract Deploy is Script {
             p256Verifier = address(0x100);
             console.log("Using RIP-7212 P-256 precompile at 0x100");
         } else {
-            vm.startBroadcast(deployer);
-            FCLP256Verifier fclVerifier = new FCLP256Verifier();
+            vm.startBroadcast();
+            P256Verifier verifier = new P256Verifier();
             vm.stopBroadcast();
-            p256Verifier = address(fclVerifier);
-            console.log("RIP-7212 not available, deployed FCLP256Verifier at:", address(fclVerifier));
+            p256Verifier = address(verifier);
+            console.log("RIP-7212 not available, deployed P256Verifier at:", address(verifier));
         }
 
         // ── MDAOToken ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         MDAOToken token = new MDAOToken(deployer);
         vm.stopBroadcast();
         console.log("MDAOToken:", address(token));
 
         // ── MDAOPaymaster (needs token address) ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         MDAOPaymaster paymaster = new MDAOPaymaster(
             vm.envAddress("ENTRY_POINT"),
             address(token),
@@ -62,47 +62,49 @@ contract Deploy is Script {
         console.log("MDAOPaymaster:", address(paymaster));
 
         // ── InsuranceFund (after paymaster, needs paymaster for fee collection) ──
-        vm.startBroadcast(deployer);
-        InsuranceFund insuranceFund = new InsuranceFund(address(0));
+        address insuranceAuditor = vm.envAddress("INSURANCE_AUDITOR_ADDRESS");
+        require(insuranceAuditor != address(0), "InsuranceFund auditor not set (INSURANCE_AUDITOR_ADDRESS)");
+        require(insuranceAuditor != deployer, "Auditor cannot be deployer");
+        vm.startBroadcast();
+        InsuranceFund insuranceFund = new InsuranceFund(insuranceAuditor);
         vm.stopBroadcast();
         console.log("InsuranceFund:", address(insuranceFund));
-        // ponytail: InsuranceFund needs setPaymaster(address(paymaster)) once contract supports it
 
         // ── SocialRecoveryModule (needs mdaoToken + p256Verifier) ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         SocialRecoveryModule socialRecovery = new SocialRecoveryModule(address(token), p256Verifier);
         vm.stopBroadcast();
         console.log("SocialRecoveryModule:", address(socialRecovery));
 
         // ── NicknameRegistry ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         NicknameRegistry nicknameRegistry = new NicknameRegistry();
         vm.stopBroadcast();
         console.log("NicknameRegistry:", address(nicknameRegistry));
 
         // ── DeadManSwitch ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         DeadManSwitch deadManSwitch = new DeadManSwitch();
         vm.stopBroadcast();
         console.log("DeadManSwitch:", address(deadManSwitch));
         // ponytail: DeadManSwitch uses MIN_INACTIVITY=90d constant; add setter if variable needed
 
         // ── AttestationLedger ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         AttestationLedger attestationLedger = new AttestationLedger();
         vm.stopBroadcast();
         console.log("AttestationLedger:", address(attestationLedger));
         // ponytail: AttestationLedger needs attester role setup once contract supports it
 
         // ── RefundVault (needs paymaster address) ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         RefundVault refundVault = new RefundVault();
         vm.stopBroadcast();
         console.log("RefundVault:", address(refundVault));
         // ponytail: RefundVault needs setPaymaster(address(paymaster)) once contract supports it
 
         // ── SessionKeyModule ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         SessionKeyModule sessionKeys = new SessionKeyModule();
         vm.stopBroadcast();
         console.log("SessionKeyModule:", address(sessionKeys));
@@ -110,7 +112,7 @@ contract Deploy is Script {
         // ── TimelockController ──
         // F-107: proposers = [gnosisSafe], не [deployer]; admin = address(0)
         address gnosisSafe = vm.envOr("GNOSIS_SAFE", deployer);
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         address[] memory proposers = new address[](1);
         proposers[0] = gnosisSafe;
         address[] memory executors = new address[](1);
@@ -121,7 +123,7 @@ contract Deploy is Script {
         console.log("Timelock proposer:", gnosisSafe);
 
         // Transfer paymaster ownership to timelock (2-step)
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         paymaster.transferOwnership(address(timelock));
         vm.stopBroadcast();
         console.log("Paymaster pendingOwner set to TimelockController");
@@ -129,7 +131,7 @@ contract Deploy is Script {
         // Accept ownership through timelock (requires 2-day delay in real deploy)
         // In script, we use vm.warp for demonstration
         bytes memory acceptData = abi.encodeWithSelector(paymaster.acceptOwnership.selector);
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         timelock.schedule(address(paymaster), 0, acceptData, bytes32(0), bytes32("accept-paymaster-ownership"), 2 days);
         vm.stopBroadcast();
         // Note: In production, deployer must wait 2 days and call execute manually
@@ -138,39 +140,39 @@ contract Deploy is Script {
         console.log("Timelock: scheduled paymaster.acceptOwnership (execute after 2 days)");
 
         // ── EcdsaVerifier ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         EcdsaVerifier ecdsaVerifier = new EcdsaVerifier(vm.envAddress("TRUSTED_SIGNER"));
         vm.stopBroadcast();
         console.log("EcdsaVerifier:", address(ecdsaVerifier));
 
         // ── TrustProviderRegistry ──
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         TrustProviderRegistry providerRegistry = new TrustProviderRegistry();
         vm.stopBroadcast();
         console.log("TrustProviderRegistry:", address(providerRegistry));
 
         // Register default provider
         bytes32 providerId = bytes32(uint256(uint160(vm.envAddress("TRUSTED_SIGNER"))));
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         providerRegistry.registerProvider(providerId, address(ecdsaVerifier));
         vm.stopBroadcast();
         console.log("Registered provider:", vm.toString(providerId));
 
         // Set registry on paymaster (owner is still deployer at this point)
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         paymaster.setRegistry(address(providerRegistry));
         vm.stopBroadcast();
         console.log("Paymaster registry set to:", address(providerRegistry));
 
         // Transfer registry ownership to timelock
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         providerRegistry.transferOwnership(address(timelock));
         vm.stopBroadcast();
         console.log("Registry pendingOwner set to TimelockController");
 
         // Schedule registry.acceptOwnership through timelock
         bytes memory acceptRegistryData = abi.encodeWithSelector(providerRegistry.acceptOwnership.selector);
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
         timelock.schedule(address(providerRegistry), 0, acceptRegistryData, bytes32(0), bytes32("accept-registry-ownership"), 2 days);
         vm.stopBroadcast();
         console.log("Timelock: scheduled registry.acceptOwnership (execute after 2 days)");

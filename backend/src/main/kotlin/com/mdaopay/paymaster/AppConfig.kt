@@ -39,6 +39,16 @@ data class AppConfig(
     val kmsKeyId: String? = null,
     // Backward compat: old GCP KMS_KEY_NAME (used as fallback if KMS_KEY_ID not set)
     val kmsKeyName: String? = null,
+    // 0.7: deployed contract addresses for testnet
+    val insuranceFundAddress: String? = null,
+    val deadManSwitchAddress: String? = null,
+    val refundVaultAddress: String? = null,
+    val sessionKeyModuleAddress: String? = null,
+    val attestationLedgerAddress: String? = null,
+    val trustProviderRegistryAddress: String? = null,
+    val ecdsaVerifierAddress: String? = null,
+    val timelockAddress: String? = null,
+    val p256VerifierAddress: String? = null,
 ) {
     // ponytail: JWT validation at construction (no security bypass — config hygiene)
     init {
@@ -108,6 +118,16 @@ data class AppConfig(
             val kmsKeyId = env["KMS_KEY_ID"] ?: env["KMS_KEY_NAME"] // fallback to old name
             val kmsKeyName = env["KMS_KEY_NAME"]
 
+            val insuranceFundAddress = env["INSURANCE_FUND_ADDRESS"]
+            val deadManSwitchAddress = env["DEAD_MAN_SWITCH_ADDRESS"]
+            val refundVaultAddress = env["REFUND_VAULT_ADDRESS"]
+            val sessionKeyModuleAddress = env["SESSION_KEY_MODULE_ADDRESS"]
+            val attestationLedgerAddress = env["ATTESTATION_LEDGER_ADDRESS"]
+            val trustProviderRegistryAddress = env["TRUST_PROVIDER_REGISTRY_ADDRESS"]
+            val ecdsaVerifierAddress = env["ECDSA_VERIFIER_ADDRESS"]
+            val timelockAddress = env["TIMELOCK_ADDRESS"]
+            val p256VerifierAddress = env["P256_VERIFIER_ADDRESS"]
+
             if (trustedSigner.isNotBlank() && !ADDRESS_REGEX.matches(trustedSigner)) {
                 error("Invalid TRUSTED_SIGNER format: must be 0x-prefixed 40-char hex")
             }
@@ -129,6 +149,16 @@ data class AppConfig(
             }
             if (!PRIVATE_KEY_REGEX.matches(privateKey)) {
                 error("Invalid PAYMASTER_PRIVATE_KEY format: must be 64-char hex (with or without 0x prefix)")
+            }
+
+            listOfNotNull(
+                insuranceFundAddress, deadManSwitchAddress, refundVaultAddress,
+                sessionKeyModuleAddress, attestationLedgerAddress, trustProviderRegistryAddress,
+                ecdsaVerifierAddress, timelockAddress, p256VerifierAddress,
+            ).forEach { addr ->
+                if (!ADDRESS_REGEX.matches(addr)) {
+                    error("Invalid contract address format: $addr (must be 0x-prefixed 40-char hex)")
+                }
             }
 
             val cfg = AppConfig(
@@ -159,6 +189,15 @@ data class AppConfig(
                 swapPrivateKey = Numeric.cleanHexPrefix(swapPrivateKey),
                 kmsKeyId = kmsKeyId,
                 kmsKeyName = kmsKeyName,
+                insuranceFundAddress = insuranceFundAddress,
+                deadManSwitchAddress = deadManSwitchAddress,
+                refundVaultAddress = refundVaultAddress,
+                sessionKeyModuleAddress = sessionKeyModuleAddress,
+                attestationLedgerAddress = attestationLedgerAddress,
+                trustProviderRegistryAddress = trustProviderRegistryAddress,
+                ecdsaVerifierAddress = ecdsaVerifierAddress,
+                timelockAddress = timelockAddress,
+                p256VerifierAddress = p256VerifierAddress,
             )
             cfg.allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
             if ((kmsKeyId != null || kmsKeyName != null) && cfg.allowLocalSigning) {

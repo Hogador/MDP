@@ -474,6 +474,44 @@ fun main() {
                 }
             }
 
+            // ── SIWE (Sign-In with Ethereum) — public ──
+            get("/auth/siwe/nonce/{walletAddress}") {
+                val wallet = call.parameters["walletAddress"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing wallet address"))
+                    return@get
+                }
+                val svc = authService ?: run {
+                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Auth service unavailable"))
+                    return@get
+                }
+                val nonce = svc.generateNonce(wallet)
+                call.respond(mapOf("nonce" to nonce))
+            }
+
+            post("/auth/siwe") {
+                val body = call.receive<Map<String, String>>()
+                val message = body["message"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing message"))
+                    return@post
+                }
+                val signature = body["signature"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing signature"))
+                    return@post
+                }
+                val svc = authService ?: run {
+                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Auth service unavailable"))
+                    return@post
+                }
+                val result = svc.verifySiwe(message, signature)
+                result.fold(
+                    onSuccess = { tokens -> call.respond(tokens) },
+                    onFailure = { err ->
+                        call.response.status(HttpStatusCode.Unauthorized)
+                        call.respond(mapOf("error" to (err.message ?: "SIWE verification failed")))
+                    }
+                )
+            }
+
             post("/auth/refresh") {
                 val ip = extractClientIp(call.request)
                 if (authIpRateLimiter.isLimited("refresh:$ip", AUTH_REFRESH_LIMIT, AUTH_WINDOW_SEC)) {

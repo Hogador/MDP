@@ -18,3 +18,11 @@ compatibility_date = "2025-02-14"
 binding = "KV"
 id = ""
 preview_id = ""
+
+[env.testnet]
+name = "mdaopay-relay-testnet"
+kv_namespaces = [
+  { binding = "KV", id = "", preview_id = "" }
+]
+# Set testnet-specific vars via: wrangler secret put --env testnet
+#  RELAY_SECRET, FCM_SERVER_KEY, SOCIAL_RECOVERY_MODULE, RPC_URL
