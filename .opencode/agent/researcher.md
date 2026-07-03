@@ -1,6 +1,7 @@
 ---
 description: "5 режимов: security/architecture/performance/ux/devops"
 mode: subagent
+model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Researcher

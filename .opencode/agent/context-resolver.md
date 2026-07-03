@@ -1,6 +1,7 @@
 ---
 description: "Подгрузка контекста + анализ радиуса (--impact)"
 mode: subagent
+model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Context Resolver
