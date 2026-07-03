@@ -1,7 +1,7 @@
 ---
 description: "Coordinator v11 + ZCode + Strict + Steer + Logging"
 mode: primary
-model: "opencode/big-pickle"
+model: "sambanova/DeepSeek-V3.1"
 ---
 
 <!-- СИСТЕМНЫЙ ПРОМТ — Coordinator Swarm v10 -->
