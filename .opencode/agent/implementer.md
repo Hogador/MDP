@@ -1,5 +1,5 @@
 ---
-description: "TDD + forge build / gradlew + ACI принципы (EN prompt, RU output)"
+description: "TDD + forge build / gradlew"
 mode: subagent
 ---
 
