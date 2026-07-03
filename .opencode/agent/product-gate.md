@@ -1,6 +1,7 @@
 ---
 description: "Сверка с VISION.md и PRD"
 mode: subagent
+model: "groq/llama-3.3-70b-versatile"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Product Gate

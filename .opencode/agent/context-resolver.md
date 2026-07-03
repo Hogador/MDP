@@ -1,6 +1,7 @@
 ---
 description: "Подгрузка контекста + анализ радиуса (--impact)"
 mode: subagent
+model: "groq/llama-3.3-70b-versatile"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Context Resolver
