@@ -1,6 +1,7 @@
 ---
-description: "Red Team критик (Ponytail)"
+description: "Red Team"
 mode: subagent
+model: "sambanova/DeepSeek-V3.1"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Code Reviewer

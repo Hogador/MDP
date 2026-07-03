@@ -1,49 +1,87 @@
 #!/usr/bin/env bash
 # swarm-sync-prompts.sh — синхронизация .hive/prompts/ → .opencode/agent/
-# Запускать после правки промтов в .hive/prompts/
-#
-# Важно: поле tools НЕ используется — mode: primary уже даёт coordinator
-# доступ к task tool, mode: subagent его ограничивает.
+# СОХРАНЯЕТ model: (читает из текущего .opencode/agent/*.md если есть)
 
 set -euo pipefail
 
-make_agent() {
-  local agent_name="$1"
-  local description="$2"
-  local mode="$3"
-  local prompt_file=".hive/prompts/$agent_name/system.md"
-  local output_file=".opencode/agent/$agent_name.md"
+# Модели по умолчанию (используются если в .opencode/agent/*.md нет model:)
+declare -A DEFAULT_MODELS=(
+    ["coordinator"]="opencode/big-pickle"
+    ["context-resolver"]="groq/llama-3.3-70b-versatile"
+    ["product-gate"]="groq/llama-3.3-70b-versatile"
+    ["researcher"]="sambanova/DeepSeek-V3.1"
+    ["architect"]="sambanova/DeepSeek-V3.1"
+    ["implementer"]="mistral/codestral-latest"
+    ["code-reviewer"]="sambanova/DeepSeek-V3.1"
+    ["verifier"]="sambanova/DeepSeek-V3.1"
+    ["adr-writer"]="mistral/codestral-latest"
+    ["lessons-learned"]="groq/llama-3.3-70b-versatile"
+    ["evolution-manager"]="groq/llama-3.3-70b-versatile"
+)
 
-  if [ ! -f "$prompt_file" ]; then
-    echo "  [SKIP] $prompt_file не найден"
-    return 1
-  fi
+declare -A DESCRIPTIONS=(
+    ["coordinator"]="Coordinator v11 + ZCode + Strict + Steer + Logging"
+    ["context-resolver"]="Подгрузка контекста + --impact"
+    ["product-gate"]="Сверка с VISION"
+    ["researcher"]="5 режимов + edge cases"
+    ["architect"]="3 альтернативы + interview + edge cases"
+    ["implementer"]="TDD + ACI + refactor mode"
+    ["code-reviewer"]="Red Team"
+    ["verifier"]="3 режима"
+    ["adr-writer"]="Фиксация факта"
+    ["lessons-learned"]="Tier 2 + session summary"
+    ["evolution-manager"]="Чистка по триггерам"
+)
 
-  {
-    echo "---"
-    echo "description: \"$description\""
-    echo "mode: $mode"
-    echo "---"
-    echo ""
-    cat "$prompt_file"
-  } > "$output_file"
+declare -A MODES=(
+    ["coordinator"]="primary"
+    ["context-resolver"]="subagent"
+    ["product-gate"]="subagent"
+    ["researcher"]="subagent"
+    ["architect"]="subagent"
+    ["implementer"]="subagent"
+    ["code-reviewer"]="subagent"
+    ["verifier"]="subagent"
+    ["adr-writer"]="subagent"
+    ["lessons-learned"]="subagent"
+    ["evolution-manager"]="subagent"
+)
 
-  echo "  [OK] synced $agent_name"
-}
+echo "Синхронизация .hive/prompts/ → .opencode/agent/..."
 
-echo "Синхронизация промтов .hive/prompts/ → .opencode/agent/..."
-
-make_agent "coordinator" "Главный роутер сворма MDAOPay v9.0 — вызывает других агентов через task" "primary"
-make_agent "context-resolver" "Подгрузка контекста + анализ радиуса (--impact)" "subagent"
-make_agent "product-gate" "Сверка с VISION.md и PRD" "subagent"
-make_agent "researcher" "5 режимов: security/architecture/performance/ux/devops" "subagent"
-make_agent "architect" "Архитектурные решения по radius" "subagent"
-make_agent "implementer" "TDD + forge build / gradlew" "subagent"
-make_agent "code-reviewer" "Red Team критик (Ponytail)" "subagent"
-make_agent "verifier" "3 режима: build/logic/requirements" "subagent"
-make_agent "adr-writer" "Фиксация свершившегося факта" "subagent"
-make_agent "lessons-learned" "Tier 2 куратор памяти" "subagent"
-make_agent "evolution-manager" "Чистка по триггерам — только архивация" "subagent"
+for agent in "${!DEFAULT_MODELS[@]}"; do
+    src=".hive/prompts/$agent/system.md"
+    dst=".opencode/agent/$agent.md"
+    
+    if [ ! -f "$src" ]; then
+        echo "  [SKIP] $agent: нет исходника"
+        continue
+    fi
+    
+    # Пытаемся сохранить текущую model: из существующего файла
+    CURRENT_MODEL=""
+    if [ -f "$dst" ]; then
+        CURRENT_MODEL=$(grep -E '^model:' "$dst" 2>/dev/null | head -1 | sed 's/^model:[[:space:]]*//' | tr -d '"' || echo "")
+    fi
+    
+    # Если не удалось — используем default
+    if [ -z "$CURRENT_MODEL" ]; then
+        CURRENT_MODEL="${DEFAULT_MODELS[$agent]}"
+    fi
+    
+    # Собираем файл
+    {
+        echo "---"
+        echo "description: \"${DESCRIPTIONS[$agent]}\""
+        echo "mode: ${MODES[$agent]}"
+        echo "model: \"$CURRENT_MODEL\""
+        echo "---"
+        echo ""
+        cat "$src"
+    } > "$dst"
+    
+    echo "  [OK] $agent → $CURRENT_MODEL"
+done
 
 echo ""
-echo "Готово. Все 11 агентов синхронизированы (без поля tools)."
+echo "Готово. Все 11 агентов синхронизированы с model: в frontmatter."
