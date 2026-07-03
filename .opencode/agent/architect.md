@@ -1,6 +1,7 @@
 ---
 description: "Архитектурные решения по radius"
 mode: subagent
+model: "cloudflare-workers-ai/@cf/nvidia/nemotron-3-120b-a12b"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Architect

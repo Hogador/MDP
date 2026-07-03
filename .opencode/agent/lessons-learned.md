@@ -1,6 +1,7 @@
 ---
 description: "Tier 2 куратор памяти"
 mode: subagent
+model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Lessons Learned

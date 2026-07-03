@@ -1,6 +1,7 @@
 ---
 description: "Чистка по триггерам — только архивация"
 mode: subagent
+model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Evolution Manager
