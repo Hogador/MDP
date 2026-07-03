@@ -1,6 +1,7 @@
 ---
-description: "Архитектурные решения по radius"
+description: "3 альтернативы + interview + edge cases"
 mode: subagent
+model: "sambanova/DeepSeek-V3.1"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Architect

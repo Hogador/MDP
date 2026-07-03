@@ -1,6 +1,7 @@
 ---
-description: "5 режимов: security/architecture/performance/ux/devops"
+description: "5 режимов + edge cases"
 mode: subagent
+model: "sambanova/DeepSeek-V3.1"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Researcher

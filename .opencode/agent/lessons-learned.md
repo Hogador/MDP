@@ -1,6 +1,7 @@
 ---
-description: "Tier 2 куратор памяти"
+description: "Tier 2 + session summary"
 mode: subagent
+model: "groq/llama-3.3-70b-versatile"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Lessons Learned
