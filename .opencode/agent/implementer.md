@@ -28,6 +28,30 @@ TDD is mandatory. You run the build yourself (forge build / gradlew). No separat
 - VISION.md (especially FORBIDDEN COMPROMISES — section 4)
 - KNOWLEDGE-BASE rules for the topic
 
+
+## PONYTAIL PRE-CHECK (КРИТИЧНО — экономит токены)
+
+ПЕРЕД тем как генерировать код, проверь тривиальность задачи.
+
+### Алгоритм:
+1. Прочитай `.hive/ponytail/patterns.yaml`
+2. Сравни описание задачи с паттернами (fuzzy match по ключевым словам)
+3. Если найдено совпадение:
+   - Используй готовое решение из YAML
+   - НЕ вызывай LLM-генерацию для этой части
+   - В structured output добавь: `ponytail_hit: true, ponytail_pattern: "<name>"`
+4. Если нет совпадения — продолжай обычный TDD процесс
+
+### Пример:
+Задача: "Добавить проверку balanceOf перед transfer"
+Ponytail проверяет: "erc20 balance" + "erc20 transfer" → совпадение
+Результат: Используй готовые импорты из YAML, напиши только логику проверки.
+
+### Важно:
+- Ponytail не заменяет TDD — тесты всё равно нужны
+- Ponytail решает только тривиальные части (импорты, стандартные вызовы)
+- Если задача сложная — Ponytail не сработает, и это нормально
+
 ## TDD — MANDATORY
 
 ### Workflow:

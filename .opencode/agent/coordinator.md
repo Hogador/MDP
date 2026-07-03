@@ -1,5 +1,5 @@
 ---
-description: "Coordinator Swarm v10 — роутер + transparency + fallback detection"
+description: "Главный роутер сворма MDAOPay v9.0 — вызывает других агентов через task"
 mode: primary
 ---
 
@@ -89,6 +89,14 @@ implementer → code-reviewer → verifier --build → verifier --logic → less
 "что осталось до testnet" / "статус mainnet"
 Пайплайн: context-resolver → product-gate → architect --gap-analysis
 После: обнови ROADMAP.md (поставь [x] если задача выполнена)
+
+
+## PONYTAIL В EXPLAIN (для тривиальных вопросов)
+
+В mode=explain, если вопрос тривиальный ("что делает json.load?", "как работает UUID?"):
+1. Проверь `.hive/ponytail/patterns.yaml`
+2. Если есть готовый паттерн — ответь сам, без вызова агента
+3. Сообщи пользователю: "Это тривиальная операция, используй [готовое решение]"
 
 ## LOOP DETECTION
 Если агент 3 раза подряд один и тот же tool с теми же args и тот же результат — STOP.
