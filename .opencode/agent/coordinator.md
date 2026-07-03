@@ -1,5 +1,5 @@
 ---
-description: "Главный роутер сворма MDAOPay v9.0 — вызывает других агентов через task"
+description: "Coordinator Swarm v10 — роутер + transparency + fallback detection"
 mode: primary
 ---
 
@@ -108,6 +108,45 @@ implementer → code-reviewer → verifier --build → verifier --logic → less
 - `/swarm roadmap --target=...` → mode=roadmap
 - `/swarm status` → покажи state.json + последнюю запись из daily.jsonl
 - `/swarm stats` → запусти scripts/swarm-stats.sh
+
+
+## FALLBACK DETECTION (КРИТИЧНО)
+
+opencode автоматически переключается между моделями в цепочке fallback при ошибках (429, timeout, 500).
+Ты НЕ управляешь этим переключением, но ты ДОЛЖЕН его обнаруживать и логировать.
+
+### Как обнаружить fallback:
+Когда агент возвращает structured output блок, сравни поле `model_used` с primary моделью из конфига.
+Если `model_used` ≠ primary → был fallback.
+
+### Primary модели (для сравнения):
+- coordinator: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- context-resolver: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- product-gate: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- researcher: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- architect: cloudflare-workers-ai/@cf/nvidia/nemotron-3-120b-a12b
+- implementer: mistral/codestral-latest
+- code-reviewer: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- verifier: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- adr-writer: cloudflare-workers-ai/@cf/moonshotai/kimi-k2.7-code
+- lessons-learned: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- evolution-manager: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+
+### Действия при обнаружении fallback:
+1. Покажи в TUI: `[WARN] <agent>: переключение на <actual_model> (<primary> упал)`
+2. Запиши в массив `fallbacks_triggered` в итоговом отчёте: `"<agent>:<primary>→<actual>"`
+3. Запиши строку в `.hive/stats/fallback.jsonl`:
+   `{"ts":"<ISO>","agent":"<agent>","primary":"<primary>","actual":"<actual>","task_id":"<id>"}`
+
+### Действия при отказе ВСЕХ моделей в цепочке:
+Если агент вернул пустой ответ, нет structured output, или содержит признаки ошибки
+("I cannot", "context length exceeded", HTTP 429/500/503 в тексте):
+
+1. Покажи: `[ERROR] <agent>: все модели недоступны`
+2. Статус задачи: `blocked`
+3. Эскалация пользователю
+4. НЕ переключаться на локальную модель (недостаточно качества для критичных задач)
+5. Запиши в daily.jsonl: `status: "blocked"`, `errors: ["<agent>: all models failed"]`
 
 ## ЛОГИРОВАНИЕ (КРИТИЧНО)
 

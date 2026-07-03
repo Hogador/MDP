@@ -52,6 +52,33 @@ for line in stats_file.read_text(encoding="utf-8").splitlines():
 
 if not records:
     print()
+# 7. Fallbacks
+echo ""
+echo "─── 7. FALLBACKS ЗА ПЕРИОД ───"
+FB_FILE=".hive/stats/fallback.jsonl"
+if [ -f "$FB_FILE" ]; then
+    FB_COUNT=$(grep -c "agent" "$FB_FILE" 2>/dev/null || echo 0)
+    echo "  Всего переключений: $FB_COUNT"
+    echo ""
+    echo "  Топ моделей (упали):"
+    grep -o '"primary":"[^"]*"' "$FB_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -5 | while read line; do
+        echo "    $line"
+    done
+    echo ""
+    echo "  Топ backup моделей (выручили):"
+    grep -o '"actual":"[^"]*"' "$FB_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -5 | while read line; do
+        echo "    $line"
+    done
+    echo ""
+    echo "  Топ агентов с fallback:"
+    grep -o '"agent":"[^"]*"' "$FB_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -5 | while read line; do
+        echo "    $line"
+    done
+else
+    echo "  Файл fallback.jsonl не найден"
+fi
+
+
     print("Записей за период нет. Запустите задачу через сворм.")
     print()
     exit(0)

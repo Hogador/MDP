@@ -1,0 +1,82 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agents": {
+    "coordinator": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "omniroute/auto/coding",
+        "sambanova/DeepSeek-V3.1"
+      ]
+    },
+    "context-resolver": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "sambanova/DeepSeek-V3.1",
+        "openrouter/nvidia/nemotron-3-nano-30b-a3b:free"
+      ]
+    },
+    "product-gate": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "sambanova/DeepSeek-V3.1",
+        "groq/llama-3.3-70b-versatile"
+      ]
+    },
+    "researcher": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "sambanova/DeepSeek-V3.1",
+        "nvidia/meta/llama-3.1-405b-instruct"
+      ]
+    },
+    "architect": {
+      "model": [
+        "cloudflare-workers-ai/@cf/nvidia/nemotron-3-120b-a12b",
+        "sambanova/DeepSeek-V3.1",
+        "nvidia/meta/llama-3.1-405b-instruct"
+      ]
+    },
+    "implementer": {
+      "model": [
+        "mistral/codestral-latest",
+        "openrouter/qwen/qwen3-coder:free",
+        "cloudflare-workers-ai/@cf/moonshotai/kimi-k2.7-code"
+      ]
+    },
+    "code-reviewer": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "sambanova/DeepSeek-V3.1",
+        "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
+      ]
+    },
+    "verifier": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "sambanova/DeepSeek-V3.1",
+        "nvidia/meta/llama-3.1-405b-instruct"
+      ]
+    },
+    "adr-writer": {
+      "model": [
+        "cloudflare-workers-ai/@cf/moonshotai/kimi-k2.7-code",
+        "openrouter/qwen/qwen3-coder:free",
+        "mistral/codestral-latest"
+      ]
+    },
+    "lessons-learned": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "openrouter/qwen/qwen3-coder:free",
+        "groq/llama-3.3-70b-versatile"
+      ]
+    },
+    "evolution-manager": {
+      "model": [
+        "cloudflare-workers-ai/@cf/zai-org/glm-5.2",
+        "openrouter/qwen/qwen3-coder:free",
+        "groq/llama-3.3-70b-versatile"
+      ]
+    }
+  }
+}
