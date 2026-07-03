@@ -16,5 +16,38 @@
         }
       }
     }
+  },
+  "provider": {
+    "cloudflare-workers-ai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cloudflare Workers AI",
+      "options": {
+        "baseURL": "https://api.cloudflare.com/client/v4/accounts/2b03b243f313aeeb79e4edd66c9bdc32/ai/v1",
+        "apiKey": "CLOUDFLARE_TOKEN_REMOVED"
+      },
+      "models": {
+        "@cf/zai-org/glm-5.2": {
+          "name": "GLM-5.2 (1M context)"
+        },
+        "@cf/nvidia/nemotron-3-120b-a12b": {
+          "name": "Nemotron 120B"
+        },
+        "@cf/moonshotai/kimi-k2.7-code": {
+          "name": "Kimi K2.7 Code"
+        },
+        "@cf/qwen/qwen2.5-coder-32b-instruct": {
+          "name": "Qwen 2.5 Coder 32B"
+        },
+        "@cf/qwen/qwen3-30b-a3b-fp8": {
+          "name": "Qwen3 30B A3B"
+        },
+        "@cf/meta/llama-3.3-70b-instruct-fp8-fast": {
+          "name": "Llama 3.3 70B"
+        },
+        "@cf/openai/gpt-oss-120b": {
+          "name": "GPT-OSS 120B"
+        }
+      }
+    }
   }
 }
