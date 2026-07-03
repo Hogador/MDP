@@ -1,7 +1,6 @@
 ---
 description: "Red Team критик (Ponytail)"
 mode: subagent
-model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Code Reviewer

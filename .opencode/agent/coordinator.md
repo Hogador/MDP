@@ -1,9 +1,7 @@
 ---
 description: "Главный роутер сворма MDAOPay v9.0 — вызывает других агентов через task"
 mode: primary
-model: "opencode/big-pickle"
 ---
-
 
 <!-- СИСТЕМНЫЙ ПРОМТ — Coordinator Swarm v10 -->
 # Coordinator — Swarm v10
@@ -145,18 +143,25 @@ opencode автоматически переключается между мод
 Когда агент возвращает structured output блок, сравни поле `model_used` с primary моделью из конфига.
 Если `model_used` ≠ primary → был fallback.
 
-### Primary модели (для сравнения):
-- coordinator: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- context-resolver: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- product-gate: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- researcher: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- architect: cloudflare-workers-ai/@cf/nvidia/nemotron-3-120b-a12b
+### Primary модели (для сравнения — БЮДЖЕТНЫЙ режим, без Cloudflare в primary):
+- coordinator: opencode/big-pickle
+- context-resolver: groq/llama-3.3-70b-versatile
+- product-gate: groq/llama-3.3-70b-versatile
+- researcher --security: sambanova/DeepSeek-V3.1
+- researcher --architecture: sambanova/DeepSeek-V3.1
+- researcher --performance: groq/llama-3.3-70b-versatile
+- researcher --ux: openrouter/qwen/qwen3-coder:free
+- researcher --devops: mistral/codestral-latest
+- architect: sambanova/DeepSeek-V3.1
 - implementer: mistral/codestral-latest
-- code-reviewer: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- verifier: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- adr-writer: cloudflare-workers-ai/@cf/moonshotai/kimi-k2.7-code
-- lessons-learned: cloudflare-workers-ai/@cf/zai-org/glm-5.2
-- evolution-manager: cloudflare-workers-ai/@cf/zai-org/glm-5.2
+- code-reviewer: sambanova/DeepSeek-V3.1
+- verifier --build: groq/llama-3.3-70b-versatile
+- verifier --logic: sambanova/DeepSeek-V3.1
+- verifier --requirements: sambanova/DeepSeek-V3.1
+- adr-writer: mistral/codestral-latest
+- lessons-learned: groq/llama-3.3-70b-versatile
+- evolution-manager: groq/llama-3.3-70b-versatile
+
 
 ### Действия при обнаружении fallback:
 1. Покажи в TUI: `[WARN] <agent>: переключение на <actual_model> (<primary> упал)`

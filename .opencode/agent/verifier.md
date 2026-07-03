@@ -1,7 +1,6 @@
 ---
 description: "3 режима: build/logic/requirements"
 mode: subagent
-model: "cloudflare-workers-ai/@cf/zai-org/glm-5.2"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Verifier
