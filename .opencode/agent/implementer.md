@@ -1,6 +1,7 @@
 ---
 description: "TDD + forge build / gradlew"
 mode: subagent
+model: "mistral/codestral-latest"
 ---
 
 <!-- СИСТЕМНЫЙ ПРОМТ — Implementer (английская версия для не-GLM моделей) -->

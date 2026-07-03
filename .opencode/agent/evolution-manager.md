@@ -1,6 +1,7 @@
 ---
 description: "Чистка по триггерам — только архивация"
 mode: subagent
+model: "groq/llama-3.3-70b-versatile"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Evolution Manager
