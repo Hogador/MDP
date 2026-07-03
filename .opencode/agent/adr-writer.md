@@ -1,7 +1,6 @@
 ---
 description: "Фиксация свершившегося факта"
 mode: subagent
-model: "mistral/codestral-latest"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — ADR Writer

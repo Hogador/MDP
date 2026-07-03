@@ -1,7 +1,6 @@
 ---
 description: "TDD + forge build / gradlew"
 mode: subagent
-model: "mistral/codestral-latest"
 ---
 
 <!-- СИСТЕМНЫЙ ПРОМТ — Implementer (английская версия для не-GLM моделей) -->
@@ -212,3 +211,20 @@ errors: []
 ---
 
 Без этого блока ответ считается неполным.
+
+
+## REFACTOR MODE (для миграций)
+
+Если задача — миграция (замена X на Y во всём проекте):
+
+1. find every place we say "{X}" or a close variant
+2. show me each one in context (файл + строка + окружение)
+3. update them all to "{Y}"
+4. leave tests and changelog alone (если явно не просят)
+
+Команды:
+- grep -rn "{X}" --include="*.sol" --include="*.kt" --include="*.ts"
+- Показать каждый match с контекстом (3 строки до/после)
+- Заменить через search-replace (не через sed!)
+
+В structured output добавь: `refactor_mode: true, replacements_made: <N>`
