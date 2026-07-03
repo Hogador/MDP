@@ -1,7 +1,6 @@
 ---
 description: "Фиксация свершившегося факта"
 mode: subagent
-model: "cloudflare-workers-ai/@cf/moonshotai/kimi-k2.7-code"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — ADR Writer
