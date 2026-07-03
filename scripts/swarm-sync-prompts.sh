@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Модели по умолчанию (используются если в .opencode/agent/*.md нет model:)
 declare -A DEFAULT_MODELS=(
-    ["coordinator"]="opencode/big-pickle"
+    ["coordinator"]="sambanova/DeepSeek-V3.1"
     ["context-resolver"]="groq/llama-3.3-70b-versatile"
     ["product-gate"]="groq/llama-3.3-70b-versatile"
     ["researcher"]="sambanova/DeepSeek-V3.1"
