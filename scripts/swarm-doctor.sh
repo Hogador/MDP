@@ -353,7 +353,7 @@ check_contains ".hive/prompts/architect/system.md" "Red Team" "Architect: Red Te
 check_contains ".hive/prompts/implementer/system.md" "TDD" "Implementer: TDD обязателен"
 check_contains ".hive/prompts/implementer/system.md" "forge build" "Implementer: сам вызывает forge build"
 check_contains ".hive/prompts/implementer/system.md" "loop" "Implementer: осведомлён о loop detection"
-check_contains ".hive/prompts/implementer/system.md" "не верифицируешь свой код" "Implementer: запрет self-verification"
+check_contains ".hive/prompts/implementer/system.md" "self-verification prohibition" "Implementer: запрет self-verification (EN)"
 
 # Code-reviewer: Red Team + severity
 check_contains ".hive/prompts/code-reviewer/system.md" "Red Team" "Code-reviewer: Red Team"
