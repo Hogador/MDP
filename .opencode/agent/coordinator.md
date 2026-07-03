@@ -1,7 +1,6 @@
 ---
 description: "Главный роутер сворма MDAOPay v9.0 — вызывает других агентов через task"
 mode: primary
-model: "opencode/big-pickle"
 ---
 
 <!-- СИСТЕМНЫЙ ПРОМТ — Coordinator Swarm v10 -->

@@ -1,7 +1,6 @@
 ---
 description: "3 режима: build/logic/requirements"
 mode: subagent
-model: "sambanova/DeepSeek-V3.1"
 ---
 
 # СИСТЕМНЫЙ ПРОМТ — Verifier
