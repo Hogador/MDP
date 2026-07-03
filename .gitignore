@@ -125,3 +125,6 @@ gradlew.bat
 # docs/ROADMAP.md         ← коммитим
 # docs/adr/               ← коммитим
 # security/               ← коммитим
+
+# === ZCode IDE runtime (не коммитить) ===
+.zcode/
