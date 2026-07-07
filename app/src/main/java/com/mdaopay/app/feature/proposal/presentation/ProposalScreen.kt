@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,7 +37,7 @@ fun ProposalScreen(
     val d = ext.themeColors
 
     GradientBackground {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, top = 14.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 14.dp)) {
             MDAOTopBar(title = "DAO Proposals", onBack = onBack)
 
             when {
@@ -53,9 +54,26 @@ fun ProposalScreen(
                 state.proposals.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Нет предложений", color = d.text2, fontFamily = MarsFont)
                 }
-                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
-                    items(state.proposals, key = { it.id }) { proposal ->
-                        ProposalCard(proposal = proposal)
+                else -> {
+                    // Vote status snackbar
+                    val vs by viewModel.voteState.collectAsState()
+                    if (vs.voteTxHash != null) {
+                        LaunchedEffect(vs.voteTxHash) {
+                            kotlinx.coroutines.delay(3000)
+                            viewModel.clearVoteState()
+                        }
+                    }
+
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
+                        items(state.proposals, key = { it.id }) { proposal ->
+                            ProposalCard(
+                                proposal = proposal,
+                                isVoting = vs.isVoting && vs.votingProposalId == proposal.id,
+                                voteError = if (vs.votingProposalId == proposal.id) vs.voteError else null,
+                                voteTxHash = if (vs.votingProposalId == proposal.id) vs.voteTxHash else null,
+                                onVote = { support -> viewModel.castVote(proposal.id, support) }
+                            )
+                        }
                     }
                 }
             }
@@ -64,14 +82,20 @@ fun ProposalScreen(
 }
 
 @Composable
-private fun ProposalCard(proposal: ProposalSummary) {
+private fun ProposalCard(
+    proposal: ProposalSummary,
+    isVoting: Boolean = false,
+    voteError: String? = null,
+    voteTxHash: String? = null,
+    onVote: (support: Int) -> Unit = {}
+) {
     val ext = MaterialTheme.extended
     val d = ext.themeColors
 
     val statusColor = when (proposal.status) {
         "active" -> ext.success
         "ended" -> ext.warning
-        "executed" -> ext.info
+        "executed" -> d.text2
         "cancelled" -> ext.danger
         else -> d.text3
     }
@@ -136,6 +160,32 @@ private fun ProposalCard(proposal: ProposalSummary) {
                     val remaining = (proposal.deadline * 1000 - System.currentTimeMillis()) / 1000 / 3600
                     val timeText = if (remaining > 0) "${remaining}h left" else "Ended"
                     Text(timeText, fontSize = 10.sp, color = d.text3, fontFamily = MarsFont)
+                }
+            }
+
+            // Vote buttons (active proposals only)
+            if (proposal.status == "active") {
+                if (voteTxHash != null) {
+                    Text("Vote sent: ${voteTxHash.take(10)}...", fontSize = 11.sp, color = ext.success, fontFamily = MarsFont)
+                } else if (voteError != null) {
+                    Text("Error: $voteError", fontSize = 11.sp, color = ext.danger, fontFamily = MarsFont)
+                } else {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MDAOButton(
+                            text = if (isVoting) "..." else "For",
+                            onClick = { HapticManager.light(); onVote(1) },
+                            variant = MDAOButtonVariant.Primary,
+                            modifier = Modifier.weight(1f),
+                            enabled = !isVoting
+                        )
+                        MDAOButton(
+                            text = if (isVoting) "..." else "Against",
+                            onClick = { HapticManager.light(); onVote(0) },
+                            variant = MDAOButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
+                            enabled = !isVoting
+                        )
+                    }
                 }
             }
         }

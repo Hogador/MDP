@@ -124,9 +124,6 @@ fun MainScreen(
                 }
             )
         )
-                }
-            )
-        )
     }
 
     Scaffold(
