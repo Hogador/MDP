@@ -25,6 +25,8 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
+            buildConfigField("long", "CHAIN_ID", "97L")
+            buildConfigField("String", "PROPOSAL_CONTRACT", "\"${project.findProperty("PROPOSAL_CONTRACT_DEV") ?: "0x0000000000000000000000000000000000000000"}\"")
             buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:8080\"")
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_DEV") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
@@ -42,6 +44,8 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
+            buildConfigField("long", "CHAIN_ID", "97L")
+            buildConfigField("String", "PROPOSAL_CONTRACT", "\"${project.findProperty("PROPOSAL_CONTRACT_STAGING") ?: "0x0000000000000000000000000000000000000000"}\"")
             buildConfigField("String", "BACKEND_URL", "\"https://staging-api.mdaopay.com\"")
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_STAGING") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
@@ -54,6 +58,8 @@ android {
         }
         create("prod") {
             dimension = "environment"
+            buildConfigField("long", "CHAIN_ID", "56L")
+            buildConfigField("String", "PROPOSAL_CONTRACT", "\"${project.findProperty("PROPOSAL_CONTRACT_PROD") ?: ""}\"")
             buildConfigField("String", "BACKEND_URL", "\"https://api.mdaopay.com\"")
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_PROD") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")

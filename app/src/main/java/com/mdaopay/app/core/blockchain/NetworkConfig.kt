@@ -4,11 +4,11 @@ import com.mdaopay.app.BuildConfig
 
 // ponytail: RPC_URL from BuildConfig — overridable per flavor.
 // F-025 fix: single URL is for legacy use; RpcProviderManager uses 3 providers.
-// BSC Mainnet (Chain 56) — PRD §14
+// CHAIN_ID: 97 (BSC Testnet) for dev/staging, 56 (BSC Mainnet) for prod.
 object NetworkConfig {
     val RPC_URL: String get() = BuildConfig.RPC_URL_1
     val BUNDLER_URL: String get() = BuildConfig.BUNDLER_URL
-    const val CHAIN_ID = 56L
+    val CHAIN_ID: Long get() = BuildConfig.CHAIN_ID
     const val USDT_CONTRACT = "0x7169D38820dfd117C3FA1f22a697dBA58d90ba06"
     const val MDAO_CONTRACT = "0x0000000000000000000000000000000000000000" // Set by deploy script
     val ETHERSCAN_API_KEY: String get() = BuildConfig.ETHERSCAN_API_KEY
@@ -18,6 +18,7 @@ object NetworkConfig {
     const val SIMPLE_ACCOUNT_FACTORY = "0x9406Cc6185a346906296840746125a0E44976454"
     const val SOCIAL_RECOVERY_MODULE = "0x0000000000000000000000000000000000000000" // Set by deploy script
     val PAYMASTER_CONTRACT: String get() = BuildConfig.PAYMASTER_CONTRACT
+    val PROPOSAL_CONTRACT: String get() = BuildConfig.PROPOSAL_CONTRACT
 
     val activeChainId: Long get() = CHAIN_ID
 

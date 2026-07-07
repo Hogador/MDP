@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.CurrencyExchange
+import androidx.compose.material.icons.rounded.HowToVote
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,6 +58,7 @@ import com.mdaopay.app.core.ui.theme.extended
 import com.mdaopay.app.feature.exchanger.presentation.ExchangerScreen
 import com.mdaopay.app.feature.home.presentation.HomeScreen
 import com.mdaopay.app.feature.home.presentation.HomeViewModel
+import com.mdaopay.app.feature.proposal.presentation.ProposalScreen
 import com.mdaopay.app.navigation.Routes
 
 @Composable
@@ -106,6 +108,22 @@ fun MainScreen(
                         tint = Color.Unspecified,
                         modifier = Modifier.size(22.dp)
                     )
+                }
+            ),
+            NavItem(
+                label = "DAO",
+                isActive = selectedTab == 3,
+                onClick = { selectedTab = 3 },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Rounded.HowToVote,
+                        contentDescription = "DAO",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            )
+        )
                 }
             )
         )
@@ -166,6 +184,11 @@ fun MainScreen(
                         navController.navigate(Routes.webviewRoute(url, title))
                     }
                 )
+                3 -> Box(modifier = Modifier.fillMaxSize()) {
+                    ProposalScreen(
+                        onBack = { selectedTab = 0 }
+                    )
+                }
             }
         }
     }
