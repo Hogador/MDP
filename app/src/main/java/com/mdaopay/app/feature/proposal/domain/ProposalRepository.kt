@@ -1,6 +1,7 @@
 package com.mdaopay.app.feature.proposal.domain
 
 import com.mdaopay.app.BuildConfig
+import com.mdaopay.app.core.common.AppError
 import com.mdaopay.app.core.common.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,12 +66,12 @@ class ProposalRepository @Inject constructor() {
             val request = Request.Builder().url(url).get().build()
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
-                return@withContext Result.Error(Exception("HTTP ${response.code}"))
+                return@withContext Result.Error(AppError.Unknown(Exception("HTTP ${response.code}")))
             }
-            val body = response.body?.string() ?: return@withContext Result.Error(Exception("Empty response"))
+            val body = response.body?.string() ?: return@withContext Result.Error(AppError.Unknown(Exception("Empty response")))
 
             val raw = json.parseToJsonElement(body).jsonObject
-            val rawEvents = raw["events"]?.jsonArray ?: return@withContext Result.Error(Exception("No events"))
+            val rawEvents = raw["events"]?.jsonArray ?: return@withContext Result.Error(AppError.Unknown(Exception("No events")))
             val events = rawEvents.map { json.decodeFromString<OnChainEvent>(it.toString()) }
 
             val created = events.filter { it.event_name == "ProposalCreated" }
@@ -106,7 +107,7 @@ class ProposalRepository @Inject constructor() {
 
             Result.Success(proposals)
         } catch (e: Exception) {
-            Result.Error(e)
+            Result.Error(AppError.Unknown(e))
         }
     }
 
@@ -115,9 +116,10 @@ class ProposalRepository @Inject constructor() {
         return when (result) {
             is Result.Success -> {
                 val found = result.data.find { it.id == proposalId }
-                if (found != null) Result.Success(found) else Result.Error(Exception("Not found"))
+                if (found != null) Result.Success(found) else Result.Error(AppError.Unknown(Exception("Not found")))
             }
             is Result.Error -> result
+            is Result.Loading -> result
         }
     }
 
