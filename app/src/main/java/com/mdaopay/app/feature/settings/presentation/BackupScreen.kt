@@ -49,23 +49,42 @@ import com.mdaopay.app.core.ui.theme.MDARadius
 import com.mdaopay.app.core.ui.theme.MarsFont
 import com.mdaopay.app.core.ui.theme.MarsMono
 import com.mdaopay.app.core.ui.theme.*
-
-private val demoPhrase = listOf(
-    "apple", "forest", "mountain", "river", "ocean", "desert",
-    "cloud", "stone", "crystal", "ember", "whisper", "horizon"
-)
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun BackupScreen(onBack: () -> Unit) {
+fun BackupScreen(
+    onBack: () -> Unit,
+    viewModel: BackupViewModel = hiltViewModel()
+) {
     val ext = MaterialTheme.extended
     val d = ext.themeColors
+    val phrase by viewModel.mnemonicWords.collectAsState()
+    val hasWallet by viewModel.hasWallet.collectAsState()
     var isRevealed by remember { mutableStateOf(false) }
     var word3 by remember { mutableStateOf("") }
     var word7 by remember { mutableStateOf("") }
     var word11 by remember { mutableStateOf("") }
+    val verifyResult = remember { mutableStateOf<Boolean?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().background(d.bg)) {
         MDAOTopBar(title = "Резервная копия", onBack = onBack)
+
+        if (!hasWallet) {
+            // Wallet not created yet
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Кошелёк не создан", fontSize = 16.sp, color = d.text2, fontFamily = MarsFont)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Сначала создайте кошелёк через приветственный экран.", fontSize = 14.sp, color = d.text3, fontFamily = MarsFont, textAlign = TextAlign.Center)
+            }
+            return@Column
+        }
 
         Column(
             modifier = Modifier
@@ -161,11 +180,11 @@ fun BackupScreen(onBack: () -> Unit) {
             MDAOListSection(header = "Recovery phrase (12 слов)") {
                 Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                     val gridSize = 3
-                    val rows = demoPhrase.chunked(gridSize)
+                    val rows = phrase.chunked(gridSize)
                     rows.forEach { row ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             row.forEachIndexed { _, word ->
-                                val idx = demoPhrase.indexOf(word)
+                                val idx = phrase.indexOf(word)
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
@@ -240,10 +259,35 @@ fun BackupScreen(onBack: () -> Unit) {
                         modifier = Modifier.weight(1f)
                     )
                 }
+                if (verifyResult.value == true) {
+                    Text(
+                        text = "✓ Верно",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ext.success,
+                        fontFamily = MarsFont,
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp)
+                    )
+                } else if (verifyResult.value == false) {
+                    Text(
+                        text = "✗ Неверно, попробуйте снова",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ext.danger,
+                        fontFamily = MarsFont,
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp)
+                    )
+                }
                 Box(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                     MDAOButton(
                         text = "Проверить",
-                        onClick = { HapticManager.light() },
+                        onClick = {
+                            HapticManager.light()
+                            val ok = viewModel.verifyWord(2, word3) &&
+                                    viewModel.verifyWord(6, word7) &&
+                                    viewModel.verifyWord(10, word11)
+                            verifyResult.value = ok
+                        },
                         variant = MDAOButtonVariant.Secondary,
                         size = com.mdaopay.app.core.ui.components.MDAOButtonSize.Sm
                     )

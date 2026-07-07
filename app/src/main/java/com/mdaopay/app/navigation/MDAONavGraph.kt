@@ -45,6 +45,8 @@ import com.mdaopay.app.feature.receive.presentation.ReceiveScreen
 import com.mdaopay.app.feature.recovery.presentation.RecoveryScreen
 import com.mdaopay.app.feature.send.presentation.SendScreen
 import com.mdaopay.app.feature.settings.presentation.SettingsScreen
+import com.mdaopay.app.feature.settings.presentation.BackupScreen
+import com.mdaopay.app.feature.proposal.presentation.ProposalScreen
 import com.mdaopay.app.feature.exchanger.presentation.OnrampScreen
 import com.mdaopay.app.feature.home.presentation.HomeViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +60,7 @@ object Routes {
     const val RECEIVE = "receive"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
+    const val BACKUP = "backup"
     const val RECOVERY = "recovery"
     const val GUARDIAN_INVITE = "guardian-invite/{inviteId}"
     const val WEBVIEW = "webview/{url}/{title}"
@@ -65,6 +68,7 @@ object Routes {
     const val PROFILE = "profile/{nickname}/{address}"
     const val ASSET_DETAILS = "asset_details/{symbol}/{balance}"
     const val CONTACTS = "contacts"
+    const val PROPOSALS = "proposals"
     fun assetDetailsRoute(symbol: String, balance: String): String {
         return "asset_details/${Uri.encode(symbol)}/${Uri.encode(balance)}"
     }
@@ -204,6 +208,7 @@ fun MDAONavGraph(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onBackupClick = { navController.navigate(Routes.BACKUP) },
                 onRecoveryClick = { navController.navigate(Routes.RECOVERY) },
                 onCreateNewWallet = {
                     navController.navigate(Routes.TUTORIAL) {
@@ -211,6 +216,11 @@ fun MDAONavGraph(
                     }
                 }
             )
+        }
+
+        // ─── Backup ──────────────────────────────────
+        composable(Routes.BACKUP) {
+            BackupScreen(onBack = { navController.popBackStack() })
         }
 
         // ─── Recovery ─────────────────────────────────
@@ -301,6 +311,11 @@ fun MDAONavGraph(
                     navController.navigate(Routes.RECEIVE)
                 }
             )
+        }
+
+        // ─── Proposals ──────────────────────────────
+        composable(Routes.PROPOSALS) {
+            ProposalScreen(onBack = { navController.popBackStack() })
         }
 
         // ─── Contacts ─────────────────────────────────
