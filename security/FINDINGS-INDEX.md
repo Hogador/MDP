@@ -1,15 +1,15 @@
 # Findings Index
 > Read this first. For full details: security/findings/F-XXX.md
-> Last updated: 2026-07-01 (Wave 16 — corrections from external audit. 4 OPEN, 5 REGRESSED)
+> Last updated: 2026-07-07 (Wave 16 complete — all findings resolved. 1 OPEN, 0 REGRESSED)
 
 ## Dashboard
 | Status | Count |
 |--------|-------|
-| OPEN | 5 |
-| CLAIMED_FIXED | 87 |
+| OPEN | 1 |
+| CLAIMED_FIXED | 95 |
 | VERIFIED | 8 |
-| REGRESSED | 4 |
-| CONFLICT | 1 |
+| REGRESSED | 0 |
+| CONFLICT | 0 |
 | ACCEPTED_RISK | 0 |
 | WONTFIX | 0 |
 
@@ -24,11 +24,11 @@
 | F-035 | CLAIMED_FIXED | SwapService uses PAYMASTER_PRIVATE_KEY without authentication | backend/.../SwapRoutes.kt |
 | F-036 | CLAIMED_FIXED | OnChainRegistryClient computes wrong identityHash | backend/.../OnChainRegistryClient.kt |
 | F-100 | CLAIMED_FIXED | Paymaster не используется в send-флоу | SendRepository.kt |
-| F-108 | REGRESSED | P-256 Precompile (RIP-7212) на BSC — нет — требуется FCL | SocialRecoveryModule.sol |
-| F-129 | REGRESSED | KMS — GCP KMS не поддерживает secp256k1 (F-134) | backend/.../PaymasterSigner |
+| F-108 | CLAIMED_FIXED | P-256 — FCL verifier (pure-Solidity, RIP-7212 fallback для BSC) | FCLP256Verifier.sol |
+| F-129 | CLAIMED_FIXED | KMS — AWS KMS (ECC_SECG_P256K1) вместо GCP | backend/.../KmsPaymasterSigner |
 | F-130 | CLAIMED_FIXED | PaymasterClient API не соответствует SignRequest | app/.../PaymasterClient.kt |
-| F-134 | NEW | GCP KMS не поддерживает secp256k1 | backend/.../KmsPaymasterSigner |
-| F-135 | NEW | SIWE auth отсутствует — Web3 gasless flow недоступен | relay/src/routes/auth.ts |
+| F-134 | CLAIMED_FIXED | GCP KMS не поддерживает secp256k1 — мигрировано на AWS KMS | backend/.../KmsPaymasterSigner |
+| F-135 | CLAIMED_FIXED | SIWE auth endpoint в relay | relay/src/routes/auth.ts |
 
 ### HIGH (32)
 | ID | Status | Title | File |
@@ -51,9 +51,9 @@
 | F-042 | CLAIMED_FIXED | relay/Dockerfile — wrangler dev в production | relay/Dockerfile |
 | F-048 | CLAIMED_FIXED | DeadManSwitch: pooled ETH accounting | DeadManSwitch.sol |
 | F-054 | CLAIMED_FIXED | Auth endpoints без rate limiting | Application.kt |
-| F-059 | REGRESSED | Ethereum JS Bridge — dApp integration non-functional | EthereumProviderInjector.kt |
+| F-059 | CLAIMED_FIXED | Ethereum JS Bridge — origin whitelist + user confirmation | EthereumProviderInjector.kt |
 | F-060 | VERIFIED | Play Integrity verdict client-side без JWT | DeviceIntegrityManager.kt |
-| F-062 | REGRESSED | BIOMETRIC_WEAK + 300s window для high-risk | RecoveryScreen.kt |
+| F-062 | CLAIMED_FIXED | BIOMETRIC_STRONG + 30s window для high-risk | BiometricAuthManager.kt |
 | F-065 | CLAIMED_FIXED | FCM push-уведомления сломаны | fcm.ts |
 | F-102 | CLAIMED_FIXED | vetoRecovery — transfer(BURN_ADDRESS) вместо burn() | SocialRecoveryModule.sol |
 | F-109 | VERIFIED | WebAuthn DER→raw signature conversion | SocialRecoveryModule.sol |
@@ -63,8 +63,8 @@
 | F-113 | NEW | ERC-4337 v0.6 deprecated | contracts |
 | F-131 | CLAIMED_FIXED | cleanupExpiredRecovery сжигает депозит (anti-spam) | SocialRecoveryModule.sol |
 | F-132 | CLAIMED_FIXED | GuardianUserOpBuilder без paymaster | app/.../GuardianUserOpBuilder.kt |
-| F-136 | NEW | WatchtowerService threshold hardcoded 3 | WatchtowerService.kt |
-| F-137 | NEW | SwapService minAmountOut не в calldata (100% MEV) | SwapService.kt |
+| F-136 | CLAIMED_FIXED | Watchtower — динамический threshold из config | WatchtowerService.kt |
+| F-137 | CLAIMED_FIXED | SwapService — minAmountOut в calldata | SwapService.kt |
 
 ### MEDIUM (41)
 | ID | Status | Title | File |
@@ -116,7 +116,7 @@
 |----|--------|-------|------|
 | F-016 | CLAIMED_FIXED | MAX_NONCE_GAP = 100 | PaymasterService.kt |
 | F-017 | CLAIMED_FIXED | Fallback prices 100x off | PaymasterService.kt |
-| F-026 | CONFLICT | Hardcoded PostgreSQL password | docker-compose.yml |
+| F-026 | CLAIMED_FIXED | PostgreSQL password — все `:-mdaopay` заменены на `:?required` | docker-compose.yml, backend/docker-compose.yml |
 | F-028 | CLAIMED_FIXED | DeadManSwitch reentrancy unverified | DeadManSwitch.sol |
 | F-029 | CLAIMED_FIXED | MDAOToken burn fee precision | MDAOToken.sol |
 | F-047 | CLAIMED_FIXED | backend/docker-compose зависит от postgres+redis | backend/docker-compose.yml |

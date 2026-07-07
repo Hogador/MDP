@@ -141,6 +141,17 @@ jobs:
           cd relay
           npm audit --audit-level=high || echo "⚠️ npm audit found issues (non-blocking)"
 
+  cert-pin-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate cert pins against live TLS
+        env:
+          CERT_PIN_API: ${{ secrets.CERT_PIN_API }}
+          CERT_PIN_BACKUP: ${{ secrets.CERT_PIN_BACKUP }}
+        run: bash scripts/check-cert-pins.sh
+
   coverage-gate:
     runs-on: ubuntu-latest
     needs: [contracts, backend, relay]
