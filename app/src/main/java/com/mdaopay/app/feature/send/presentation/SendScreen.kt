@@ -203,6 +203,7 @@ fun SendScreen(
                     is SendState.AmountInput -> AmountStep(
                         nickname = s.nickname,
                         amount = s.amount,
+                        balance = s.balance,
                         error = s.error,
                         onAmountChanged = { viewModel.onAmountChanged(it) },
                         onConfirmed = { viewModel.onAmountConfirmed(it) },
@@ -422,6 +423,7 @@ private fun RecipientStep(
 private fun AmountStep(
     nickname: String,
     amount: BigDecimal,
+    balance: BigDecimal,
     error: String?,
     onAmountChanged: (String) -> Unit,
     onConfirmed: (BigDecimal) -> Unit,
@@ -499,9 +501,8 @@ private fun AmountStep(
                 .clip(RoundedCornerShape(999.dp))
                 .background(d.tile)
                 .clickable {
-                    val maxAmount = BigDecimal("1250.50")
-                    input = maxAmount.toPlainString()
-                    onAmountChanged(maxAmount.toPlainString())
+                    input = balance.toPlainString()
+                    onAmountChanged(balance.toPlainString())
                 }
                 .padding(horizontal = 14.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -513,7 +514,7 @@ private fun AmountStep(
                 color = d.text2
             )
             Text(
-                text = "1 250.50",
+                text = balance.toDisplayAmount(),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = MarsMono,
@@ -544,8 +545,7 @@ private fun AmountStep(
                         .clip(RoundedCornerShape(12.dp))
                         .background(d.tile)
                         .clickable {
-                            val maxAmount = BigDecimal("1250.50")
-                            val value = (maxAmount * BigDecimal.valueOf(percent)).setScale(2, java.math.RoundingMode.DOWN)
+                            val value = (balance * BigDecimal.valueOf(percent)).setScale(2, java.math.RoundingMode.DOWN)
                             input = value.toPlainString()
                             onAmountChanged(value.toPlainString())
                         }
@@ -706,7 +706,7 @@ private fun ConfirmationSheetContent(state: SendState.Confirmation) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "\u0421\u0435\u0442\u044C", fontSize = 12.sp, color = d.text2)
-                    Text(text = "Sepolia", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = d.text)
+                    Text(text = "BSC Testnet", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = d.text)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),

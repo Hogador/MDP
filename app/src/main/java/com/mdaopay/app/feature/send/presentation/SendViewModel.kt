@@ -31,6 +31,7 @@ sealed class SendState {
     data class AmountInput(
         val nickname: String,
         val amount: BigDecimal = BigDecimal.ZERO,
+        val balance: BigDecimal = BigDecimal.ZERO,
         val error: String? = null
     ) : SendState()
     data class Confirmation(
@@ -109,6 +110,7 @@ class SendViewModel @Inject constructor(
             recipientNickname = nickname.take(12)
             recipientAddress = nickname
             _state.value = SendState.AmountInput(nickname = nickname)
+            loadBalance()
             return
         }
 
@@ -126,12 +128,23 @@ class SendViewModel @Inject constructor(
                 recipientNickname = nickname.take(12)
                 recipientAddress = resolved
                 _state.value = SendState.AmountInput(nickname = "@$nickname")
+                loadBalance()
             } else {
                 _state.value = SendState.RecipientInput(
                     nickname = nickname,
                     error = "Пользователь «$nickname» не найден"
                 )
             }
+        }
+    }
+
+    private fun loadBalance() {
+        viewModelScope.launch {
+            val walletData = walletManager.getWalletData() ?: return@launch
+            val balanceResult = blockchainRepository.getUsdtBalance(walletData.address)
+            val balance = balanceResult.getOrNull() ?: BigDecimal.ZERO
+            val current = _state.value as? SendState.AmountInput ?: return@launch
+            _state.value = current.copy(balance = balance)
         }
     }
 
@@ -152,7 +165,7 @@ class SendViewModel @Inject constructor(
         if (sanitized.count { it == '.' } > 1) return
         if (sanitized.length > 15) return
         val amount = sanitized.toBigDecimalOrNull() ?: BigDecimal.ZERO
-        _state.value = current.copy(amount = amount, error = null)
+        _state.value = current.copy(amount = amount, error = null)  // ponytail: balance preserved via copy
     }
 
     fun onAmountConfirmed(amount: BigDecimal) {
@@ -207,9 +220,11 @@ class SendViewModel @Inject constructor(
     }
 
     fun onBackToAmount() {
+        val prev = _state.value as? SendState.AmountInput
         _state.value = SendState.AmountInput(
             nickname = recipientNickname.ifBlank { recipientAddress.take(12) },
-            amount = sendAmount
+            amount = sendAmount,
+            balance = prev?.balance ?: BigDecimal.ZERO
         )
     }
 
