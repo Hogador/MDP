@@ -15,7 +15,7 @@
 - [ ] `MDAOPaymaster.sol` (post-paid deduction, MDAO/USDT fallback)
 - [ ] `SocialRecoveryModule.sol` (P-256, 2-of-3, 48h timelock, anti-spam deposit)
 - [ ] `NicknameRegistry.sol` (EIP-712, identityHash mapping)
-- [ ] Деплой на Sepolia testnet, верификация на Etherscan
+- [ ] Деплой на BSC Testnet, верификация на BSCscan
 
 ### Недели 4-6: Mobile App Foundation
 - [ ] Onboarding (Tutorial → Biometric → Nickname → Trusted Contacts setup)

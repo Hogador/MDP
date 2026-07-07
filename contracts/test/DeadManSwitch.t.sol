@@ -15,15 +15,16 @@ contract DeadManSwitchTest is Test {
         dms = new DeadManSwitch();
     }
 
+    // ─── setSwitch ──────────────────────────────────────────────────
+
     function test_SetSwitch() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
-        (address beneficiary, uint256 inactivityPeriod,, bool active, bool claimed) = dms.switches(alice);
+        (address beneficiary, uint256 inactivityPeriod,, bool active) = dms.switches(alice);
         assertEq(beneficiary, bob);
         assertEq(inactivityPeriod, 90 days);
         assertTrue(active);
-        assertFalse(claimed);
     }
 
     function test_RevertWhen_BeneficiarySameAsOwner() public {
@@ -36,9 +37,11 @@ contract DeadManSwitchTest is Test {
         vm.prank(alice);
         dms.setSwitch(bob, 1 days);
 
-        (, uint256 inactivityPeriod,,,) = dms.switches(alice);
+        (, uint256 inactivityPeriod,,) = dms.switches(alice);
         assertEq(inactivityPeriod, 90 days);
     }
+
+    // ─── ping ───────────────────────────────────────────────────────
 
     function test_Ping() public {
         vm.prank(alice);
@@ -51,7 +54,7 @@ contract DeadManSwitchTest is Test {
         emit DeadManSwitch.ActivityPinged(alice, block.timestamp);
         dms.ping();
 
-        (, , uint256 lastActivity,,) = dms.switches(alice);
+        (, , uint256 lastActivity,) = dms.switches(alice);
         assertEq(lastActivity, block.timestamp);
     }
 
@@ -66,6 +69,8 @@ contract DeadManSwitchTest is Test {
         dms.ping();
     }
 
+    // ─── changeBeneficiary ──────────────────────────────────────────
+
     function test_ChangeBeneficiary() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
@@ -74,12 +79,14 @@ contract DeadManSwitchTest is Test {
         vm.prank(alice);
         dms.changeBeneficiary(charlie);
 
-        (address beneficiary,,, bool active,) = dms.switches(alice);
+        (address beneficiary,,, bool active) = dms.switches(alice);
         assertEq(beneficiary, charlie);
         assertTrue(active);
     }
 
-    function test_TriggerRecovery() public {
+    // ─── initiateClaim ──────────────────────────────────────────────
+
+    function test_InitiateClaim() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
@@ -88,13 +95,13 @@ contract DeadManSwitchTest is Test {
         vm.prank(bob);
         vm.expectEmit(true, true, false, true);
         emit DeadManSwitch.SwitchTriggered(alice, bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
         assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Triggered));
         assertEq(dms.triggerAt(alice), block.timestamp);
     }
 
-    function test_RevertWhen_TriggerBeforeInactivity() public {
+    function test_RevertWhen_ClaimBeforeInactivity() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
@@ -102,10 +109,10 @@ contract DeadManSwitchTest is Test {
 
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrInactivityNotMet.selector));
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
     }
 
-    function test_RevertWhen_TriggerByNonBeneficiary() public {
+    function test_RevertWhen_ClaimByNonBeneficiary() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
@@ -113,22 +120,24 @@ contract DeadManSwitchTest is Test {
 
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrNotBeneficiary.selector));
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
     }
 
-    function test_RevertWhen_TriggerTwice() public {
+    function test_RevertWhen_ClaimTwice() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrAlreadyClaimed.selector));
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
     }
+
+    // ─── deactivate ─────────────────────────────────────────────────
 
     function test_Deactivate() public {
         vm.prank(alice);
@@ -153,64 +162,53 @@ contract DeadManSwitchTest is Test {
         dms.deactivate();
     }
 
-    function test_ClaimFunds() public {
+    // ─── executeClaim ───────────────────────────────────────────────
+
+    function test_ExecuteClaim() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
         // Advance past challenge period
-        vm.warp(block.timestamp + 7 days + 1);
-
-        // alice sends ETH through receive() so deposit is tracked
-        vm.deal(alice, 10 ether);
-        vm.prank(alice);
-        (bool ok,) = payable(address(dms)).call{value: 10 ether}("");
-        assertTrue(ok);
-
-        assertEq(dms.deposits(alice), 10 ether);
+        vm.warp(block.timestamp + 7 days);
 
         vm.prank(bob);
         vm.expectEmit(true, true, false, true);
-        emit DeadManSwitch.FundsClaimed(alice, bob, 10 ether);
-        dms.claimFunds(alice);
+        emit DeadManSwitch.OwnershipClaimTriggered(alice, bob);
+        dms.executeClaim(alice);
 
-        assertEq(address(bob).balance, 10 ether);
-        assertEq(dms.deposits(alice), 0);
-        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Claimable));
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Executed));
     }
 
-    function test_RevertWhen_ClaimFundsNotTriggered() public {
+    function test_RevertWhen_ExecuteClaimNotTriggered() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrSwitchNotActive.selector));
-        dms.claimFunds(alice);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrNotTriggered.selector));
+        dms.executeClaim(alice);
     }
 
-    function test_RevertWhen_ClaimFundsNoDeposit() public {
+    function test_RevertWhen_ExecuteClaimBeforeChallengePeriod() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
-        // Advance past challenge period
-        vm.warp(block.timestamp + 7 days + 1);
-
-        // No deposit made — should revert
+        // Try to execute immediately — challenge period not elapsed
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrNoDeposits.selector));
-        dms.claimFunds(alice);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrChallengeNotExpired.selector));
+        dms.executeClaim(alice);
     }
 
-    function test_ClaimFundsPerWalletIsolation() public {
+    function test_ExecuteClaimPerWalletIsolation() public {
         address charlie = address(0x3333);
         address dan = address(0x4444);
 
@@ -224,83 +222,27 @@ contract DeadManSwitchTest is Test {
 
         vm.warp(block.timestamp + 91 days);
 
-        // Trigger both
+        // Initiate both
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
         vm.prank(dan);
-        dms.triggerRecovery(charlie);
+        dms.initiateClaim(charlie);
 
         // Advance past challenge period
-        vm.warp(block.timestamp + 7 days + 1);
+        vm.warp(block.timestamp + 7 days);
 
-        // alice deposits 5 ETH, charlie deposits 7 ETH
-        vm.deal(alice, 5 ether);
-        vm.prank(alice);
-        (bool ok1,) = payable(address(dms)).call{value: 5 ether}("");
-        assertTrue(ok1);
-
-        vm.deal(charlie, 7 ether);
-        vm.prank(charlie);
-        (bool ok2,) = payable(address(dms)).call{value: 7 ether}("");
-        assertTrue(ok2);
-
-        assertEq(dms.deposits(alice), 5 ether);
-        assertEq(dms.deposits(charlie), 7 ether);
-
-        // bob claims only alice's deposit (5 ETH)
+        // bob claims alice
         vm.prank(bob);
-        dms.claimFunds(alice);
-        assertEq(address(bob).balance, 5 ether);
-        assertEq(dms.deposits(alice), 0);
-        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Claimable));
+        dms.executeClaim(alice);
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Executed));
 
-        // dan claims charlie's deposit (7 ETH)
+        // dan claims charlie
         vm.prank(dan);
-        dms.claimFunds(charlie);
-        assertEq(address(dan).balance, 7 ether);
-        assertEq(dms.deposits(charlie), 0);
-        assertEq(uint256(dms.recoveryState(charlie)), uint256(DeadManSwitch.State.Claimable));
+        dms.executeClaim(charlie);
+        assertEq(uint256(dms.recoveryState(charlie)), uint256(DeadManSwitch.State.Executed));
     }
 
-    function test_ConstantMinInactivity() public view {
-        assertEq(dms.MIN_INACTIVITY(), 90 days);
-    }
-
-    // ─── F-072 regression tests ─────────────────────────────────────
-
-    function test_RevertWhen_PingAfterTrigger() public {
-        vm.prank(alice);
-        dms.setSwitch(bob, 90 days);
-
-        vm.warp(block.timestamp + 91 days);
-
-        vm.prank(bob);
-        dms.triggerRecovery(alice);
-
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrSwitchNotActive.selector));
-        dms.ping();
-    }
-
-    function test_RevertWhen_ClaimBeforeChallengePeriod() public {
-        vm.prank(alice);
-        dms.setSwitch(bob, 90 days);
-
-        vm.warp(block.timestamp + 91 days);
-
-        vm.prank(bob);
-        dms.triggerRecovery(alice);
-
-        // Try to claim immediately — should fail (CHALLENGE_PERIOD not elapsed)
-        vm.deal(alice, 1 ether);
-        vm.prank(alice);
-        (bool ok,) = payable(address(dms)).call{value: 1 ether}("");
-        assertTrue(ok);
-
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrNotExpired.selector));
-        dms.claimFunds(alice);
-    }
+    // ─── challengeTrigger ───────────────────────────────────────────
 
     function test_ChallengeTrigger() public {
         vm.prank(alice);
@@ -309,7 +251,7 @@ contract DeadManSwitchTest is Test {
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
         assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Triggered));
 
@@ -332,6 +274,8 @@ contract DeadManSwitchTest is Test {
         dms.challengeTrigger();
     }
 
+    // ─── Ping after challenge ───────────────────────────────────────
+
     function test_PingAfterChallenge() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
@@ -339,7 +283,7 @@ contract DeadManSwitchTest is Test {
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
         // Alice challenges
         vm.prank(alice);
@@ -353,54 +297,144 @@ contract DeadManSwitchTest is Test {
         dms.ping();
     }
 
-    function test_ClaimFundsAfterChallengePeriod() public {
+    // ─── Ping after initiateClaim (F-072 regression) ────────────────
+
+    function test_RevertWhen_PingAfterTrigger() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrSwitchNotActive.selector));
+        dms.ping();
+    }
+
+    // ─── Execute after challenge period boundary ────────────────────
+
+    function test_ExecuteClaimAfterChallengePeriod() public {
+        vm.prank(alice);
+        dms.setSwitch(bob, 90 days);
+
+        vm.warp(block.timestamp + 91 days);
+
+        vm.prank(bob);
+        dms.initiateClaim(alice);
 
         // Advance exactly to challenge period boundary
         vm.warp(block.timestamp + 7 days);
 
-        vm.deal(alice, 2 ether);
-        vm.prank(alice);
-        (bool ok,) = payable(address(dms)).call{value: 2 ether}("");
-        assertTrue(ok);
-
-        // At exact boundary (triggerAt + 7 days) should work
         vm.prank(bob);
-        dms.claimFunds(alice);
+        dms.executeClaim(alice);
 
-        assertEq(address(bob).balance, 2 ether);
-        assertEq(dms.deposits(alice), 0);
-        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Claimable));
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Executed));
     }
 
-    function test_RevertWhen_TriggerAfterClaimed() public {
+    // ─── Re-trigger after executeClaim ──────────────────────────────
+
+    function test_RevertWhen_InitiateAfterExecuted() public {
         vm.prank(alice);
         dms.setSwitch(bob, 90 days);
 
         vm.warp(block.timestamp + 91 days);
 
         vm.prank(bob);
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
 
-        vm.warp(block.timestamp + 7 days + 1);
-
-        vm.deal(alice, 1 ether);
-        vm.prank(alice);
-        (bool ok,) = payable(address(dms)).call{value: 1 ether}("");
-        assertTrue(ok);
+        vm.warp(block.timestamp + 7 days);
 
         vm.prank(bob);
-        dms.claimFunds(alice);
+        dms.executeClaim(alice);
 
-        // Second trigger attempt should fail
+        // Second initiate should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrAlreadyClaimed.selector));
-        dms.triggerRecovery(alice);
+        dms.initiateClaim(alice);
+    }
+
+    // ─── Constant ───────────────────────────────────────────────────
+
+    function test_ConstantMinInactivity() public view {
+        assertEq(dms.MIN_INACTIVITY(), 90 days);
+    }
+
+    // ─── IRecoveryHook: onRecoveryExecuted ──────────────────────────
+
+    function test_OnRecoveryExecutedResetsTimer() public {
+        vm.prank(alice);
+        dms.setSwitch(bob, 90 days);
+
+        // Advance time
+        vm.warp(block.timestamp + 50 days);
+
+        // Set recoveryCaller
+        address recoveryModule = address(0x9999);
+        vm.prank(owner);
+        dms.setRecoveryCaller(recoveryModule);
+
+        // Call onRecoveryExecuted as recovery module
+        vm.prank(recoveryModule);
+        dms.onRecoveryExecuted(alice);
+
+        // lastActivity should be now
+        (, , uint256 lastActivity,) = dms.switches(alice);
+        assertEq(lastActivity, block.timestamp);
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Active));
+    }
+
+    function test_OnRecoveryExecutedCancelsTriggered() public {
+        vm.prank(alice);
+        dms.setSwitch(bob, 90 days);
+
+        vm.warp(block.timestamp + 91 days);
+
+        vm.prank(bob);
+        dms.initiateClaim(alice);
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Triggered));
+
+        // Set recoveryCaller and trigger recovery hook
+        address recoveryModule = address(0x9999);
+        vm.prank(owner);
+        dms.setRecoveryCaller(recoveryModule);
+
+        vm.prank(recoveryModule);
+        dms.onRecoveryExecuted(alice);
+
+        // Should reset to Active
+        assertEq(uint256(dms.recoveryState(alice)), uint256(DeadManSwitch.State.Active));
+        assertEq(dms.triggerAt(alice), 0);
+
+        // Timer should be reset — initiateClaim should fail again
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrInactivityNotMet.selector));
+        dms.initiateClaim(alice);
+    }
+
+    function test_RevertWhen_OnRecoveryExecutedUnauthorized() public {
+        vm.prank(alice);
+        dms.setSwitch(bob, 90 days);
+
+        // recoveryCaller not set yet — default is address(0)
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrUnauthorized.selector));
+        dms.onRecoveryExecuted(alice);
+    }
+
+    // ─── setRecoveryCaller ──────────────────────────────────────────
+
+    function test_SetRecoveryCaller() public {
+        address recoveryModule = address(0x9999);
+        vm.prank(owner);
+        dms.setRecoveryCaller(recoveryModule);
+        assertEq(dms.recoveryCaller(), recoveryModule);
+    }
+
+    function test_RevertWhen_SetRecoveryCallerNotOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DeadManSwitch.ErrUnauthorized.selector));
+        dms.setRecoveryCaller(address(0x9999));
     }
 }

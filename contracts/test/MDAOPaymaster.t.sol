@@ -1083,8 +1083,9 @@ contract MDAOPaymasterTest is Test {
 
     function testFuzzRejectsMalleableSignature(uint256 s) public {
         // Bound s to the malleable range (> secp256k1n/2)
+        // Use bound instead of assume to avoid rejection overflow
         uint256 SECP256K1N_DIV_2 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-        vm.assume(s > SECP256K1N_DIV_2);
+        s = bound(s, SECP256K1N_DIV_2 + 1, type(uint256).max);
 
         paymaster = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt), signer);
         vm.mockCall(

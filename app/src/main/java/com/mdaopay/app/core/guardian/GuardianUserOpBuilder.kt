@@ -1,6 +1,5 @@
 package com.mdaopay.app.core.guardian
 
-import android.util.Base64
 import com.mdaopay.app.core.blockchain.EthereumClient
 import com.mdaopay.app.core.blockchain.NetworkConfig
 import com.mdaopay.app.core.blockchain.WalletManager
@@ -317,56 +316,66 @@ class GuardianUserOpBuilder @Inject constructor(
      * The attestationObject CBOR contains authData which holds the COSE_Key
      * with labels -2 (x) and -3 (y) for the P-256 public key coordinates.
      */
-    fun extractP256PublicKey(registrationJson: String): GuardianKeyData? {
-        return try {
-            val json = JSONObject(registrationJson)
-            val response = json.getJSONObject("response")
-            val attestationB64 = response.getString("attestationObject")
-            val attestationBytes = Base64.decode(attestationB64, Base64.URL_SAFE)
+    companion object {
+        fun extractP256PublicKey(registrationJson: String): GuardianKeyData? {
+            return try {
+                val json = JSONObject(registrationJson)
+                val response = json.getJSONObject("response")
+                val attestationB64 = response.getString("attestationObject")
+                val attestationBytes = java.util.Base64.getUrlDecoder().decode(attestationB64)
 
-            val (attestation, _) = CborDecoder.decode(attestationBytes)
-            val attestationMap = attestation as? CborItem.CborMap ?: return null
-            val authDataEntry = attestationMap.entries[CborItem.CborText("authData")] as? CborItem.CborBytes ?: return null
-            val authData = authDataEntry.value
+                val (attestation, _) = CborDecoder.decode(attestationBytes)
+                val attestationMap = attestation as? CborItem.CborMap ?: return null
+                val authDataEntry = attestationMap.entries[CborItem.CborText("authData")] as? CborItem.CborBytes ?: return null
+                val authData = authDataEntry.value
 
-            val (x, y) = parseCoseKeyFromAuthData(authData) ?: return null
+                val (x, y) = parseCoseKeyFromAuthData(authData) ?: return null
 
-            GuardianKeyData(
-                pubKeyXHex = Numeric.toHexStringNoPrefix(x),
-                pubKeyYHex = Numeric.toHexStringNoPrefix(y)
-            )
-        } catch (_: Exception) {
-            null
+                // ponytail: manual hex avoids Web3j Numeric dependency (Java 21+ classfile)
+                fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
+                GuardianKeyData(
+                    pubKeyXHex = x.toHex(),
+                    pubKeyYHex = y.toHex()
+                )
+            } catch (_: Exception) {
+                null
+            }
         }
-    }
 
-    /**
-     * Extracts WebAuthn assertion data (authenticatorData, clientDataJSON, signature)
-     * from a passkey authentication response JSON.
-     */
-    fun extractWebAuthnAssertion(authenticationJson: String): WebAuthnAssertion? {
-        return try {
-            val json = JSONObject(authenticationJson)
-            val response = json.getJSONObject("response")
-            val authDataB64 = response.getString("authenticatorData")
-            val clientDataB64 = response.getString("clientDataJSON")
-            val sigB64 = response.getString("signature")
+        /**
+         * Extracts WebAuthn assertion data (authenticatorData, clientDataJSON, signature)
+         * from a passkey authentication response JSON.
+         *
+         * S-09: Validates cross-ceremony — checks `type` is "webauthn.get" and `origin` is present
+         * in the clientDataJSON to prevent using a registration response as authentication.
+         */
+        fun extractWebAuthnAssertion(authenticationJson: String): WebAuthnAssertion? {
+            return try {
+                val json = JSONObject(authenticationJson)
+                val response = json.getJSONObject("response")
+                val authDataB64 = response.getString("authenticatorData")
+                val clientDataB64 = response.getString("clientDataJSON")
+                val sigB64 = response.getString("signature")
 
-            WebAuthnAssertion(
-                authenticatorData = Base64.decode(authDataB64, Base64.URL_SAFE),
-                clientDataJSON = Base64.decode(clientDataB64, Base64.URL_SAFE),
-                signature = Base64.decode(sigB64, Base64.URL_SAFE)
-            )
-        } catch (_: Exception) {
-            null
+                // S-09: cross-ceremony check — decode clientDataJSON and validate
+                val clientDataRaw = java.util.Base64.getUrlDecoder().decode(clientDataB64)
+            val clientData = JSONObject(clientDataRaw.decodeToString())
+                val type = clientData.optString("type", "")
+                val origin = clientData.optString("origin", "")
+                if (type != "webauthn.get" || origin.isBlank()) return null
+
+                val urlDecoder = java.util.Base64.getUrlDecoder()
+                WebAuthnAssertion(
+                    authenticatorData = urlDecoder.decode(authDataB64),
+                    clientDataJSON = clientDataRaw,
+                    signature = urlDecoder.decode(sigB64)
+                )
+            } catch (_: Exception) {
+                null
+            }
         }
-    }
 
-    // ──────────────────────────────────────────────
-    //  Helpers
-    // ──────────────────────────────────────────────
-
-    private fun parseCoseKeyFromAuthData(authData: ByteArray): Pair<ByteArray, ByteArray>? {
+        private fun parseCoseKeyFromAuthData(authData: ByteArray): Pair<ByteArray, ByteArray>? {
         var offset = 0
         if (authData.size < 37) return null
         offset += 32 // RP ID hash
@@ -407,6 +416,7 @@ class GuardianUserOpBuilder @Inject constructor(
         if (xBytes != null && yBytes != null) return Pair(xBytes, yBytes)
         return null
     }
+    } // companion object
 
     private fun buildUserOp(
         sender: String,

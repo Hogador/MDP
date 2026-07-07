@@ -90,10 +90,12 @@ cache/
 .history/
 ci.yml.additions
 
-# ——— Agent config (не часть проекта) ———
+# ——— Agent config / Swarm (не часть проекта, скрыть в Obsidian) ———
 .agents/
 .hive/
 ponytail/
+.opencode/
+.zcode/
 
 # ——— Root misc (не часть проекта) ———
 .editorconfig

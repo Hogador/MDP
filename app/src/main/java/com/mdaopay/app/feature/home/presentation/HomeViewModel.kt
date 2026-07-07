@@ -23,6 +23,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.math.BigDecimal
@@ -98,42 +100,45 @@ class HomeViewModel @Inject constructor(
         val socialName = userPreferences.getSocialName()
         val displayName = socialName ?: nickname
 
-        val usdtBalance = blockchainRepository.getUsdtBalance(wallet.address)
-        val mdaoBalance = blockchainRepository.getMdaoBalance(wallet.address)
+        // ponytail: parallel fetch balances, txs, contacts — independent calls
+        val results = coroutineScope {
+            val usdtDeferred = async { blockchainRepository.getUsdtBalance(wallet.address) }
+            val mdaoDeferred = async { blockchainRepository.getMdaoBalance(wallet.address) }
+            val ethDeferred = async { blockchainRepository.getEthBalance(wallet.address) }
+            val txsDeferred = async { transactionHistory.getTransactions() }
+            val contactsDeferred = async { contactsStore.getContacts() }
+            val remoteTxsDeferred = async { etherscanRepository.fetchTransactions(wallet.address) }
 
-        val ethBalance = blockchainRepository.getEthBalance(wallet.address)
-        val balanceEth = if (ethBalance.isSuccess) ethBalance.getOrNull()!!
-            else BigDecimal.ZERO
-        val balanceUsdt = if (usdtBalance.isSuccess) usdtBalance.getOrNull()!!
-            else BigDecimal.ZERO
-        val balanceMdao = if (mdaoBalance.isSuccess) mdaoBalance.getOrNull()!!
-            else BigDecimal.ZERO
-        val isOnline = usdtBalance.isSuccess || mdaoBalance.isSuccess
+            val usdtBalance = usdtDeferred.await()
+            val mdaoBalance = mdaoDeferred.await()
+            val ethBalance = ethDeferred.await()
+            val records = txsDeferred.await()
+            val contacts = contactsDeferred.await()
+            val remoteTxs = remoteTxsDeferred.await()
 
-        val records = transactionHistory.getTransactions()
-        val localTxs = records.map { it.toTransactionItem() }
+            val balanceEth = ethBalance.getOrNull() ?: BigDecimal.ZERO
+            val balanceUsdt = usdtBalance.getOrNull() ?: BigDecimal.ZERO
+            val balanceMdao = mdaoBalance.getOrNull() ?: BigDecimal.ZERO
+            val isOnline = usdtBalance.isSuccess || mdaoBalance.isSuccess
 
-        val contacts = contactsStore.getContacts()
+            val localTxs = records.map { it.toTransactionItem() }
+            val remoteItems = remoteTxs.map { it.toTransactionItem(wallet.address) }
+            val merged = (localTxs + remoteItems)
+                .distinctBy { it.txHash }
+                .sortedByDescending { it.timestamp }
+                .take(20)
 
-        val remoteTxs = etherscanRepository.fetchTransactions(wallet.address)
-        val remoteItems = remoteTxs.map { it.toTransactionItem(wallet.address) }
-
-        val merged = (localTxs + remoteItems)
-            .distinctBy { it.txHash }
-            .sortedByDescending { it.timestamp }
-            .take(20)
+            Triple(
+                WalletState(nickname, wallet.address, balanceEth, balanceUsdt, balanceMdao, isOnline),
+                merged,
+                contacts
+            )
+        }
 
         _uiState.value = HomeUiState.Ready(
-            wallet = WalletState(
-                nickname = nickname,
-                address = wallet.address,
-                balanceEth = balanceEth,
-                balanceUsdt = balanceUsdt,
-                balanceMdao = balanceMdao,
-                isOnline = isOnline,
-            ),
-            recentTransactions = merged,
-            contacts = contacts,
+            wallet = results.first,
+            recentTransactions = results.second,
+            contacts = results.third,
             isConnected = connectivityMonitor.isOnline.value,
             displayName = displayName,
         )

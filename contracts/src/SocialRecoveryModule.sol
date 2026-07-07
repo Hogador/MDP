@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MDAOToken} from "./MDAOToken.sol";
+import {IRecoveryHook} from "./interfaces/IRecoveryHook.sol";
 
 contract SocialRecoveryModule is Ownable {
     error ErrAlreadyRegistered();
@@ -28,6 +29,7 @@ contract SocialRecoveryModule is Ownable {
     error ErrGuardianAlreadySet();
     error ErrNoExpiredRecovery();
     error ErrDerParsing();
+    error ErrHookArrayEmpty();
 
     /// @notice P-256 verifier address. Defaults to RIP-7212 precompile (0x100).
     ///         Can be overridden via constructor or setP256Verifier() for chains without RIP-7212.
@@ -46,6 +48,9 @@ contract SocialRecoveryModule is Ownable {
     uint256 public constant RECOVERY_DEPOSIT = 10_000_000_000_000_000; // 0.01 MDAO (18 decimals)
 
     IERC20 public immutable mdaoToken;
+
+    /// @notice Registered recovery hooks called after executeRecovery.
+    IRecoveryHook[] public recoveryHooks;
 
     struct Guardian {
         bytes32 identityHash;
@@ -74,6 +79,13 @@ contract SocialRecoveryModule is Ownable {
     mapping(address wallet => mapping(uint256 nonce => uint256)) public approvalCount;
     mapping(address wallet => mapping(uint256 nonce => uint256)) public vetoCount;
     mapping(address wallet => uint256) public recoveryDeposit;
+
+    /// @notice New EOA owner for MDAOSmartAccount after recovery (S-137).
+    /// @dev Set by wallet owner before executeRecovery. Consumed in executeRecovery.
+    mapping(address => address) public recoveryEOAOwner;
+    /// @notice MDAOSmartAccount contract address per wallet (S-137).
+    /// @dev executeRecovery calls smartAccount.transferOwnership(recoveryEOAOwner[wallet]).
+    mapping(address => address) public recoverySmartAccount;
 
     event WalletRegistered(address indexed wallet, bytes32 passkeyHash);
     event GuardianAdded(address indexed wallet, bytes32 indexed identityHash, uint256 index);
@@ -317,6 +329,59 @@ contract SocialRecoveryModule is Ownable {
         }
 
         emit RecoveryExecutedEv(wallet, newKeyHash);
+
+        // Call registered recovery hooks (e.g., invalidate session keys)
+        uint256 len = recoveryHooks.length;
+        for (uint256 i; i < len; i++) {
+            recoveryHooks[i].onRecoveryExecuted(wallet);
+        }
+
+        // S-137: transfer MDAOSmartAccount ownership to new EOA if configured
+        address smartAccount = recoverySmartAccount[wallet];
+        address newEOA = recoveryEOAOwner[wallet];
+        if (smartAccount != address(0) && newEOA != address(0)) {
+            recoverySmartAccount[wallet] = address(0); // consume — prevent re-use
+            recoveryEOAOwner[wallet] = address(0);
+            // Silently ignore if SmartAccount doesn't implement transferOwnership
+            (bool success,) = smartAccount.call(
+                abi.encodeWithSignature("transferOwnership(address)", newEOA)
+            );
+            if (!success) {} // suppress unused warning
+        }
+    }
+
+    /// @notice Register a recovery hook contract.
+    /// @param hook Address of the contract implementing IRecoveryHook.
+    function addRecoveryHook(IRecoveryHook hook) external onlyOwner {
+        recoveryHooks.push(hook);
+    }
+
+    /// @notice Remove a recovery hook by index (swap & pop).
+    /// @param index Index in the recoveryHooks array.
+    function removeRecoveryHook(uint256 index) external onlyOwner {
+        uint256 len = recoveryHooks.length;
+        if (index >= len) revert ErrHookArrayEmpty();
+        recoveryHooks[index] = recoveryHooks[len - 1];
+        recoveryHooks.pop();
+    }
+
+    function getRecoveryHookCount() external view returns (uint256) {
+        return recoveryHooks.length;
+    }
+
+    /// @notice Set the new EOA owner for MDAOSmartAccount after recovery completes.
+    /// @dev When executeRecovery runs, it will call wallet.transferOwnership(newOwner).
+    ///      The wallet's SmartAccount must have this module as recoveryCaller.
+    ///      Call this BEFORE initiateRecovery (or before executeRecovery).
+    /// @param newOwner Address of the new EOA owner (must be non-zero).
+    /// @notice Set (or clear) the SmartAccount + new EOA owner for ownership transfer on recovery.
+    /// @dev executeRecovery will call smartAccount.transferOwnership(newOwner).
+    ///      The SmartAccount must have this module as recoveryCaller.
+    /// @param smartAccount Address of the MDAOSmartAccount contract. Set both to 0 to clear.
+    /// @param newOwner New EOA owner address. Can be address(0) to skip transfer.
+    function setRecoveryTransfer(address smartAccount, address newOwner) external {
+        recoverySmartAccount[msg.sender] = smartAccount;
+        recoveryEOAOwner[msg.sender] = newOwner;
     }
 
     function cleanupExpiredRecovery(address wallet) external {

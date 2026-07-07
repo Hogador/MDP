@@ -251,7 +251,7 @@ contract IntegrationTest is Test {
         sessionKeys.validateSessionKey(keyId, keccak256("payments.send"), 1 ether);
 
         // Use
-        vm.prank(dapp);
+        vm.prank(owner);
         sessionKeys.useSessionKey(keyId, keccak256("payments.send"), 1 ether);
 
         // Validate — within limit
@@ -262,11 +262,12 @@ contract IntegrationTest is Test {
         sessionKeys.validateSessionKey(keyId, keccak256("payments.send"), 1.5 ether);
 
         // Use all remaining (exactly fills to limit)
-        vm.prank(dapp);
+        vm.prank(owner);
         sessionKeys.useSessionKey(keyId, keccak256("payments.send"), 1 ether);
 
         // Now fully spent — should revert
         vm.expectRevert(SessionKeyModule.SpendingLimitExceeded.selector);
+        vm.prank(owner);
         sessionKeys.useSessionKey(keyId, keccak256("payments.send"), 0.01 ether);
 
         // Revoke

@@ -177,7 +177,7 @@ class DeviceIntegrityManagerTest {
         verifier2.update("${tamperedParts[0]}.${tamperedParts[1]}".toByteArray())
         val isTamperedValid = try {
             verifier2.verify(Base64.getUrlDecoder().decode(tamperedParts[2]))
-        } catch (_: IllegalArgumentException) {
+        } catch (_: Exception) {
             false
         }
         assert(!isTamperedValid) { "Tampered JWT should NOT verify" }

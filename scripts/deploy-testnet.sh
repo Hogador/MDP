@@ -259,11 +259,15 @@ TIMELOCK=$(parse_address "TimelockController")
 ECDSA_VERIFIER=$(parse_address "EcdsaVerifier")
 TRUST_PROVIDER_REGISTRY=$(parse_address "TrustProviderRegistry")
 P256_VERIFIER=$(parse_address "P256Verifier")
+TREASURY=$(parse_address "Treasury")
+PROPOSAL=$(parse_address "Proposal")
+SPLITTER_FACTORY=$(parse_address "PaymentSplitterFactory")
 log_info "P256Verifier deployed at: $P256_VERIFIER"
 
 ALL_ADDRS=("$MDAO_TOKEN" "$PAYMASTER" "$INSURANCE_FUND" "$SOCIAL_RECOVERY" \
            "$NICKNAME_REGISTRY" "$DEAD_MAN_SWITCH" "$ATTESTATION_LEDGER" "$REFUND_VAULT" \
-           "$SESSION_KEY" "$TIMELOCK" "$ECDSA_VERIFIER" "$TRUST_PROVIDER_REGISTRY" "$P256_VERIFIER")
+           "$SESSION_KEY" "$TIMELOCK" "$ECDSA_VERIFIER" "$TRUST_PROVIDER_REGISTRY" "$P256_VERIFIER" \
+           "$TREASURY" "$PROPOSAL" "$SPLITTER_FACTORY")
 ALL_LOWER=($(printf '%s\n' "${ALL_ADDRS[@]}" | tr '[:upper:]' '[:lower:]'))
 UNIQUE_ADDRS=($(printf '%s\n' "${ALL_LOWER[@]}" | sort -u))
 [ ${#UNIQUE_ADDRS[@]} -eq ${#ALL_LOWER[@]} ] \
@@ -283,6 +287,9 @@ log_info "  TimelockController:     $TIMELOCK"
 log_info "  EcdsaVerifier:          $ECDSA_VERIFIER"
 log_info "  TrustProviderRegistry:  $TRUST_PROVIDER_REGISTRY"
 log_info "  P256Verifier:           $P256_VERIFIER"
+log_info "  Treasury:               $TREASURY"
+log_info "  Proposal:               $PROPOSAL"
+log_info "  PaymentSplitterFactory: $SPLITTER_FACTORY"
 
 # ============================================================================
 # 7. VERIFY CONTRACTS ON BSCSCAN
@@ -371,6 +378,15 @@ verify_contract "$ECDSA_VERIFIER" "src/EcdsaVerifier.sol" "EcdsaVerifier" \
 verify_contract "$TRUST_PROVIDER_REGISTRY" "src/TrustProviderRegistry.sol" "TrustProviderRegistry" ""
 verify_contract "$P256_VERIFIER" "src/helpers/P256Verifier.sol" "P256Verifier" ""
 
+# ── Governance contracts (R-2) ──
+verify_contract "$TREASURY" "src/Treasury.sol" "Treasury" \
+    "$(cast abi-encode "constructor(address,address)" "$DEPLOYER_ADDR" "0x0000000000000000000000000000000000000000")"
+
+verify_contract "$PROPOSAL" "src/Proposal.sol" "Proposal" \
+    "$(cast abi-encode "constructor(address,address,address)" "$TREASURY" "$MDAO_TOKEN" "$DEPLOYER_ADDR")"
+
+verify_contract "$SPLITTER_FACTORY" "src/PaymentSplitterFactory.sol" "PaymentSplitterFactory" ""
+
 # ============================================================================
 # 8. POST-DEPLOY ON-CHAIN CONFIGURATION
 # ============================================================================
@@ -433,6 +449,9 @@ ECDSA_VERIFIER_ADDRESS=$ECDSA_VERIFIER
 TIMELOCK_ADDRESS=$TIMELOCK
 P256_VERIFIER_ADDRESS=$P256_VERIFIER
 SWAP_ROUTER_ADDRESS=$SWAP_ROUTER_TESTNET
+TREASURY_ADDRESS=$TREASURY
+PROPOSAL_ADDRESS=$PROPOSAL
+PAYMENT_SPLITTER_FACTORY_ADDRESS=$SPLITTER_FACTORY
 ALLOW_LOCAL_SIGNING=true
 KMS_REGION=us-east-1
 EOF
@@ -693,7 +712,10 @@ cat > "$DEPLOY_SUMMARY" <<EOF
     "SessionKeyModule": "$SESSION_KEY",
     "TimelockController": "$TIMELOCK",
     "EcdsaVerifier": "$ECDSA_VERIFIER",
-    "TrustProviderRegistry": "$TRUST_PROVIDER_REGISTRY"
+    "TrustProviderRegistry": "$TRUST_PROVIDER_REGISTRY",
+    "Treasury": "$TREASURY",
+    "Proposal": "$PROPOSAL",
+    "PaymentSplitterFactory": "$SPLITTER_FACTORY"
   },
   "explorer": "$BSC_EXPLORER",
   "nextSteps": [
@@ -732,6 +754,9 @@ echo "   SocialRecoveryModule:   $BSC_EXPLORER/address/$SOCIAL_RECOVERY"
 echo "   NicknameRegistry:       $BSC_EXPLORER/address/$NICKNAME_REGISTRY"
 echo "   TimelockController:     $BSC_EXPLORER/address/$TIMELOCK"
 echo "   TrustProviderRegistry:  $BSC_EXPLORER/address/$TRUST_PROVIDER_REGISTRY"
+echo "   Treasury:               $BSC_EXPLORER/address/$TREASURY"
+echo "   Proposal:               $BSC_EXPLORER/address/$PROPOSAL"
+echo "   PaymentSplitterFactory: $BSC_EXPLORER/address/$SPLITTER_FACTORY"
 echo "   P256Verifier:           $BSC_EXPLORER/address/$P256_VERIFIER"
 echo ""
 echo "--- Services:"

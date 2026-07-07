@@ -309,9 +309,9 @@ private fun HomeContent(
                 )
 
                 NetworkAddressCard(
-                    network = "Ethereum (Sepolia)",
+                    network = "BSC Testnet",
                     address = wallet.address,
-                    chainId = "11155111",
+                    chainId = "97",
                     context = context
                 )
 
@@ -347,9 +347,9 @@ private fun TokenActions(
             },
             Triple("История", Icons.Rounded.History, onHistoryClick)
         )
-        "Sepolia ETH" -> listOf(
-            Triple("Отправить ETH", Icons.Rounded.ArrowUpward, onSendClick),
-            Triple("Получить ETH", Icons.Rounded.ArrowDownward, onReceiveClick),
+        "tBNB" -> listOf(
+            Triple("Отправить tBNB", Icons.Rounded.ArrowUpward, onSendClick),
+            Triple("Получить tBNB", Icons.Rounded.ArrowDownward, onReceiveClick),
             Triple("История", Icons.Rounded.History, onHistoryClick)
         )
         else -> listOf(
@@ -443,7 +443,7 @@ private fun TransactionRow(tx: TransactionItem) {
     Card(
         onClick = {
             if (tx.status == TxStatus.CONFIRMED && tx.txHash.isNotBlank()) {
-                val url = "https://sepolia.etherscan.io/tx/${tx.txHash}"
+                val url = "https://testnet.bscscan.com/tx/${tx.txHash}"
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)
             }
@@ -597,7 +597,7 @@ private fun walletToTokens(wallet: WalletState): List<TokenInfo> = buildList {
     if (wallet.balanceUsdt > java.math.BigDecimal.ZERO)
         add(TokenInfo("USDT", wallet.balanceUsdt, SuccessGreen))
     if (wallet.balanceEth > java.math.BigDecimal.ZERO)
-        add(TokenInfo("Sepolia ETH", wallet.balanceEth, androidx.compose.ui.graphics.Color(0xFF627EEA)))
+        add(TokenInfo("tBNB", wallet.balanceEth, androidx.compose.ui.graphics.Color(0xFFF0B90B)))
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -671,7 +671,7 @@ private fun TokenCardSwipableStack(
                             ) {
                                 Text(
                                     text = when (token.symbol) {
-                                        "Sepolia ETH" -> "Ξ"
+                                        "tBNB" -> "✦"
                                         "USDT" -> "₮"
                                         else -> "M"
                                     },
@@ -705,7 +705,7 @@ private fun TokenCardSwipableStack(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (balanceHidden) "••••••"
-                            else "▲ ${token.balance.toDisplayAmount(if (token.symbol == "Sepolia ETH") 6 else 2)}",
+                            else "▲ ${token.balance.toDisplayAmount(if (token.symbol == "tBNB") 6 else 2)}",
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold
                             ),

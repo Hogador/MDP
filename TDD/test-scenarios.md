@@ -1350,7 +1350,7 @@ Even though it's a false alarm, price drops 40% in 1h."
 
 ## I. Test Fixtures — НОВОЕ
 
-### I.1. Test Wallets (Sepolia testnet)
+### I.1. Test Wallets (BSC Testnet)
 
 | Name | Address | Purpose | Private Key (test only!) |
 |------|---------|---------|--------------------------|
@@ -1363,15 +1363,13 @@ Even though it's a false alarm, price drops 40% in 1h."
 
 **Note:** All keys stored in `.env.test`, never committed to git. CI injects via GitHub Secrets.
 
-### I.2. Test Tokens (Sepolia)
+### I.2. Test Tokens (BSC Testnet)
 
 | Token | Address | Decimals | Faucet Amount |
 |-------|---------|----------|---------------|
-| USDT (test) | `0x...` | 6 | 10,000 USDT |
-| USDC (test) | `0x...` | 6 | 10,000 USDC |
-| MDAO (test) | `0x...` | 18 | 100,000 MDAO |
-| DAI (test) | `0x...` | 18 | 10,000 DAI |
-| WETH (test) | `0x...` | 18 | 10 WETH |
+| USDT (test) | `0x337610d27c682E347C9cD60BD4b3b107C9d34dDD` | 18 | 10,000 USDT |
+| WBNB (test) | `0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd` | 18 | 10 WBNB |
+| MDAO (test) | `0x...` (after deploy) | 18 | 100,000 MDAO |
 
 ### I.3. Test Seed Phrases
 
@@ -1400,19 +1398,18 @@ Even though it's a false alarm, price drops 40% in 1h."
 
 | Chain | Primary | Fallback | Chain ID |
 |-------|---------|----------|----------|
-| Sepolia | `https://rpc.sepolia.mdaopay.xyz` | `https://sepolia.infura.io/v3/...` | 11155111 |
-| BSC Testnet | `https://rpc.bsc-testnet.mdaopay.xyz` | `https://data-seed-prebsc-1...` | 97 |
+| BSC Testnet | `https://data-seed-prebsc-1-s1.binance.org:8545` | `https://bsc-testnet-rpc.publicnode.com` | 97 |
 | Local (Anvil) | `http://localhost:8545` | — | 31337 |
 
-### I.6. Test Contracts (Sepolia)
+### I.6. Test Contracts (BSC Testnet)
 
 | Contract | Address | TDD Ref |
 |----------|---------|---------|
 | EntryPoint | `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` | §3.1 |
-| MDAOToken | `0x...` | §3.2 |
-| MDAOPaymaster | `0x...` | §3.3 |
-| SocialRecoveryModule | `0x...` | §3.4 |
-| NicknameRegistry | `0x...` | §3.5 |
+| MDAOToken | `0x...` (after deploy) | §3.2 |
+| MDAOPaymaster | `0x...` (after deploy) | §3.3 |
+| SocialRecoveryModule | `0x...` (after deploy) | §3.4 |
+| NicknameRegistry | `0x...` (after deploy) | §3.5 |
 
 ### I.7. Test Data for Edge Cases
 
@@ -1427,15 +1424,15 @@ Even though it's a false alarm, price drops 40% in 1h."
 ### I.8. Anvil Fork Commands
 
 ```bash
-# Fork Sepolia for contract tests
-anvil --fork-url https://rpc.sepolia.mdaopay.xyz \
-      --fork-block-number 5000000 \
+# Fork BSC Testnet for contract tests
+anvil --fork-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+      --fork-block-number 40000000 \
       --port 8545
 
 # Impersonate Alice for tests
 cast rpc anvil_impersonateAccount 0x4F2E...8B9C
 
-# Fund Alice with ETH
+# Fund Alice with tBNB
 cast rpc anvil_setBalance 0x4F2E...8B9C 0xDE0B6B3A7640000
 ```
 

@@ -49,6 +49,11 @@ data class AppConfig(
     val ecdsaVerifierAddress: String? = null,
     val timelockAddress: String? = null,
     val p256VerifierAddress: String? = null,
+    // F-104: Event indexer
+    val treasuryAddress: String? = null,
+    val proposalAddress: String? = null,
+    val paymentSplitterFactoryAddress: String? = null,
+    val indexerPollIntervalSec: Long = 30,
 ) {
     // ponytail: JWT validation at construction (no security bypass — config hygiene)
     init {
@@ -127,6 +132,10 @@ data class AppConfig(
             val ecdsaVerifierAddress = env["ECDSA_VERIFIER_ADDRESS"]
             val timelockAddress = env["TIMELOCK_ADDRESS"]
             val p256VerifierAddress = env["P256_VERIFIER_ADDRESS"]
+            val treasuryAddress = env["TREASURY_ADDRESS"]
+            val proposalAddress = env["PROPOSAL_ADDRESS"]
+            val paymentSplitterFactoryAddress = env["PAYMENT_SPLITTER_FACTORY_ADDRESS"]
+            val indexerPollIntervalSec = env["INDEXER_POLL_INTERVAL_SEC"]?.toLongOrNull() ?: 30
 
             if (trustedSigner.isNotBlank() && !ADDRESS_REGEX.matches(trustedSigner)) {
                 error("Invalid TRUSTED_SIGNER format: must be 0x-prefixed 40-char hex")
@@ -155,6 +164,7 @@ data class AppConfig(
                 insuranceFundAddress, deadManSwitchAddress, refundVaultAddress,
                 sessionKeyModuleAddress, attestationLedgerAddress, trustProviderRegistryAddress,
                 ecdsaVerifierAddress, timelockAddress, p256VerifierAddress,
+                treasuryAddress, proposalAddress, paymentSplitterFactoryAddress,
             ).forEach { addr ->
                 if (!ADDRESS_REGEX.matches(addr)) {
                     error("Invalid contract address format: $addr (must be 0x-prefixed 40-char hex)")
@@ -198,6 +208,10 @@ data class AppConfig(
                 ecdsaVerifierAddress = ecdsaVerifierAddress,
                 timelockAddress = timelockAddress,
                 p256VerifierAddress = p256VerifierAddress,
+                treasuryAddress = treasuryAddress,
+                proposalAddress = proposalAddress,
+                paymentSplitterFactoryAddress = paymentSplitterFactoryAddress,
+                indexerPollIntervalSec = indexerPollIntervalSec,
             )
             cfg.allowLocalSigning = env["ALLOW_LOCAL_SIGNING"]?.toBooleanStrictOrNull() ?: false
             if ((kmsKeyId != null || kmsKeyName != null) && cfg.allowLocalSigning) {

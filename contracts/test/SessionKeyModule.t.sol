@@ -184,10 +184,12 @@ contract SessionKeyModuleTest is Test {
 
         bytes32 keyId = _createKey(dApp, perms, 2 ether, block.timestamp + 1 days, 0);
 
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 0.3 ether);
         (, , , , , , uint256 spent,,,,,) = module.getSessionKey(keyId);
         assertEq(spent, 0.3 ether);
 
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 0.2 ether);
         (, , , , , , spent,,,,,) = module.getSessionKey(keyId);
         assertEq(spent, 0.5 ether);
@@ -201,9 +203,11 @@ contract SessionKeyModuleTest is Test {
 
         bytes32 keyId = _createKey(dApp, perms, 1 ether, block.timestamp + 1 days, 0);
 
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 0.8 ether);
 
         vm.expectRevert(SessionKeyModule.SpendingLimitExceeded.selector);
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 0.3 ether);
     }
 
@@ -215,6 +219,7 @@ contract SessionKeyModuleTest is Test {
 
         bytes32 keyId = _createKey(dApp, perms, 0, block.timestamp + 1 days, 0);
 
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 1000 ether);
         (, , , , , , uint256 spent,,,,,) = module.getSessionKey(keyId);
         assertEq(spent, 1000 ether);
@@ -300,6 +305,7 @@ contract SessionKeyModuleTest is Test {
 
         // Use 11 times to build successCount to 11
         for (uint256 i = 0; i < 11; i++) {
+            vm.prank(owner);
             module.useSessionKey(keyId, PERM_PAY, 1);
         }
 
@@ -321,8 +327,11 @@ contract SessionKeyModuleTest is Test {
         bytes32 keyId = _createKey(dApp, perms, 100 ether, block.timestamp + 1 days, 0);
 
         // Use normally: amounts 10, 20, 15
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 10);
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 20);
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 15);
 
         // successCount should be 3
@@ -330,6 +339,7 @@ contract SessionKeyModuleTest is Test {
         assertEq(successCount, 3);
 
         // Spike: 40 > 15 * 2 = 30
+        vm.prank(owner);
         module.useSessionKey(keyId, PERM_PAY, 40);
 
         // successCount reset to 0
@@ -410,6 +420,7 @@ contract SessionKeyModuleTest is Test {
 
         // Use 10 times → successCount = 10 (no bonus yet, need > 10)
         for (uint256 i = 0; i < 10; i++) {
+            vm.prank(owner);
             module.useSessionKey(keyId, PERM_PAY, 1);
         }
         // spent = 10, dynamicLimit = 100 (no bonus), 10 + 91 = 101 > 100 → revert
@@ -426,5 +437,83 @@ contract SessionKeyModuleTest is Test {
         // spent(10) + 111 = 121 > 120 → revert
         vm.expectRevert(SessionKeyModule.SpendingLimitExceeded.selector);
         module.validateSessionKey(keyId, PERM_PAY, 111);
+    }
+
+    // ── 27. onRecoveryExecuted: recovery invalidates all keys for the wallet ──
+
+    function test_OnRecoveryExecuted() public {
+        bytes32[] memory perms = new bytes32[](1);
+        perms[0] = PERM_PAY;
+
+        // Create keys for multiple owners
+        bytes32 aliceKey1 = _createKeyAs(alice, dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+        bytes32 aliceKey2 = _createKeyAs(alice, dApp2, perms, 2 ether, block.timestamp + 1 days, 0);
+        bytes32 ownerKey = _createKey(dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+
+        // Set this contract as the recovery caller
+        vm.prank(owner);
+        module.setRecoveryCaller(address(this));
+
+        // Execute recovery — invalidate alice's keys
+        module.onRecoveryExecuted(alice);
+
+        // alice's keys are revoked
+        (, , , , , , , bool revoked1,,,,) = module.getSessionKey(aliceKey1);
+        assertTrue(revoked1);
+
+        (, , , , , , , bool revoked2,,,,) = module.getSessionKey(aliceKey2);
+        assertTrue(revoked2);
+
+        // owner's key is NOT revoked
+        (, , , , , , , bool revokedOwner,,,,) = module.getSessionKey(ownerKey);
+        assertFalse(revokedOwner);
+
+        // Double recovery is idempotent
+        module.onRecoveryExecuted(alice); // should not revert
+
+        // New keys after recovery still work
+        bytes32 newKey = _createKeyAs(alice, dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+        (, , , , , , , bool revokedNew,,,,) = module.getSessionKey(newKey);
+        assertFalse(revokedNew);
+    }
+
+    function test_OnRecoveryExecutedRevertsUnauthorized() public {
+        // Without setting recoveryCaller, it defaults to address(0)
+        bytes32[] memory perms = new bytes32[](1);
+        perms[0] = PERM_PAY;
+        bytes32 keyId = _createKey(dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+
+        // Unauthorized caller (this contract, not set as recoveryCaller)
+        vm.expectRevert(SessionKeyModule.NotRecoveryCaller.selector);
+        module.onRecoveryExecuted(alice);
+    }
+
+    // ── 28. Foreign keyId cannot be used by another user (S-131.2) ─
+
+    function test_RevertWhen_ForeignKeyUsedByStranger() public {
+        bytes32[] memory perms = new bytes32[](1);
+        perms[0] = PERM_PAY;
+
+        // alice creates a key
+        bytes32 aliceKey = _createKeyAs(alice, dApp, perms, 1 ether, block.timestamp + 1 days, 0);
+
+        // bob tries to use alice's key → Unauthorized
+        vm.prank(makeAddr("bob"));
+        vm.expectRevert(SessionKeyModule.Unauthorized.selector);
+        module.useSessionKey(aliceKey, PERM_PAY, 0.1 ether);
+    }
+
+    // ── Helper: create key as a specific owner ─────────────────────
+
+    function _createKeyAs(
+        address _owner,
+        address _dapp,
+        bytes32[] memory perms,
+        uint256 limit,
+        uint256 expiry,
+        uint8 riskTier
+    ) internal returns (bytes32 keyId) {
+        vm.prank(_owner);
+        keyId = module.createSessionKey(_dapp, expiry, perms, limit, riskTier);
     }
 }

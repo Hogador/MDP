@@ -138,7 +138,7 @@ fun AssetDetailsScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "\u25B2 ${balance.toBigDecimalOrNull()?.toDisplayAmount(
-                                    if (symbol == "ETH" || symbol == "Sepolia ETH") 6 else 2
+                                    if (symbol == "ETH" || symbol == "tBNB") 6 else 2
                                 ) ?: "0"}",
                                 fontFamily = MarsMono,
                                 fontWeight = FontWeight.Bold,

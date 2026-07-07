@@ -8,7 +8,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.math.BigDecimal
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,13 +44,11 @@ data class RemoteTx(
 )
 
 @Singleton
-class EtherscanRepository @Inject constructor() {
+class EtherscanRepository @Inject constructor(
+    private val client: OkHttpClient
+) {
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .build()
 
     suspend fun fetchTransactions(address: String): List<RemoteTx> {
         if (NetworkConfig.ETHERSCAN_API_KEY.isBlank()) return emptyList()

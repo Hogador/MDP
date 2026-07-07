@@ -1,8 +1,8 @@
 package com.mdaopay.app.core.guardian
 
-import android.util.Base64
 import org.junit.Assert.*
 import org.junit.Test
+import java.util.Base64
 
 /**
  * F-101 regression: Guardian on-chain флоу.
@@ -13,34 +13,26 @@ import org.junit.Test
  * Real CBOR attestationObject with a P-256 COSE_Key is used for extraction tests.
  * The bundler/paymaster integration paths are tested via the builder methods
  * (unit-testable after DI mock setup).
+ *
+ * ponytail: pure-function methods live in companion object → callable directly.
  */
 class GuardianUserOpBuilderTest {
 
     @Test
     fun `extractP256PublicKey returns null for empty json`() {
-        // Cannot instantiate GuardianUserOpBuilder without DI,
-        // but extractP256PublicKey is a pure function of registrationJson
-        // We test the logic by creating a minimal instance — since the method
-        // is non-static and doesn't use constructor params, we can call it
-        // on a real instance via reflection-like approach.
-        //
-        // ponytail: the method is a pure function of its input; null for bad input.
-        val builder = GuardianUserOpBuilderTestHelper.createBuilder()
-        assertNull(builder.extractP256PublicKey("{}"))
-        assertNull(builder.extractP256PublicKey("{\"response\":{}}"))
-        assertNull(builder.extractP256PublicKey("{\"response\":{\"attestationObject\":\"AAAA\"}}"))
+        assertNull(GuardianUserOpBuilder.extractP256PublicKey("{}"))
+        assertNull(GuardianUserOpBuilder.extractP256PublicKey("{\"response\":{}}"))
+        assertNull(GuardianUserOpBuilder.extractP256PublicKey("{\"response\":{\"attestationObject\":\"AAAA\"}}"))
     }
 
     @Test
     fun `extractWebAuthnAssertion returns null for empty json`() {
-        val builder = GuardianUserOpBuilderTestHelper.createBuilder()
-        assertNull(builder.extractWebAuthnAssertion("{}"))
-        assertNull(builder.extractWebAuthnAssertion("{\"response\":{}}"))
+        assertNull(GuardianUserOpBuilder.extractWebAuthnAssertion("{}"))
+        assertNull(GuardianUserOpBuilder.extractWebAuthnAssertion("{\"response\":{}}"))
     }
 
     @Test
     fun `extractWebAuthnAssertion returns null for missing fields`() {
-        val builder = GuardianUserOpBuilderTestHelper.createBuilder()
         val json = """{
             "id": "test-id",
             "type": "public-key",
@@ -48,22 +40,17 @@ class GuardianUserOpBuilderTest {
                 "clientDataJSON": "dGVzdA"
             }
         }"""
-        assertNull(builder.extractWebAuthnAssertion(json))
+        assertNull(GuardianUserOpBuilder.extractWebAuthnAssertion(json))
     }
 
     @Test
     fun `extractWebAuthnAssertion parses valid response`() {
-        val builder = GuardianUserOpBuilderTestHelper.createBuilder()
-
-        val authDataB64 = Base64.encodeToString(
-            ByteArray(37) { it.toByte() }, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+        val b64enc = Base64.getUrlEncoder().withoutPadding()
+        val authDataB64 = b64enc.encodeToString(ByteArray(37) { it.toByte() })
+        val clientDataB64 = b64enc.encodeToString(
+            "{\"type\":\"webauthn.get\",\"origin\":\"android:apk-key-hash:test\"}".encodeToByteArray()
         )
-        val clientDataB64 = Base64.encodeToString(
-            "{\"type\":\"webauthn.get\"}".encodeToByteArray(), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
-        )
-        val sigB64 = Base64.encodeToString(
-            ByteArray(64) { 0xAA.toByte() }, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
-        )
+        val sigB64 = b64enc.encodeToString(ByteArray(64) { 0xAA.toByte() })
 
         val json = """{
             "id": "test-id",
@@ -75,17 +62,38 @@ class GuardianUserOpBuilderTest {
             }
         }"""
 
-        val result = builder.extractWebAuthnAssertion(json)
+        val result = GuardianUserOpBuilder.extractWebAuthnAssertion(json)
         assertNotNull(result)
         assertEquals(37, result!!.authenticatorData.size)
-        assertEquals("{\"type\":\"webauthn.get\"}", result.clientDataJSON.decodeToString())
+        assertTrue(result.clientDataJSON.decodeToString().contains("\"type\":\"webauthn.get\""))
         assertEquals(64, result.signature.size)
     }
 
     @Test
-    fun `extractP256PublicKey parses real CBOR attestation`() {
-        val builder = GuardianUserOpBuilderTestHelper.createBuilder()
+    fun `extractWebAuthnAssertion rejects registration cross-ceremony`() {
+        val b64enc = Base64.getUrlEncoder().withoutPadding()
+        val authDataB64 = b64enc.encodeToString(ByteArray(37) { it.toByte() })
+        // clientDataJSON with type=webauthn.create (registration, not authentication)
+        val clientDataB64 = b64enc.encodeToString(
+            "{\"type\":\"webauthn.create\",\"origin\":\"https://mdaopay.app\"}".encodeToByteArray()
+        )
+        val sigB64 = b64enc.encodeToString(ByteArray(64) { 0xAA.toByte() })
 
+        val json = """{
+            "id": "test-id",
+            "type": "public-key",
+            "response": {
+                "authenticatorData": "$authDataB64",
+                "clientDataJSON": "$clientDataB64",
+                "signature": "$sigB64"
+            }
+        }"""
+
+        assertNull(GuardianUserOpBuilder.extractWebAuthnAssertion(json))
+    }
+
+    @Test
+    fun `extractP256PublicKey parses real CBOR attestation`() {
         // Build a realistic CBOR attestationObject:
         // {
         //   "fmt": "none",
@@ -120,9 +128,6 @@ class GuardianUserOpBuilderTest {
         val flags = byteArrayOf(0x41) // UP (1) + AT (64)
         val signCount = ByteArray(4) { 0x00 }
         val aaguid = ByteArray(16) { 0x00 }
-        val credIdLen = ByteArray(2) { 0x00 } // empty cred ID for simplicity
-        // Actually need proper cred ID: len = 0 means no cred ID
-        // Let's make cred ID 16 bytes
         val credId = ByteArray(16) { it.toByte() }
         val credIdLenBytes = byteArrayOf(0x00, 0x10) // 16
 
@@ -131,7 +136,7 @@ class GuardianUserOpBuilderTest {
         // Build attestation CBOR
         val attestationBytes = buildAttestationCbor("none", authData)
 
-        val attestationB64 = Base64.encodeToString(attestationBytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+        val attestationB64 = Base64.getUrlEncoder().withoutPadding().encodeToString(attestationBytes)
 
         val registrationJson = """{
             "id": "test-cred-id",
@@ -142,7 +147,7 @@ class GuardianUserOpBuilderTest {
             }
         }"""
 
-        val keyData = builder.extractP256PublicKey(registrationJson)
+        val keyData = GuardianUserOpBuilder.extractP256PublicKey(registrationJson)
         assertNotNull("Should extract P-256 public key from valid CBOR attestation", keyData)
 
         // Verify x and y coordinates match
@@ -159,7 +164,7 @@ class GuardianUserOpBuilderTest {
     /** Builds a CBOR-encoded COSE_Key map for P-256. */
     private fun buildCoseKeyBytes(x: ByteArray, y: ByteArray): ByteArray {
         // CBOR map with 5 entries
-        val mapHeader = byteArrayOf(0xA5) // major 5, 5 items
+        val mapHeader = byteArrayOf(0xA5.toByte()) // major 5, 5 items
 
         // Key 1 (uint): 1 -> 2
         val k1 = byteArrayOf(0x01, 0x02)
@@ -186,7 +191,7 @@ class GuardianUserOpBuilderTest {
     /** Builds a CBOR attestationObject with fmt and authData. */
     private fun buildAttestationCbor(fmt: String, authData: ByteArray): ByteArray {
         // Build CBOR map with 3 entries
-        val mapHeader = byteArrayOf(0xA3) // major 5, 3 items
+        val mapHeader = byteArrayOf(0xA3.toByte()) // major 5, 3 items
 
         // fmt (text): "none"
         val fmtKey = byteArrayOf(0x63) + "fmt".encodeToByteArray()
@@ -194,13 +199,13 @@ class GuardianUserOpBuilderTest {
 
         // attStmt (map): {}
         val attStmtKey = byteArrayOf(0x67) + "attStmt".encodeToByteArray()
-        val attStmtVal = byteArrayOf(0xA0) // empty map
+        val attStmtVal = byteArrayOf(0xA0.toByte()) // empty map
 
         // authData (bytes)
         val authDataKey = byteArrayOf(0x68) + "authData".encodeToByteArray()
         val authDataLen = authData.size
         val authDataHeader = when {
-            authDataLen <= 23 -> byteArrayOf(0x40 + authDataLen) // major 2
+            authDataLen <= 23 -> byteArrayOf((0x40 + authDataLen).toByte()) // major 2
             authDataLen <= 255 -> byteArrayOf(0x58.toByte(), authDataLen.toByte())
             authDataLen <= 65535 -> byteArrayOf(0x59.toByte(), (authDataLen shr 8).toByte(), authDataLen.toByte())
             else -> byteArrayOf(0x5A.toByte()) // too big for test
@@ -220,24 +225,4 @@ class GuardianUserOpBuilderTest {
 
     private fun ByteArray.plus(other: ByteArray): ByteArray = concat(other)
     private fun ByteArray.plus(other: Byte): ByteArray = concat(byteArrayOf(other))
-}
-
-/**
- * Helper to create GuardianUserOpBuilder for testing without DI.
- */
-object GuardianUserOpBuilderTestHelper {
-    fun createBuilder(): GuardianUserOpBuilder {
-        // GuardianUserOpBuilder's P-256 extraction methods don't use constructor
-        // deps — they're pure function of the input string. We instantiate with
-        // nulls since those methods are exercised in tests.
-        //
-        // ponytail: minimal testing infrastructure, no mocking framework needed.
-        return GuardianUserOpBuilder(
-            walletManager = null!!,
-            bundlerClient = null!!,
-            paymasterClient = null!!,
-            ethereumClient = null!!,
-            passkeyManager = null!!
-        )
-    }
 }

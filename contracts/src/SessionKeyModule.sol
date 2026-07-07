@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {IRecoveryHook} from "./interfaces/IRecoveryHook.sol";
+
 /// @title SessionKeyModule
 /// @notice Identity Connect: scoped session keys with permissions, spending limits, and expiry.
 /// @dev Standalone contract (no inheritance). Keys are owned by wallet addresses.
 ///      Only the owner can create, revoke keys. External callers validate + use.
 ///      F-118: Permission whitelist prevents arbitrary permission assignment.
-contract SessionKeyModule {
+contract SessionKeyModule is IRecoveryHook {
     error SessionKeyExpired();
     error SessionKeyRevoked();
     error PermissionDenied();
@@ -14,6 +16,10 @@ contract SessionKeyModule {
     error Unauthorized();
     error InvalidKey();
     error PermissionNotAllowed();
+    error TooManyPermissions();
+    error NotRecoveryCaller();
+
+    uint8 public constant MAX_PERMISSIONS = 20;
 
     struct SessionKey {
         address owner;
@@ -33,6 +39,8 @@ contract SessionKeyModule {
     mapping(bytes32 => SessionKey) public sessionKeys;
     // owner => key count (for future enumeration if needed)
     mapping(address => uint256) public keyCount;
+    // owner => list of key IDs (for recovery invalidation)
+    mapping(address => bytes32[]) private _ownerKeys;
 
     event SessionKeyCreated(
         bytes32 indexed keyId,
@@ -47,6 +55,8 @@ contract SessionKeyModule {
     event PermissionAllowedSet(bytes32 indexed permission, bool allowed);
 
     address public owner;
+    /// @notice Allowed caller of onRecoveryExecuted (SocialRecoveryModule).
+    address public recoveryCaller;
     mapping(bytes32 => bool) public allowedPermissions;
     uint256 public allowedPermissionCount;
 
@@ -57,6 +67,12 @@ contract SessionKeyModule {
 
     constructor() {
         owner = msg.sender;
+    }
+
+    /// @notice Set the allowed caller of onRecoveryExecuted (SocialRecoveryModule address).
+    /// @param caller The recovery module address.
+    function setRecoveryCaller(address caller) external onlyOwner {
+        recoveryCaller = caller;
     }
 
     /// @notice Allow or disallow a permission for session keys (F-118).
@@ -85,6 +101,7 @@ contract SessionKeyModule {
     ) external returns (bytes32 keyId) {
         if (dapp == address(0) || validUntil <= block.timestamp) revert InvalidKey();
         if (riskTier > 2) revert InvalidKey();
+        if (permissions.length > MAX_PERMISSIONS) revert TooManyPermissions();
 
         // F-118: validate permissions against whitelist when non-empty
         if (allowedPermissionCount > 0) {
@@ -106,6 +123,8 @@ contract SessionKeyModule {
         key.spendingLimit = spendingLimit;
         key.riskTier = riskTier;
 
+        _ownerKeys[msg.sender].push(keyId);
+
         emit SessionKeyCreated(keyId, msg.sender, dapp, validUntil, spendingLimit, riskTier);
     }
 
@@ -119,6 +138,22 @@ contract SessionKeyModule {
 
         key.revoked = true;
         emit SessionKeyRevokedEv(keyId, msg.sender);
+    }
+
+    /// @notice IRecoveryHook: invalidate all session keys for a wallet after recovery.
+    /// @dev Only callable by recoveryCaller (SocialRecoveryModule).
+    /// @param wallet The address whose session keys should be revoked.
+    function onRecoveryExecuted(address wallet) external {
+        if (msg.sender != recoveryCaller) revert NotRecoveryCaller();
+        bytes32[] storage keys = _ownerKeys[wallet];
+        for (uint256 i = 0; i < keys.length; i++) {
+            SessionKey storage key = sessionKeys[keys[i]];
+            if (!key.revoked) {
+                key.revoked = true;
+                emit SessionKeyRevokedEv(keys[i], wallet);
+            }
+        }
+        delete _ownerKeys[wallet];
     }
 
     /// @notice Validate a session key: not expired, not revoked, has permission, within dynamic limit.
@@ -144,6 +179,7 @@ contract SessionKeyModule {
     function useSessionKey(bytes32 keyId, bytes32 permission, uint256 amount) external {
         SessionKey storage key = sessionKeys[keyId];
         if (key.owner == address(0)) revert InvalidKey();
+        if (msg.sender != key.owner) revert Unauthorized();
         if (key.revoked) revert SessionKeyRevoked();
         if (block.timestamp < key.validAfter || block.timestamp > key.validUntil) revert SessionKeyExpired();
         if (!_hasPermission(key, permission)) revert PermissionDenied();

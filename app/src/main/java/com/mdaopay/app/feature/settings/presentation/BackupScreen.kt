@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mdaopay.app.core.ui.components.HapticManager
@@ -49,6 +50,12 @@ import com.mdaopay.app.core.ui.theme.MDARadius
 import com.mdaopay.app.core.ui.theme.MarsFont
 import com.mdaopay.app.core.ui.theme.MarsMono
 import com.mdaopay.app.core.ui.theme.*
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import android.content.Intent
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
@@ -65,6 +72,12 @@ fun BackupScreen(
     var word7 by remember { mutableStateOf("") }
     var word11 by remember { mutableStateOf("") }
     val verifyResult = remember { mutableStateOf<Boolean?>(null) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var exportPassword by remember { mutableStateOf("") }
+    var exportPasswordConfirm by remember { mutableStateOf("") }
+    var showQrDialog by remember { mutableStateOf(false) }
+    var qrBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().background(d.bg)) {
         MDAOTopBar(title = "Резервная копия", onBack = onBack)
@@ -313,7 +326,10 @@ fun BackupScreen(
                     },
                     title = "Экспорт JSON keystore",
                     subtitle = "Зашифрованный файл с паролем",
-                    onClick = { HapticManager.light() }
+                    onClick = {
+                        HapticManager.light()
+                        showPasswordDialog = true
+                    }
                 )
                 MDAOListItem(
                     icon = {
@@ -337,12 +353,96 @@ fun BackupScreen(
                     },
                     title = "Экспорт в QR",
                     subtitle = "Для импорта на другое устройство",
-                    onClick = { HapticManager.light() }
+                    onClick = {
+                        HapticManager.light()
+                        qrBitmap = viewModel.generateQrBitmap()
+                        showQrDialog = qrBitmap != null
+                    }
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    // Password dialog for keystore export
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false; exportPassword = ""; exportPasswordConfirm = "" },
+            title = { Text("Создать JSON keystore", fontWeight = FontWeight.Bold, fontFamily = MarsFont) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Введите пароль для шифрования keystore:", fontSize = 14.sp, color = d.text2, fontFamily = MarsFont)
+                    MDAOInputField(
+                        value = exportPassword,
+                        onValueChange = { exportPassword = it },
+                        placeholder = "Пароль",
+                        singleLine = true
+                    )
+                    MDAOInputField(
+                        value = exportPasswordConfirm,
+                        onValueChange = { exportPasswordConfirm = it },
+                        placeholder = "Подтвердите пароль",
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = exportPassword.length >= 4 && exportPassword == exportPasswordConfirm,
+                    onClick = {
+                        val json = viewModel.exportKeystoreJson(exportPassword)
+                        if (json != null) {
+                            val share = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, json)
+                                putExtra(Intent.EXTRA_SUBJECT, "MDAOPay Keystore")
+                            }
+                            context.startActivity(Intent.createChooser(share, "Сохранить keystore"))
+                        }
+                        showPasswordDialog = false
+                        exportPassword = ""
+                        exportPasswordConfirm = ""
+                    }
+                ) {
+                    Text("Создать", fontFamily = MarsFont)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordDialog = false; exportPassword = ""; exportPasswordConfirm = "" }) {
+                    Text("Отмена", fontFamily = MarsFont)
+                }
+            }
+        )
+    }
+
+    // QR dialog
+    if (showQrDialog && qrBitmap != null) {
+        AlertDialog(
+            onDismissRequest = { showQrDialog = false; qrBitmap = null },
+            title = {
+                Text("QR-код recovery phrase", fontWeight = FontWeight.Bold, fontFamily = MarsFont,
+                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        bitmap = qrBitmap!!.asImageBitmap(),
+                        contentDescription = "QR recovery phrase",
+                        modifier = Modifier.size(280.dp).clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQrDialog = false; qrBitmap = null }) {
+                    Text("Закрыть", fontFamily = MarsFont)
+                }
+            }
+        )
     }
 }
 

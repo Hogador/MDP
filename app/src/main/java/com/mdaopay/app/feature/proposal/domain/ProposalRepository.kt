@@ -13,7 +13,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -53,12 +52,10 @@ data class ProposalSummary(
 }
 
 @Singleton
-class ProposalRepository @Inject constructor() {
+class ProposalRepository @Inject constructor(
+    private val client: OkHttpClient
+) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .build()
 
     suspend fun getProposals(): Result<List<ProposalSummary>> = withContext(Dispatchers.IO) {
         try {

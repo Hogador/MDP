@@ -164,6 +164,31 @@ fun main() {
         }
     }
 
+    // F-104: Event indexer
+    var eventIndexer: EventIndexer? = null
+    val indexerContracts = buildList {
+        config.treasuryAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.treasuryEvents)) }
+        config.proposalAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.proposalEvents)) }
+        config.paymentSplitterFactoryAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.paymentSplitterEvents)) }
+        config.sessionKeyModuleAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.sessionKeyEvents)) }
+        config.recoveryModuleAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.socialRecoveryEvents)) }
+        config.deadManSwitchAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.deadManSwitchEvents)) }
+    }
+    if (indexerContracts.isNotEmpty() && config.databaseUrl != null) {
+        rpcManager.getBestProvider().onSuccess { web3j ->
+            val ds = appMetrics.dataSource ?: return@onSuccess
+            eventIndexer = EventIndexer(
+                contracts = indexerContracts,
+                web3j = web3j,
+                dataSource = ds,
+                chainId = config.expectedChainId,
+                pollIntervalSec = config.indexerPollIntervalSec,
+            )
+            eventIndexer!!.start()
+            log.info("EventIndexer started for {} contracts", indexerContracts.size)
+        }
+    }
+
     val paymasterSigner: PaymasterSigner = when {
         config.kmsKeyId != null -> {
             log.info("D-1: Initializing KmsPaymasterSigner with key={}", config.kmsKeyId)
@@ -190,6 +215,7 @@ fun main() {
         log.info("Shutting down — closing resources")
         priceOracle.close()
         rpcManager.close()
+        eventIndexer?.stop()
     })
     val service = PaymasterService(config, rpcManager, paymasterSigner, priceOracle)
 
@@ -284,6 +310,89 @@ fun main() {
                     call.respond(mapOf("error" to "Internal error"))
                 } finally {
                     appMetrics.recordLatency((System.nanoTime() - t0) / 1_000_000)
+                }
+            }
+
+            // ── F-104: Event indexer query ──
+            get("/events") {
+                val wallet = call.request.queryParameters["wallet"]
+                val contract = call.request.queryParameters["contract"]
+                val event = call.request.queryParameters["event"]
+                val fromBlock = call.request.queryParameters["fromBlock"]?.toLongOrNull()
+                val toBlock = call.request.queryParameters["toBlock"]?.toLongOrNull()
+                val limit = (call.request.queryParameters["limit"]?.toIntOrNull() ?: 100).coerceIn(1, 500)
+                val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
+
+                val ds = appMetrics.dataSource
+                if (ds == null) {
+                    call.response.status(HttpStatusCode.ServiceUnavailable)
+                    call.respond(mapOf("error" to "Database not configured"))
+                    return@get
+                }
+
+                try {
+                    val conditions = mutableListOf<String>()
+                    val params = mutableListOf<Any>()
+
+                    if (wallet != null) { conditions.add("wallet = ?"); params.add(wallet.lowercase()) }
+                    if (contract != null) { conditions.add("contract_address = ?"); params.add(contract.lowercase()) }
+                    if (event != null) { conditions.add("event_name = ?"); params.add(event) }
+                    if (fromBlock != null) { conditions.add("block_number >= ?"); params.add(fromBlock) }
+                    if (toBlock != null) { conditions.add("block_number <= ?"); params.add(toBlock) }
+
+                    val where = if (conditions.isEmpty()) "" else "WHERE ${conditions.joinToString(" AND ")}"
+                    val countSql = "SELECT COUNT(*) FROM onchain_events $where"
+                    val querySql = "SELECT * FROM onchain_events $where ORDER BY block_number DESC, log_index DESC LIMIT ? OFFSET ?"
+                    params.add(limit)
+                    params.add(offset)
+
+                    var total = 0L
+                    val rows = mutableListOf<Map<String, Any?>>()
+
+                    ds.connection.use { conn ->
+                        conn.prepareStatement(countSql).use { stmt ->
+                            for (i in params.indices) {
+                                when (val p = params[i]) {
+                                    is String -> stmt.setString(i + 1, p)
+                                    is Long -> stmt.setLong(i + 1, p)
+                                    is Int -> stmt.setInt(i + 1, p)
+                                }
+                            }
+                            val rs = stmt.executeQuery()
+                            if (rs.next()) total = rs.getLong(1)
+                        }
+
+                        conn.prepareStatement(querySql).use { stmt ->
+                            for (i in params.indices) {
+                                when (val p = params[i]) {
+                                    is String -> stmt.setString(i + 1, p)
+                                    is Long -> stmt.setLong(i + 1, p)
+                                    is Int -> stmt.setInt(i + 1, p)
+                                }
+                            }
+                            val rs = stmt.executeQuery()
+                            while (rs.next()) {
+                                rows.add(mapOf(
+                                    "id" to rs.getLong("id"),
+                                    "chain_id" to rs.getLong("chain_id"),
+                                    "contract_address" to rs.getString("contract_address"),
+                                    "event_name" to rs.getString("event_name"),
+                                    "block_number" to rs.getLong("block_number"),
+                                    "tx_hash" to rs.getString("tx_hash"),
+                                    "wallet" to rs.getString("wallet"),
+                                    "params" to rs.getString("params"),
+                                    "created_at" to rs.getTimestamp("created_at")?.toString(),
+                                ))
+                            }
+                        }
+                    }
+
+                    call.respond(mapOf("events" to rows, "total" to total))
+                } catch (e: Exception) {
+                    log.error("Event query failed reason={}", LogSanitizer.sanitizeError(e))
+                    if (log.isDebugEnabled) log.debug("Event query failed details", e)
+                    call.response.status(HttpStatusCode.InternalServerError)
+                    call.respond(mapOf("error" to "Query failed"))
                 }
             }
 
