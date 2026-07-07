@@ -146,9 +146,9 @@
 ### 2.2. Mobile
 - [x] F-110: Подключение к testnet RPC — CHAIN_ID per-flavor (97 dev/staging, 56 prod)
 - [x] F-111: Импорт/экспорт кошелька (seed phrase) — BackupScreen wired to real mnemonic + navigation
-- [ ] F-112: История транзакций (с backend indexing) — UI ready, needs backend data wire
+- [x] F-112: История транзакций — HistoryViewModel + EtherscanRepository sync (BSCScan API)
 - [x] F-113: Голосование по proposal из приложения — ProposalScreen + Repository (via EventIndexer, read-only MVP). Voting UserOp deferred.
-- [ ] F-114: Social recovery flow (initiate/confirm/veto) — RecoveryScreen exists (1028 lines), verify contract wiring
+- [x] F-114: Social recovery flow — RecoveryScreen fully wired (RecoveryUserOpBuilder, passkey, integrity check)
 - [ ] S-110: Тест-сценарии v5 (см. test-scenarios-v5-final.md)
 
 ### 2.3. Backend / Infra
