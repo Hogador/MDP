@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -65,7 +64,7 @@ interface IEntryPointView {
 /// `maxTokenAmount` in the paymaster data MUST also be zero — any non-zero value reverts
 /// with `AmountTooHigh`. This allows the paymaster to operate without price feeds by
 /// relying solely on off-chain quote verification.
-contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP712("MDAOPay", "1") {
+contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1") {
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 
@@ -514,13 +513,14 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, ReentrancyGuard, EIP
         return FailureReason.TokenRevert;
     }
 
-    // F-10: ReentrancyGuard on postOp
+    // A-06: nonReentrant removed — EntryPoint already serializes postOp calls,
+    // and ReentrancyGuard caused testnet reverts on nested EntryPoint interactions.
     function postOp(
         PostOpMode mode,
         bytes calldata context,
         uint256 actualGasCost,
         uint256
-    ) external onlyEntryPoint whenNotPaused nonReentrant {
+    ) external onlyEntryPoint whenNotPaused {
         (address sender, IERC20 token, uint256 maxTokenAmount) =
             abi.decode(context, (address, IERC20, uint256));
 
