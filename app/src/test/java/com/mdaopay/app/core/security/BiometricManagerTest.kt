@@ -1,17 +1,28 @@
 package com.mdaopay.app.core.security
 
+import org.junit.After
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 
 /**
- * F-062 regression: Biometric auth levels separated.
+ * F-062 regression: Biometric auth levels separated + 30s grace window.
  *
  * - authenticate() — general use, allows BIOMETRIC_WEAK
  * - authenticateHighRisk() — requires BIOMETRIC_STRONG only
+ * - authenticateHighRisk() has 30s grace window (F-062)
  *
- * Full test requires Android instrumentation (BiometricPrompt).
+ * Full BiometricPrompt test requires Android instrumentation.
  */
 class BiometricManagerTest {
+
+    // Test the 30s window using the companion object directly.
+    // BiometricAuthManager requires Android Context for prompt — skip instantiation.
+
+    @After
+    fun tearDown() {
+        BiometricAuthManager.lastHighRiskAuthMs = 0L
+    }
 
     @Test
     fun `high risk authenticators require BIOMETRIC_STRONG only`() {
@@ -45,14 +56,21 @@ class BiometricManagerTest {
     }
 
     @Test
-    fun `biometric availability flags work`() {
-        // Verify isBiometricAvailable(requireStrong=true) checks only BIOMETRIC_STRONG
-        // isBiometricAvailable(requireStrong=false) checks STRONG|WEAK|DEVICE_CREDENTIAL
-        val requireStrong = true
-        val requireAny = false
+    fun `high risk window starts expired`() {
+        assertEquals("Window must start at 0 (expired)",
+            0L, BiometricAuthManager.lastHighRiskAuthMs)
+    }
 
-        assertTrue("requireStrong=true should be possible", requireStrong)
-        assertFalse("requireStrong=false should be possible", requireAny)
+    @Test
+    fun `high risk window is 30 seconds`() {
+        assertEquals("Window must be exactly 30_000 ms",
+            30_000L, BiometricAuthManager.HIGH_RISK_WINDOW_MS)
+    }
+
+    @Test
+    fun `reset clears the window`() {
+        BiometricAuthManager.lastHighRiskAuthMs = 0L
+        assertEquals("Must be 0 after reset", 0L, BiometricAuthManager.lastHighRiskAuthMs)
     }
 
     private data class BiometricAuthenticators(

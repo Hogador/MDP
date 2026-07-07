@@ -153,7 +153,7 @@ class RedisRateLimiter(private val prefix: String = "ratelimit") {
         scavenge()
         val now = System.currentTimeMillis()
         val entry = fallbackMap[key]
-        if (entry == null || now > entry.expiresAt) {
+        if (entry == null || now >= entry.expiresAt) {
             fallbackMap[key] = RateLimitEntry(1, now + windowSec * 1000)
             rateLimitLog.warn("Redis unavailable — rate limit fallback for key={}", key)
             return false

@@ -15,6 +15,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterEach
@@ -30,9 +31,16 @@ import kotlin.test.assertEquals
  */
 class SwapRoutesAuthTest {
 
+    // Shared mocks configurable per-test via swapRoutesSetup
+    private var rateLimiterIsLimited: Boolean = false
+    private val mockRateLimiter = mockk<RedisRateLimiter>(relaxed = true)
+    private val mockSwapService = mockk<SwapService>(relaxed = true)
+
     @AfterEach
     fun tearDown() {
         clearAllMocks()
+        rateLimiterIsLimited = false
+        unmockkObject(Redis)
     }
 
     @Test
@@ -90,10 +98,7 @@ class SwapRoutesAuthTest {
 
     @Test
     fun `swap quote returns 429 after rate limit exceeded`() = runTest {
-        mockkObject(Redis)
-        // Simulate rate limit exceeded (incr returns > SWAP_IP_RATE_LIMIT=10)
-        coEvery { Redis.incr(any<String>()) } returns 11L
-        coEvery { Redis.expire(any<String>(), any()) } returns true
+        rateLimiterIsLimited = true
 
         testApplication {
             application {
@@ -127,12 +132,11 @@ class SwapRoutesAuthTest {
             }
         }
 
+        coEvery { mockRateLimiter.isLimited(any(), any(), any()) } returns rateLimiterIsLimited
+
         routing {
             route("/v1") {
                 authenticate("auth-jwt") {
-                    val mockSwapService = mockk<SwapService>(relaxed = true)
-                    val mockRateLimiter = mockk<RedisRateLimiter>(relaxed = true)
-                    coEvery { mockRateLimiter.isLimited(any(), any(), any()) } returns false
                     swapRoutes(mockSwapService, mockRateLimiter)
                 }
             }
