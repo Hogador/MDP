@@ -154,7 +154,7 @@
 ### 2.3. Backend / Infra
 - [x] I-101: Indexer service — выполнен как F-104 (кастомный на Web3j + PostgreSQL)
 - [ ] I-102: Push-уведомления (proposal created, vote requested)
-- [ ] I-103: Backup/restore backend state
+- [x] I-103: Backup/restore backend state — scripts/db-backup.sh + db-restore.sh (pg_dump)
 - [x] S-120: CI/CD pipeline — test.yml (contracts + backend) + deploy-testnet.yml (manual trigger)
 
 ### 2.4. Документация
