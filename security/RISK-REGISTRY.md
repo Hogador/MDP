@@ -1,65 +1,19 @@
 # RISK REGISTRY — MDAOPay
 
-> Реестр рисков с Mitigation-планом. Риски заносятся verifier'ом после
-> подтверждения findings из режима --mode=audit.
->
-> Риск без Mitigation = незакрытый риск. Critical без дедлайна = блокер.
+**Обновлён:** 2026-07-06 (после code review аудита)
+**Всего рисков:** 8 (активных)
 
----
+| ID | Риск | P | I | R | Статус | Митигация |
+|----|------|---|---|---|--------|-----------|
+| R-01 | Reentrancy в InsuranceFund | 2 | 5 | **10** | ✅ **Исправлено** | nonReentrant + CEI |
+| R-02 | mint() обесценивает токен | 3 | 5 | **15** | ⬜ | Удалить/DAO-gated (до mainnet) |
+| R-03 | SessionKey DoS (permissions без лимита) | 2 | 2 | **4** | ✅ **Исправлено** | MAX_PERMISSIONS=20 |
+| R-04 | Flash loan голосование | 2 | 4 | **8** | ⬜ | ERC20Votes snapshot (до mainnet) |
+| R-05 | Admin-дренаж Treasury | 1 | 5 | **5** | ⬜ | Timelock (до mainnet) |
+| R-06 | API открыт интернету | 4 | 4 | **16** | ⬜ | IAM + Cloudflare Access (до testnet) |
+| R-07 | Ключи в env | 3 | 5 | **15** | ⬜ | **AWS KMS** `ECC_SECG_P256K1` (до mainnet) ⚠️ GCP KMS не поддерж. secp256k1 |
+| R-08 | Деплой без approval | 3 | 4 | **12** | ⬜ | GitHub Environments (до testnet) |
 
-## Шкала критичности
-
-| Severity | Описание | SLA |
-|---|---|---|
-| Critical | Может привести к потере средств | Блокер mainnet, фикс <= 7 дней |
-| High | Существенная уязвимость | Фикс <= 30 дней |
-| Medium | Ограниченная уязвимость | Фикс <= 90 дней |
-| Low | Качество кода / минор | По возможности |
-
----
-
-## Формат записи
-
-~~~markdown
-### RISK-NNN: <название>
-
-**Severity:** Critical | High | Medium | Low
-**Likelihood:** Low | Medium | High
-**Domain:** SOL | MOB | BACK | INF | SEC | UX
-**Источник:** audit/<timestamp>/findings-<mode>.md
-**Дата обнаружения:** YYYY-MM-DD
-**Статус:** open | mitigated | accepted | closed
-
-**Описание:**
-<что не так>
-
-**Влияние:**
-<что произойдёт, если эксплуатировать>
-
-**Mitigation:**
-- [ ] <шаг 1>
-- [ ] <шаг 2>
-
-**Верификация Mitigation:**
-verifier --logic --risk=RISK-NNN
-~~~
-
----
-
-## Активные риски
-
-*(риски добавляются verifier'ом после аудита)*
-
----
-
-## Закрытые риски (архив)
-
-*(переносится сюда после verifier --logic --risk=RISK-NNN = mitigated)*
-
----
-
-## Журнал изменений
-
-| Дата | Действие | RISK ID | Агент |
-|---|---|---|---|
-| — | — | — | — |
+## Примечание к R-07
+GCP Cloud KMS не поддерживает secp256k1 — только P-256/P-384.
+Для Ethereum используйте **AWS KMS с `ECC_SECG_P256K1`** или **HashiCorp Vault transit**.

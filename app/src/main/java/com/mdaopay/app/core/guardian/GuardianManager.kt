@@ -60,7 +60,7 @@ class GuardianManager @Inject constructor(
             val passkeyData = passkeyResult.getOrElse { return passkeyResult.map { } }
 
             // Extract P-256 public key from passkey registration — fixes F-101 (empty pubKeyX/pubKeyY)
-            val keyData = guardianUserOpBuilder.extractP256PublicKey(passkeyData.registrationJson)
+            val keyData = GuardianUserOpBuilder.extractP256PublicKey(passkeyData.registrationJson)
             val pubKeyX = keyData?.pubKeyXHex ?: ""
             val pubKeyY = keyData?.pubKeyYHex ?: ""
 

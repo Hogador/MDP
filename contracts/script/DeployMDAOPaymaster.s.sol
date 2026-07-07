@@ -5,15 +5,14 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {MDAOPaymaster} from "../src/MDAOPaymaster.sol";
 
-// Deploy to Sepolia:
+// Deploy to BSC Testnet:
 //   forge script script/DeployMDAOPaymaster.s.sol \
-//     --rpc-url https://rpc.sepolia.org \
+//     --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
 //     --private-key <deployer-key> \
 //     --broadcast \
-//     --verify --etherscan-api-key <key>
-//   env USDT=0x7169D38820dfd117C3FA1f22a697dBA58d90BA06
+//     --verify --verifier-url https://api-testnet.bscscan.com/api --etherscan-api-key <key>
 //
-// Deploy to BSC:
+// Deploy to BSC Mainnet:
 //   forge script script/DeployMDAOPaymaster.s.sol \
 //     --rpc-url https://bsc-dataseed1.binance.org \
 //     --private-key <deployer-key> \
@@ -22,15 +21,15 @@ import {MDAOPaymaster} from "../src/MDAOPaymaster.sol";
 //
 // ENV:
 //   ENTRY_POINT   (default: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789)
-//   MDAO          (BSC: 0x60322971a672B81BccE5947706D22c19dAeCf6Fb;
-//                  Sepolia: deploy your own mock or leave default)
-//   USDT          (BSC: 0x55d398326f99059fF775485246999027B3197955;
-//                  Sepolia: 0x7169D38820dfd117C3FA1f22a697dBA58d90BA06)
+//   MDAO          (BSC mainnet: 0x60322971a672B81BccE5947706D22c19dAeCf6Fb;
+//                  BSC testnet: deploy your own)
+//   USDT          (BSC mainnet: 0x55d398326f99059fF775485246999027B3197955;
+//                  BSC testnet: 0x337610d27c682E347C9cD60BD4b3b107C9d34dDD)
 contract DeployMDAOPaymaster is Script {
     address constant DEFAULT_ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
     address constant MDAO_BSC = 0x60322971a672B81BccE5947706D22c19dAeCf6Fb;
     address constant USDT_BSC = 0x55d398326f99059fF775485246999027B3197955;
-    address constant USDT_SEPOLIA = 0x7169D38820dfd117C3FA1f22a697dBA58d90BA06;
+    address constant USDT_BSC_TESTNET = 0x337610d27c682E347C9cD60BD4b3b107C9d34dDd;
 
     function run() external {
         address entryPoint = vm.envOr("ENTRY_POINT", DEFAULT_ENTRY_POINT);

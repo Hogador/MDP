@@ -135,6 +135,16 @@ android {
     }
 }
 
+// Web3j 4.14 скомпилирован под Java 21, а окружение — Java 17.
+// Указываем явный JDK для форка тестов: Java 26 (умеет запускать Java 21 classfiles).
+// Используем `executable` вместо `javaLauncher`, чтобы обойти toolchain discovery.
+val testJdk26 = file("/usr/lib/jvm/java-26-openjdk")
+if (testJdk26.exists()) {
+    tasks.withType<Test>().configureEach {
+        executable = "$testJdk26/bin/java"
+    }
+}
+
 dependencies {
     // Core
     implementation(libs.androidx.core.ktx)
@@ -216,6 +226,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockwebserver)
+    testImplementation("org.json:json:20231013") // real implementation replaces Android stub
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
     androidTestImplementation(platform(libs.androidx.compose.bom))

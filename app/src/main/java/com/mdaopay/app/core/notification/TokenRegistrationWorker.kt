@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class TokenRegistrationWorker @AssistedInject constructor(
+    private val client: OkHttpClient,
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
@@ -31,11 +32,6 @@ class TokenRegistrationWorker @AssistedInject constructor(
 
     private fun registerToken(token: String): Result {
         return try {
-            val client = OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .build()
-
             val json = """{"token":"$token","platform":"android"}"""
             val body = json.toRequestBody("application/json".toMediaType())
 

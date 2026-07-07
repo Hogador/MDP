@@ -1,4 +1,4 @@
-# E2E Test Plan — MDAOPay (Sepolia)
+# E2E Test Plan — MDAOPay (BSC Testnet)
 
 ## Prerequisites
 
@@ -9,20 +9,20 @@ BUNDLER_STACKUP_KEY=sk_live_xxx
 BUNDLER_PIMLICO_KEY=pim_xxx
 
 # Backend .env
-RPC_URL=https://rpc.sepolia.org
+RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545
 PAYMASTER_PRIVATE_KEY=0x...
 PAYMASTER_ADDRESS=0xF6Dca93AF261Bc1ee10ba6cE57cb5AE38588d2d0
 MDAO_ADDRESS=<deployed MDAOToken address>
-USDT_ADDRESS=0x7169D38820dfd117C3FA1f22a697dBA58d90ba06
+USDT_ADDRESS=0x337610d27c682E347C9cD60BD4b3b107C9d34dDD
 ENTRY_POINT=0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789
-EXPECTED_CHAIN_ID=11155111
+EXPECTED_CHAIN_ID=97
 ```
 
 ### Deploy MDAO Token
 ```bash
 cd contracts
-forge script script/DeployMDAOToken.s.sol \
-  --rpc-url sepolia \
+forge script script/Deploy.s.sol \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
   --broadcast \
   --verify
 # Copy deployed address → backend .env MDAO_ADDRESS
@@ -32,7 +32,7 @@ forge script script/DeployMDAOToken.s.sol \
 ```bash
 cast send 0xF6Dca93AF261Bc1ee10ba6cE57cb5AE38588d2d0 \
   --value 0.1ether \
-  --rpc-url sepolia
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 ```
 
 ### Run Backend
@@ -49,14 +49,14 @@ docker compose up -d
 1. Fresh install app
 2. Complete 4-step tutorial
 3. **Verify:** `NicknameScreen` creates wallet, registers nickname
-4. Fund smart account with SepoliaETH + USDT
+4. Fund smart account with tBNB + USDT
 5. Go to Send → enter recipient address → amount 1 USDT
 6. Confirm with biometric
 7. **Verify:** `ProcessingStep` shows elapsed time + status progression
 8. **Verify:** `SuccessStep` shows block number + "Open in Explorer" button
-9. Tap explorer button → opens sepolia.etherscan.io/tx/...
+9. Tap explorer button → opens testnet.bscscan.com/tx/...
 
-**Expected:** TxHash visible on Etherscan within 60s
+**Expected:** TxHash visible on BSCscan within 60s
 
 ---
 
@@ -104,7 +104,7 @@ docker compose up -d
 ```bash
 cast send $MDAO "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)" \
   $OWNER $PAYMASTER $VALUE $DEADLINE $V $R $S \
-  --rpc-url sepolia --private-key $PK
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 --private-key $PK
 ```
 
 ---
@@ -117,7 +117,7 @@ cast send $MDAO "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)" 
 
 ```bash
 cast send $PAYMASTER "setMinimumDeadlineBuffer(uint256)" 600 \
-  --rpc-url sepolia --private-key $OWNER_PK
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 --private-key $OWNER_PK
 ```
 
 ---
@@ -136,14 +136,16 @@ cast send $PAYMASTER "setMinimumDeadlineBuffer(uint256)" 600 \
 
 ```bash
 # Check paymaster balance
-cast balance 0xF6Dca93AF261Bc1ee10ba6cE57cb5AE38588d2d0 --rpc-url sepolia
+cast balance 0xF6Dca93AF261Bc1ee10ba6cE57cb5AE38588d2d0 \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 
 # Check smart account balance
-cast balance $SMART_ACCOUNT --rpc-url sepolia
+cast balance $SMART_ACCOUNT \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545
 
 # Check UserOperation receipt
 # (via bundler eth_getUserOperationReceipt)
-# Or via etherscan if txHash known
+# Or via BSCscan if txHash known
 
 # View backend logs
 docker logs mdaopay-paymaster -f

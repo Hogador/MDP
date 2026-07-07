@@ -11,7 +11,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,12 +24,10 @@ data class ApiResponse<T>(
 )
 
 @Singleton
-class RelayClient @Inject constructor() {
+class RelayClient @Inject constructor(
+    private val client: OkHttpClient
+) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
 
     companion object {
         private val JSON_MEDIA = "application/json".toMediaType()

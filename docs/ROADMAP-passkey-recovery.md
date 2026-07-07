@@ -115,8 +115,8 @@ SSS 3-of-4, но пока есть только 2 фактора:
   - `vetoRecovery(address wallet)`
   - `executeRecovery(address wallet)` — после 48h
 - Написать тесты (Foundry / Hardhat)
-- Развернуть на Sepolia
-- Проверить P-256 precompile на Sepolia (если нет — MockP256)
+- Развернуть на BSC Testnet
+- Проверить P-256 precompile на BSC (если нет — MockP256)
 
 **Файлы:**
 | Файл | Действие |
@@ -127,7 +127,7 @@ SSS 3-of-4, но пока есть только 2 фактора:
 | `NetworkConfig.kt` | Добавить `SOCIAL_RECOVERY_MODULE` |
 | `hardhat.config.ts` / `foundry.toml` | Настроить |
 
-**Результат:** 👆 Контракт на Sepolia. Можно звать `addGuardian()`.
+**Результат:** 👆 Контракт на BSC Testnet. Можно звать `addGuardian()`.
 
 ---
 
@@ -211,7 +211,7 @@ SSS 3-of-4, но пока есть только 2 фактора:
 
 **Что делаем:**
 - Аудит контрактов (OpenZeppelin / Code4rena)
-- E2E тесты на Sepolia
+- E2E тесты на BSC Testnet
 - Развёртывание на mainnet L2 (Arbitrum / Optimism)
 - Документация для пользователей
 

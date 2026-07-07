@@ -221,7 +221,7 @@ private fun AssetRow(
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = asset.balance.toDisplayAmount(
-                    if (asset.symbol == "Sepolia ETH") 6 else 2
+                    if (asset.symbol == "tBNB") 6 else 2
                 ),
                 fontFamily = MarsMono,
                 fontWeight = FontWeight.SemiBold,
@@ -248,7 +248,7 @@ private fun buildAssetList(wallet: WalletState): List<AssetGroup> {
     if (wallet.balanceUsdt > BigDecimal.ZERO)
         main.add(AssetInfo("USDT", wallet.balanceUsdt, accentColor = Color(0xFF00D68F)))
     if (wallet.balanceEth > BigDecimal.ZERO)
-        main.add(AssetInfo("Sepolia ETH", wallet.balanceEth, accentColor = Color(0xFF627EEA)))
+        main.add(AssetInfo("tBNB", wallet.balanceEth, accentColor = Color(0xFFF0B90B)))
 
     return listOf(AssetGroup("Основные", main))
 }

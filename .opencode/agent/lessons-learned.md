@@ -62,7 +62,7 @@ model: "groq/llama-3.3-70b-versatile"
 Найди паттерны:
 - Повторяющиеся ошибки (например, "забыли IERC20Burnable import" — 3 раза)
 - Успешные подходы (например, "TDD помог быстро поймать edge case")
-- Неожиданные blockers (например, "gas limit на sepolia оказался ниже")
+- Неожиданные blockers (например, "gas limit на BSC testnet оказался ниже")
 
 ### Шаг 3: Сформулировать lessons
 Для каждого кластера — один lesson:
@@ -102,7 +102,7 @@ model: "groq/llama-3.3-70b-versatile"
 ~~~json
 {
   "ts": "2026-07-01T15:00",
-  "lesson": "При deploing на sepolia gas limit по умолчанию (3M) недостаточен для complex contracts — ставить 5M",
+  "lesson": "При deploing на BSC testnet gas limit по умолчанию (3M) недостаточен для complex contracts — ставить 5M",
   "trigger": "F-103 deploi failed 3 раза, помогло manual gas 5M",
   "category": "deployment",
   "severity": "minor",

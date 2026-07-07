@@ -1,6 +1,7 @@
 package com.mdaopay.app.core.guardian
 
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -23,7 +24,7 @@ class RelayClientTest {
         // Reset circuit breaker state before each test
         RelayClient.failureCount.set(0)
         RelayClient.circuitOpenUntil = 0L
-        client = RelayClient()
+        client = RelayClient(OkHttpClient())
     }
 
     @After

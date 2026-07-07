@@ -25,7 +25,7 @@ Set as repository secrets, injected into `~/.gradle/gradle.properties` during bu
 ### Environment Variables
 | Variable | Required | Description |
 |---|---|---|
-| `RPC_URL` | Yes | Sepolia: `https://rpc.sepolia.org`, BSC: `https://bsc-dataseed1.binance.org` |
+| `RPC_URL` | Yes | BSC Testnet: `https://data-seed-prebsc-1-s1.binance.org:8545`, BSC Mainnet: `https://bsc-dataseed1.binance.org` |
 | `PAYMASTER_PRIVATE_KEY` | Yes | Private key for signing UserOperations |
 | `PAYMASTER_ADDRESS` | Yes | Deployed MDAOPaymaster address |
 | `MDAO_ADDRESS` | Yes | MDAO token address on target chain |
@@ -35,7 +35,7 @@ Set as repository secrets, injected into `~/.gradle/gradle.properties` during bu
 
 ### Key Separation Warning
 
-**⚠️ CRITICAL:** Currently `Sepolia_KEY` and `BSC_KEY` use the same private key.
+**⚠️ CRITICAL:** Currently testnet and mainnet use the same private key.
 
 **Before mainnet launch, you MUST:**
 1. Generate a new key: `cast wallet new`

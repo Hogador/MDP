@@ -1,18 +1,38 @@
-# Запуск MDAOPay на Sepolia — инструкция
+# Запуск MDAOPay на BSC Testnet — инструкция
 
-## ⏳ Шаг 0. Проверить статус MDAO
+## ⏳ Шаг 0. Развернуть контракты
+
+Контракты деплоятся скриптом `Deploy.s.sol`:
 
 ```bash
 cd contracts
-curl -s "https://ethereum-sepolia.publicnode.com" \
+forge script script/Deploy.s.sol \
+  --rpc-url https://data-seed-prebsc-1-s1.binance.org:8545 \
+  --broadcast --verify \
+  --verifier-url https://testnet.bscscan.com/api \
+  --etherscan-api-key $BSCSCAN_API_KEY
+```
+
+После деплоя запишите адрес MDAO токена.
+
+Проверка транзакции:
+
+```bash
+curl -s "https://data-seed-prebsc-1-s1.binance.org:8545" \
   -X POST -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x69c27e906061365f3bdc31ce9186ba81cf4d0660231990944ae34bedab9da7a9"],"id":1}' \
+  -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["<TX_HASH>"],"id":1}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('result'); print('Статус:', 'MINED' if r else 'PENDING')"
 ```
 
-**Если MINED** — MDAO развёрнут. Адрес: `0xB6fcd7C09b8E223012eAa43Ac413B6142BD957a35`
+**Если MINED** — MDAO развёрнут (адрес появится в логе forge script).
 
-**Если PENDING** — ждите. Транзакция при 9 gwei, будет ждать пока base fee упадёт.
+**Контракты BSC Testnet:**
+| Контракт | Адрес |
+|---|---|
+| USDT (тестовый) | `0x337610d27c682E347C9cD60BD4b3b107C9d34dDD` |
+| WBNB | `0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd` |
+| EntryPoint | `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` |
+| MDAO | определяется после деплоя |
 
 ---
 
@@ -115,7 +135,7 @@ plugins {
 
 ```bash
 cd backend
-cp .env.sepolia .env
+cp .env.bsc .env
 docker compose up -d
 ```
 
@@ -177,6 +197,7 @@ echo "BACKEND_URL=http://192.168.x.x:8080" >> ~/.gradle/gradle.properties
 | Badge на иконке | После уведомления — цифра на иконке |
 | DND режим | Включите "Не беспокоить" → уведомления платежей всё равно приходят |
 | WorkManager fallback | Отключите интернет → через 15 мин после восстановления проверит статус |
+| Транзакция в BSCscan | Откройте `https://testnet.bscscan.com/tx/<TX>` |
 
 ---
 
@@ -196,3 +217,4 @@ echo "BACKEND_URL=http://192.168.x.x:8080" >> ~/.gradle/gradle.properties
 - `Pimlico` ключ в `~/.gradle/gradle.properties`?
 - `BACKEND_URL` указывает на ваш IP?
 - Телефон и компьютер в одной сети?
+- Есть ли tBNB на кошельке? (запросите через https://testnet.bnbchain.org/faucet-smart)

@@ -10,18 +10,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.web3j.utils.Numeric
 import java.math.BigInteger
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BundlerClient @Inject constructor() {
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .build()
+class BundlerClient @Inject constructor(
+    private val client: OkHttpClient
+) {
 
     private val jsonMediaType = "application/json".toMediaType()
     private val requestId = AtomicInteger(1)

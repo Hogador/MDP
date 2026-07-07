@@ -374,7 +374,7 @@ fun ReceiveScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u0442\u044C Sepolia (ERC-20 USDT)",
+                    text = "\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u0442\u044C BSC Testnet (BEP-20 USDT)",
                     fontSize = 11.sp,
                     color = d.text2,
                     textAlign = TextAlign.Center,

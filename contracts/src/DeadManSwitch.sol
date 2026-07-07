@@ -1,47 +1,63 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IRecoveryHook} from "./interfaces/IRecoveryHook.sol";
 
-contract DeadManSwitch is Ownable, ReentrancyGuard {
+/// @title DeadManSwitch
+/// @notice Inactivity timer that signals when a wallet owner has been inactive too long.
+///         NO deposits, NO funds, NO ownership transfer — pure event emitter.
+///         Actual ownership transfer is triggered off-chain via SocialRecoveryModule.
+/// @dev IRecoveryHook: onRecoveryExecuted resets timer when guardian recovery happens.
+contract DeadManSwitch is IRecoveryHook {
     error ErrNotBeneficiary();
     error ErrInactivityNotMet();
     error ErrAlreadyClaimed();
     error ErrBeneficiarySameAsOwner();
-    error ErrTransferFailed();
-    error ErrNotExpired();
     error ErrSwitchNotActive();
-    error ErrNoDeposits();
     error ErrNotTriggered();
+    error ErrChallengeNotExpired();
+    error ErrUnauthorized();
 
     uint256 public constant MIN_INACTIVITY = 90 days;
     uint256 public constant CHALLENGE_PERIOD = 7 days;
 
-    enum State { Active, Triggered, Claimable }
+    enum State { Active, Triggered, Executed }
 
     struct SwitchConfig {
         address beneficiary;
         uint256 inactivityPeriod;
         uint256 lastActivity;
         bool active;
-        bool claimed;
     }
 
     mapping(address wallet => SwitchConfig) public switches;
-    mapping(address => uint256) public deposits;
     mapping(address => State) public recoveryState;
     mapping(address => uint256) public triggerAt;
+
+    address public owner;
+    /// @notice Allowed caller of onRecoveryExecuted (SocialRecoveryModule).
+    address public recoveryCaller;
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert ErrUnauthorized();
+        _;
+    }
 
     event SwitchSet(address indexed wallet, address indexed beneficiary, uint256 inactivityPeriod);
     event ActivityPinged(address indexed wallet, uint256 timestamp);
     event BeneficiaryChanged(address indexed wallet, address indexed newBeneficiary);
     event SwitchTriggered(address indexed wallet, address indexed beneficiary);
     event SwitchDeactivated(address indexed wallet);
-    event FundsClaimed(address indexed wallet, address indexed beneficiary, uint256 amount);
     event TriggerChallenged(address indexed wallet);
+    /// @notice Emitted when executeClaim is called after challenge period expires.
+    ///         Watchtower/relay picks this up to initiate guardian recovery.
+    event OwnershipClaimTriggered(address indexed wallet, address indexed beneficiary);
 
-    constructor() Ownable(msg.sender) {}
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // ─── Configuration ──────────────────────────────────────────────
 
     function setSwitch(address beneficiary, uint256 inactivityPeriod) external {
         if (beneficiary == msg.sender) revert ErrBeneficiarySameAsOwner();
@@ -51,19 +67,10 @@ contract DeadManSwitch is Ownable, ReentrancyGuard {
             beneficiary: beneficiary,
             inactivityPeriod: inactivityPeriod,
             lastActivity: block.timestamp,
-            active: true,
-            claimed: false
+            active: true
         });
 
         emit SwitchSet(msg.sender, beneficiary, inactivityPeriod);
-    }
-
-    function ping() external {
-        SwitchConfig storage cfg = switches[msg.sender];
-        if (!cfg.active) revert ErrSwitchNotActive();
-        if (recoveryState[msg.sender] != State.Active) revert ErrSwitchNotActive();
-        cfg.lastActivity = block.timestamp;
-        emit ActivityPinged(msg.sender, block.timestamp);
     }
 
     function changeBeneficiary(address newBeneficiary) external {
@@ -73,7 +80,27 @@ contract DeadManSwitch is Ownable, ReentrancyGuard {
         emit BeneficiaryChanged(msg.sender, newBeneficiary);
     }
 
-    function triggerRecovery(address wallet) external {
+    function deactivate() external {
+        SwitchConfig storage cfg = switches[msg.sender];
+        if (!cfg.active) revert ErrSwitchNotActive();
+        cfg.active = false;
+        emit SwitchDeactivated(msg.sender);
+    }
+
+    // ─── Heartbeat ──────────────────────────────────────────────────
+
+    function ping() external {
+        SwitchConfig storage cfg = switches[msg.sender];
+        if (!cfg.active) revert ErrSwitchNotActive();
+        if (recoveryState[msg.sender] != State.Active) revert ErrSwitchNotActive();
+        cfg.lastActivity = block.timestamp;
+        emit ActivityPinged(msg.sender, block.timestamp);
+    }
+
+    // ─── Inactivity flow ────────────────────────────────────────────
+
+    /// @notice Start the challenge period. Only callable by beneficiary after inactivityPeriod.
+    function initiateClaim(address wallet) external {
         SwitchConfig storage cfg = switches[wallet];
         if (msg.sender != cfg.beneficiary) revert ErrNotBeneficiary();
         if (!cfg.active) revert ErrSwitchNotActive();
@@ -85,6 +112,7 @@ contract DeadManSwitch is Ownable, ReentrancyGuard {
         emit SwitchTriggered(wallet, msg.sender);
     }
 
+    /// @notice Cancel a triggered claim. Owner says "I'm alive".
     function challengeTrigger() external {
         if (recoveryState[msg.sender] != State.Triggered) revert ErrNotTriggered();
         recoveryState[msg.sender] = State.Active;
@@ -92,33 +120,35 @@ contract DeadManSwitch is Ownable, ReentrancyGuard {
         emit TriggerChallenged(msg.sender);
     }
 
-    function deactivate() external {
-        SwitchConfig storage cfg = switches[msg.sender];
-        if (!cfg.active) revert ErrSwitchNotActive();
-        cfg.active = false;
-        emit SwitchDeactivated(msg.sender);
-    }
-
-    function claimFunds(address wallet) external nonReentrant {
+    /// @notice Finalize after challenge period. Emits event only — no funds or ownership transfer.
+    ///         Watchtower/relay picks up OwnershipClaimTriggered to initiate guardian recovery.
+    function executeClaim(address wallet) external {
         SwitchConfig storage cfg = switches[wallet];
         if (msg.sender != cfg.beneficiary) revert ErrNotBeneficiary();
-        if (recoveryState[wallet] != State.Triggered) revert ErrSwitchNotActive();
-        if (block.timestamp < triggerAt[wallet] + CHALLENGE_PERIOD) revert ErrNotExpired();
+        if (recoveryState[wallet] != State.Triggered) revert ErrNotTriggered();
+        if (block.timestamp < triggerAt[wallet] + CHALLENGE_PERIOD) revert ErrChallengeNotExpired();
 
-        recoveryState[wallet] = State.Claimable;
-
-        uint256 amount = deposits[wallet];
-        if (amount == 0) revert ErrNoDeposits();
-
-        // CEI: zero out before send
-        deposits[wallet] = 0;
-
-        (bool sent, ) = payable(msg.sender).call{value: amount}("");
-        if (!sent) revert ErrTransferFailed();
-        emit FundsClaimed(wallet, msg.sender, amount);
+        recoveryState[wallet] = State.Executed;
+        emit OwnershipClaimTriggered(wallet, msg.sender);
     }
 
-    receive() external payable {
-        deposits[msg.sender] += msg.value;
+    // ─── IRecoveryHook ──────────────────────────────────────────────
+
+    /// @notice Reset timer and cancel any active challenge after guardian recovery.
+    /// @dev Only callable by recoveryCaller (SocialRecoveryModule).
+    function onRecoveryExecuted(address wallet) external {
+        if (msg.sender != recoveryCaller) revert ErrUnauthorized();
+        SwitchConfig storage cfg = switches[wallet];
+        cfg.lastActivity = block.timestamp;
+        recoveryState[wallet] = State.Active;
+        triggerAt[wallet] = 0;
+        emit ActivityPinged(wallet, block.timestamp);
+    }
+
+    // ─── Admin ──────────────────────────────────────────────────────
+
+    /// @notice Set the allowed caller of onRecoveryExecuted (SocialRecoveryModule address).
+    function setRecoveryCaller(address caller) external onlyOwner {
+        recoveryCaller = caller;
     }
 }

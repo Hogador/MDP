@@ -8,6 +8,7 @@ import com.mdaopay.app.core.common.AppError
 import com.mdaopay.app.core.common.Result
 import com.mdaopay.app.core.blockchain.erc4337.UserOperation
 import com.mdaopay.app.core.common.map
+import dagger.Lazy
 import org.web3j.utils.Numeric
 import java.math.BigInteger
 import javax.inject.Inject
@@ -34,7 +35,7 @@ data class GaslessSendResult(
 @Singleton
 class GaslessTransactionOrchestrator @Inject constructor(
     private val paymasterClient: PaymasterClient,
-    private val sendRepository: SendRepository,
+    private val sendRepository: Lazy<SendRepository>,
     private val walletManager: WalletManager
 ) {
 
@@ -50,7 +51,7 @@ class GaslessTransactionOrchestrator @Inject constructor(
                 )
 
             // 1. Построить UserOp с пустым paymasterAndData (gas estimation first)
-            val userOpResult = sendRepository.buildUserOp(
+            val userOpResult = sendRepository.get().buildUserOp(
                 recipientAddress = recipient,
                 amount = amount,
             )
@@ -78,13 +79,13 @@ class GaslessTransactionOrchestrator @Inject constructor(
             )
 
             // 4. Отправить через Bundler
-            val txResult = sendRepository.executeUserOp(finalUserOp)
+            val txResult = sendRepository.get().executeUserOp(finalUserOp)
             return txResult.map { txHash -> GaslessSendResult(txHash) }
         } catch (e: PaymasterError) {
             if (fallbackToNativeGas) {
                 // Gasless недоступен → fallback на нативный газ
                 // ponytail: sendUsdtNative — прямой native-путь без gasless (предотвращает рекурсию)
-                val nativeResult = sendRepository.sendUsdtNative(recipient, amount)
+                val nativeResult = sendRepository.get().sendUsdtNative(recipient, amount)
                 nativeResult.map { txHash ->
                     GaslessSendResult(txHash, usedFallback = true)
                 }
