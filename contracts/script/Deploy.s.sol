@@ -8,6 +8,7 @@ import {InsuranceFund} from "../src/InsuranceFund.sol";
 import {SocialRecoveryModule} from "../src/SocialRecoveryModule.sol";
 import {NicknameRegistry} from "../src/NicknameRegistry.sol";
 import {DeadManSwitch} from "../src/DeadManSwitch.sol";
+import {IRecoveryHook} from "../src/interfaces/IRecoveryHook.sol";
 import {AttestationLedger} from "../src/AttestationLedger.sol";
 import {RefundVault} from "../src/RefundVault.sol";
 import {SessionKeyModule} from "../src/SessionKeyModule.sol";
@@ -15,6 +16,9 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {TrustProviderRegistry} from "../src/TrustProviderRegistry.sol";
 import {EcdsaVerifier} from "../src/EcdsaVerifier.sol";
 import {P256Verifier} from "../src/helpers/P256Verifier.sol";
+import {Treasury} from "../src/Treasury.sol";
+import {Proposal} from "../src/Proposal.sol";
+import {PaymentSplitterFactory} from "../src/PaymentSplitterFactory.sol";
 
 contract Deploy is Script {
     function run() external {
@@ -66,7 +70,9 @@ contract Deploy is Script {
         require(insuranceAuditor != address(0), "InsuranceFund auditor not set (INSURANCE_AUDITOR_ADDRESS)");
         require(insuranceAuditor != deployer, "Auditor cannot be deployer");
         vm.startBroadcast();
-        InsuranceFund insuranceFund = new InsuranceFund(insuranceAuditor);
+        address[] memory insuranceAuditors = new address[](1);
+        insuranceAuditors[0] = insuranceAuditor;
+        InsuranceFund insuranceFund = new InsuranceFund(insuranceAuditors, 1);
         vm.stopBroadcast();
         console.log("InsuranceFund:", address(insuranceFund));
 
@@ -75,6 +81,12 @@ contract Deploy is Script {
         SocialRecoveryModule socialRecovery = new SocialRecoveryModule(address(token), p256Verifier);
         vm.stopBroadcast();
         console.log("SocialRecoveryModule:", address(socialRecovery));
+
+        // S-146: Exempt SocialRecoveryModule from burn fee to prevent double-burn on deposits
+        vm.startBroadcast();
+        token.setExempt(address(socialRecovery), true);
+        vm.stopBroadcast();
+        console.log("MDAOToken: SocialRecoveryModule exempted from burn fee");
 
         // ── NicknameRegistry ──
         vm.startBroadcast();
@@ -89,6 +101,13 @@ contract Deploy is Script {
         console.log("DeadManSwitch:", address(deadManSwitch));
         // ponytail: DeadManSwitch uses MIN_INACTIVITY=90d constant; add setter if variable needed
 
+        // Wire DeadManSwitch ↔ SocialRecoveryModule (4.3)
+        vm.startBroadcast();
+        deadManSwitch.setRecoveryCaller(address(socialRecovery));
+        socialRecovery.addRecoveryHook(IRecoveryHook(address(deadManSwitch)));
+        vm.stopBroadcast();
+        console.log("DeadManSwitch: recoveryCaller set, hook registered on SocialRecoveryModule");
+
         // ── AttestationLedger ──
         vm.startBroadcast();
         AttestationLedger attestationLedger = new AttestationLedger();
@@ -102,6 +121,50 @@ contract Deploy is Script {
         vm.stopBroadcast();
         console.log("RefundVault:", address(refundVault));
         // ponytail: RefundVault needs setPaymaster(address(paymaster)) once contract supports it
+
+        // ── Governance: Treasury → Proposal → PaymentSplitterFactory ──
+        // Treasury: admin = deployer (later transferred to timelock), proposalContract set after Proposal deploy
+        address treasuryAdmin = vm.envOr("TREASURY_ADMIN", deployer);
+        vm.startBroadcast();
+        Treasury treasury = new Treasury(treasuryAdmin, address(0));
+        vm.stopBroadcast();
+        console.log("Treasury:", address(treasury));
+        console.log("Treasury admin:", treasuryAdmin);
+
+        // Proposal: needs treasury + voting token (MDAOToken) + admin
+        // admin = deployer (later transferred to timelock or gnosis safe)
+        address proposalAdmin = vm.envOr("PROPOSAL_ADMIN", deployer);
+        vm.startBroadcast();
+        Proposal proposal = new Proposal(address(treasury), address(token), proposalAdmin);
+        vm.stopBroadcast();
+        console.log("Proposal:", address(proposal));
+
+        // Wire circular dependency: Treasury → Proposal (for executeAllocation access control)
+        // Grant FINANCE_ROLE on Treasury to Proposal (so Proposal.executeProposal can call Treasury.executeAllocation)
+        vm.startBroadcast();
+        treasury.grantRole(treasury.FINANCE_ROLE(), address(proposal));
+        treasury.setProposalContract(address(proposal));
+        vm.stopBroadcast();
+        console.log("Treasury: FINANCE_ROLE granted to Proposal, proposalContract set");
+
+        // Grant FINANCE_ROLE to gnosis safe (for off-chain allocation creation)
+        address gnosisFinance = vm.envOr("GNOSIS_FINANCE", deployer);
+        vm.startBroadcast();
+        treasury.grantRole(treasury.FINANCE_ROLE(), gnosisFinance);
+        vm.stopBroadcast();
+        console.log("Treasury: FINANCE_ROLE granted to:", gnosisFinance);
+
+        // PaymentSplitterFactory
+        vm.startBroadcast();
+        PaymentSplitterFactory splitterFactory = new PaymentSplitterFactory();
+        vm.stopBroadcast();
+        console.log("PaymentSplitterFactory:", address(splitterFactory));
+
+        // Wire Treasury → PaymentSplitterFactory (for recipient validation)
+        vm.startBroadcast();
+        treasury.setSplitterFactory(address(splitterFactory));
+        vm.stopBroadcast();
+        console.log("Treasury: splitterFactory set to PaymentSplitterFactory");
 
         // ── SessionKeyModule ──
         vm.startBroadcast();
