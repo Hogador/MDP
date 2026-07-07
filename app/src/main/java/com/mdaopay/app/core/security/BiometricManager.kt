@@ -14,10 +14,21 @@ import javax.inject.Singleton
 // ponytail: Two biometric levels:
 //   authenticate() — general use (BIOMETRIC_WEAK allowed for UX)
 //   authenticateHighRisk() — HIGH risk ops (BIOMETRIC_STRONG only, per F-062)
+//   High-risk has 30s grace window: once authenticated, subsequent calls within 30s skip prompt.
 @Singleton
 class BiometricAuthManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    /** F-062: reset 30s window (for testing, or explicit re-auth). */
+    fun resetHighRiskWindow() { lastHighRiskAuthMs = 0L }
+
+    companion object {
+        /** F-062: 30-second window for high-risk operations (not 300s like general auth). */
+        const val HIGH_RISK_WINDOW_MS = 30_000L
+        @Volatile
+        var lastHighRiskAuthMs: Long = 0L
+    }
+
     fun isBiometricAvailable(requireStrong: Boolean = false): BiometricAvailability {
         val manager = BiometricManager.from(context)
         val authenticators = if (requireStrong) {
@@ -51,19 +62,30 @@ class BiometricAuthManager @Inject constructor(
         )
     }
 
-    /** High-risk authentication — requires BIOMETRIC_STRONG only (F-062) */
+    /** High-risk authentication — requires BIOMETRIC_STRONG only (F-062).
+     * Has 30s grace window: if user authenticated within last 30s, skips prompt. */
     fun authenticateHighRisk(
         activity: FragmentActivity,
         title: String,
         subtitle: String,
         onResult: (Result<Unit>) -> Unit
     ) {
+        val now = System.currentTimeMillis()
+        if (now - lastHighRiskAuthMs < HIGH_RISK_WINDOW_MS) {
+            onResult(Result.Success(Unit))
+            return
+        }
         authenticateInternal(
             activity = activity,
             title = title,
             subtitle = subtitle,
             requireStrong = true,
-            onResult = onResult
+            onResult = { result ->
+                if (result is Result.Success) {
+                    lastHighRiskAuthMs = System.currentTimeMillis()
+                }
+                onResult(result)
+            }
         )
     }
 
