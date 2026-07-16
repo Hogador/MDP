@@ -4,6 +4,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.web3j.abi.FunctionEncoder
@@ -81,13 +84,22 @@ class PaymasterService(
 ) {
     private val log = LoggerFactory.getLogger(PaymasterService::class.java)
 
+    // F-034: per-sender mutex prevents nonce race condition on parallel sign() calls
+    // Without this, two concurrent requests for the same sender read the same quoteNonce
+    // and produce duplicate EIP-712 signatures — second tx fails with InvalidSigner.
+    private val senderMutexes = ConcurrentHashMap<String, Mutex>()
+
     private suspend fun <T> withWeb3j(block: suspend (Web3j) -> T): T {
         val result = rpcManager.getBestProvider()
         val web3j = result.getOrElse { throw GasEstimationException("No RPC provider available") }
         return block(web3j)
     }
 
-    suspend fun sign(req: SignRequest): SignResponse {
+    suspend fun sign(req: SignRequest): SignResponse = senderMutexes
+        .computeIfAbsent(req.sender.lowercase()) { Mutex() }
+        .withLock { signLocked(req) }
+
+    private suspend fun signLocked(req: SignRequest): SignResponse {
         val startNanos = System.nanoTime()
         val sender = req.sender
         val nonce = req.nonce

@@ -165,6 +165,7 @@ contract InsuranceFund is Ownable, ReentrancyGuard, EIP712 {
     }
 
     /// @notice Approve a claim (owner only, after successful auditor multi-sig).
+    /// @dev Requires submitClaim() to have been called first (claimNonces[victim] > 0).
     function approveClaim(
         address victim,
         uint256 amount
@@ -172,6 +173,8 @@ contract InsuranceFund is Ownable, ReentrancyGuard, EIP712 {
         if (amount > totalFunds) revert ErrInsufficientFunds();
         uint256 maxClaim = (totalFunds * MAX_CLAIM_BPS) / 10000;
         if (amount > maxClaim) revert ErrClaimLimitExceeded();
+        // Require submitClaim was called first — prevents owner from bypassing auditor multi-sig
+        if (claimNonces[victim] == 0) revert ErrInvalidAuditApproval();
 
         // CEI: state before transfer
         totalFunds -= amount;
