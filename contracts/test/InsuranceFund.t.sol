@@ -153,6 +153,11 @@ contract InsuranceFundTest is Test {
         uint256 total = fund.totalFunds();
         uint256 claimAmount = total / 10;
 
+        // approveClaim requires claimNonces[victim] > 0 — submitClaim must run first
+        bytes32 bugHash = keccak256("bug-approve");
+        bytes[] memory sigs = _threeValidSigs(claimAmount, bugHash);
+        fund.submitClaim(victim, claimAmount, bugHash, sigs);
+
         vm.prank(owner);
         vm.expectEmit(true, true, false, true);
         emit InsuranceFund.ClaimApproved(victim, claimAmount, claimAmount);
