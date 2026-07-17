@@ -20,15 +20,26 @@ contract TrustProviderRegistry is Ownable {
     error InvalidVerifier();
     error NoTransferToZeroAddress();
     error NotPendingOwner();
+    error InvalidTransition();
+    error AlreadySunset();
 
     event ProviderRegistered(bytes32 indexed providerId, address indexed verifier);
     event ProviderStatusUpdated(bytes32 indexed providerId, ProviderStatus oldStatus, ProviderStatus newStatus);
+    event ProviderEmergencySunset(bytes32 indexed providerId, ProviderStatus oldStatus, address indexed guardian);
 
     // 2-step ownership
     address public pendingOwner;
     event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
 
+    // F-156: emergency bypass for compromised providers
+    address public emergencyGuardian;
+
     constructor() Ownable(msg.sender) {}
+
+    /// @notice Set the emergency guardian (multisig) who can bypass grace period.
+    function setEmergencyGuardian(address _guardian) external onlyOwner {
+        emergencyGuardian = _guardian;
+    }
 
     function registerProvider(bytes32 providerId, address verifierContract) external onlyOwner {
         if (verifierContract == address(0)) revert InvalidVerifier();
@@ -40,8 +51,29 @@ contract TrustProviderRegistry is Ownable {
     function setProviderStatus(bytes32 providerId, ProviderStatus status) external onlyOwner {
         if (providers[providerId].verifier == address(0)) revert ProviderNotRegistered();
         ProviderStatus oldStatus = providers[providerId].status;
+
+        // F-156: enforce valid state transitions
+        if (oldStatus == ProviderStatus.ACTIVE && status != ProviderStatus.DEPRECATED) {
+            revert InvalidTransition();
+        }
+        if (oldStatus == ProviderStatus.DEPRECATED && status != ProviderStatus.SUNSET) {
+            revert InvalidTransition();
+        }
+        if (oldStatus == ProviderStatus.SUNSET) {
+            revert InvalidTransition();
+        }
+
         providers[providerId].status = status;
         emit ProviderStatusUpdated(providerId, oldStatus, status);
+    }
+
+    /// @notice Emergency bypass — skip grace period for compromised providers. Guardian only.
+    function emergencySunset(bytes32 providerId) external {
+        require(msg.sender == emergencyGuardian, "Not emergency guardian");
+        ProviderStatus oldStatus = providers[providerId].status;
+        if (oldStatus == ProviderStatus.SUNSET) revert AlreadySunset();
+        providers[providerId].status = ProviderStatus.SUNSET;
+        emit ProviderEmergencySunset(providerId, oldStatus, msg.sender);
     }
 
     function verify(bytes32 providerId, bytes32 intentHash, bytes calldata proof) external view returns (bool) {

@@ -15,6 +15,9 @@ interface ITreasury {
     event AllocationCreated(bytes32 indexed id, address token, uint256 totalAmount, uint256 recipientCount);
     event AllocationExecuted(bytes32 indexed id);
     event AllocationCancelled(bytes32 indexed id);
+    event TransferFailed(bytes32 indexed allocId, uint256 indexed index, address indexed recipient, uint256 amount);
+    event PartialAllocationExecuted(bytes32 indexed id, uint256 totalFailed);
+    event HighFailureRateWarning(bytes32 indexed id, uint256 failedCount, uint256 totalCount);
 
     error ErrInvalidAllocation();
     error ErrAllocationExists();

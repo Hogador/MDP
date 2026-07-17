@@ -107,7 +107,6 @@ contract SocialRecoveryModule is Ownable {
     event RecoveryExecutedEv(address indexed wallet, bytes32 indexed newPasskeyHash);
     event RecoveryCleanedUp(address indexed wallet, uint256 depositBurned);
     event DepositBurned(address indexed wallet, uint256 amount);
-    event P256VerifierUpdated(address indexed oldVerifier, address indexed newVerifier);
     event HookApproved(address indexed hook);
     event HookRevoked(address indexed hook);
     event RecoveryHookFailed(address indexed wallet, address indexed hook, bytes reason);
@@ -119,12 +118,39 @@ contract SocialRecoveryModule is Ownable {
         P256_VERIFIER = _p256Verifier;
     }
 
-    /// @notice Update the P-256 verifier address (e.g., when deploying MockP256 for testnet).
+    // ── F-138a: P-256 verifier timelock ──
+    address public pendingP256Verifier;
+    uint256 public pendingVerifierSetAt;
+    uint256 public constant VERIFIER_TIMELOCK = 48 hours;
+
+    event P256VerifierProposed(address indexed newVerifier, uint256 expiresAt);
+    event P256VerifierConfirmed(address indexed oldVerifier, address indexed newVerifier);
+    event P256VerifierUpdateCancelled();
+
+    /// @notice Propose a new P-256 verifier. Takes effect after VERIFIER_TIMELOCK.
     function setP256Verifier(address _p256Verifier) external onlyOwner {
         require(_p256Verifier != address(0), "Invalid verifier");
+        pendingP256Verifier = _p256Verifier;
+        pendingVerifierSetAt = block.timestamp;
+        emit P256VerifierProposed(_p256Verifier, block.timestamp + VERIFIER_TIMELOCK);
+    }
+
+    /// @notice Confirm pending verifier after timelock elapsed.
+    function confirmP256Verifier() external onlyOwner {
+        require(pendingP256Verifier != address(0), "No pending verifier");
+        require(block.timestamp >= pendingVerifierSetAt + VERIFIER_TIMELOCK, "Timelock not elapsed");
         address old = P256_VERIFIER;
-        P256_VERIFIER = _p256Verifier;
-        emit P256VerifierUpdated(old, _p256Verifier);
+        P256_VERIFIER = pendingP256Verifier;
+        delete pendingP256Verifier;
+        delete pendingVerifierSetAt;
+        emit P256VerifierConfirmed(old, P256_VERIFIER);
+    }
+
+    /// @notice Cancel a pending verifier update before timelock expires.
+    function cancelP256VerifierUpdate() external onlyOwner {
+        delete pendingP256Verifier;
+        delete pendingVerifierSetAt;
+        emit P256VerifierUpdateCancelled();
     }
 
     // ──────────────────────────────────────────────
