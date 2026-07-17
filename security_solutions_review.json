@@ -1,0 +1,72 @@
+{
+  "VERIFIED": [],
+  "CHANGED": [
+    {
+      "finding": "F-142 SessionKeyModule.useSessionKey заблокирован",
+      "issue": "useSessionKey requires msg.sender == owner, but dApp should call this method on behalf of user (via EntryPoint or SmartAccount). Entire session key module is broken.",
+      "proposed_solution": "Add authorizedCallers mapping to allow owner to specify which smart accounts can use session keys",
+      "verification": "Current code at lines 179-203 in SessionKeyModule.sol shows the restrictive check - the fix is NOT implemented",
+      "edge_cases_missed": [
+        "The proposed solution in the document contains a logical error: it keeps the original 'if (msg.sender != key.owner) revert Unauthorized();' check and then adds a nested check that can never execute (since msg.sender would have already been rejected if not equal to key.owner)",
+        "No mechanism to prevent front-running where an attacker could quickly call setAuthorizedCaller before a legitimate transaction",
+        "No event emitted when authorized caller is added/removed for monitoring suspicious activity"
+      ],
+      "simpler_alternative": "Replace the simple owner check with: require(caller == key.owner || authorizedCallers[key.owner][caller], \"Unauthorized\");",
+      "gas_impact": "~3K gas for mapping lookup (cheaper than current approach which always reverts for legitimate use cases) + 1 storage slot per authorized mapping entry"
+    },
+    {
+      "finding": "F-138a P-256 verifier swap",
+      "issue": "setP256Verifier can be called instantly by owner, allowing malicious verifier installation if owner key is compromised (e.g., setting MockP256 that accepts any proof)",
+      "proposed_solution": "Add timelock with pending state: setP256Verifier() sets pending value, confirmP256Verifier() executes after 48h delay",
+      "verification": "Current code at lines 122-128 in SocialRecoveryModule.sol shows simple setter without timelock - the fix is NOT implemented",
+      "edge_cases_missed": [
+        "No way to cancel a pending verifier update if needed (e.g., if owner realizes they proposed a malicious address)",
+        "Should consider emitting a warning event when timelock starts so community can monitor for suspicious activity",
+        "Fixed 48h timelock may not be appropriate for all chains/network conditions (might be too long for urgent fixes on some L2s)"
+      ],
+      "simpler_alternative": "Could use OpenZeppelin's TimelockController but would be overkill for this single-variable use case",
+      "gas_impact": "~5K gas (2 storage writes) + 2 storage slots for pending values"
+    },
+    {
+      "finding": "F-156 Registry status bypass",
+      "issue": "setProviderStatus allows invalid state transitions like ACTIVE→SUNSET (skipping DEPRECATED), risking UserOp fund loss when EntryPoint deposits are lost",
+      "proposed_solution": "Add state machine validation: ACTIVE→only DEPRECATED, DEPRECATED→only SUNSET, SUNSET→terminal state",
+      "verification": "Current code at lines 40-45 in TrustProviderRegistry.sol shows no transition validation - the fix is NOT implemented",
+      "edge_cases_missed": [
+        "Doesn't explicitly forbid UNREGISTERED→DEPRECATED/SUNSET transitions (though these are already prevented by ProviderNotRegistered check)",
+        "No consideration for emergency bypass mechanism if governance is compromised and immediate SUNSET is needed",
+        "Could add more detailed revert messages to help frontend applications handle specific transition errors"
+      ],
+      "simpler_alternative": "Could just block the specific ACTIVE→SUNSET transition instead of implementing full state machine",
+      "gas_impact": "~200 gas for additional branching checks - negligible"
+    },
+    {
+      "finding": "F-149 Treasury batch revert",
+      "issue": "Single failed transfer in batch causes entire batch to revert, denying funds to all recipients (e.g., one blacklisted address blocks 200 others)",
+      "proposed_solution": "Implement pull pattern: track individual failures, continue processing, leave failed amounts in treasury for later recovery",
+      "verification": "Current code at lines 140-148 in Treasury.sol still reverts on any transfer failure - the fix is NOT implemented",
+      "edge_cases_missed": [
+        "Using low-level token.call() instead of safeTransfer() introduces risk with non-standard ERC20 tokens that return boolean values unconventionally",
+        "No mechanism to prevent dust attacks via many tiny failed transactions that could grief the system",
+        "Should consider minimum amount thresholds or failure rate limits to prevent spam"
+      ],
+      "simpler_alternative": "Full pull pattern where users claim funds would be more robust but significantly more complex and UX-intensive",
+      "gas_impact": "~500 gas per failed transfer + 1 event; storage efficient as amounts are zeroed after processing attempt"
+    }
+  ],
+  "REJECTED": [],
+  "NEW": [
+    {
+      "finding": "F-142 Alternative consideration",
+      "proposal": "Instead of authorizedCallers mapping, use ERC-1271 signature validation to allow smart accounts to prove ownership of the key",
+      "rationale": "More standardized approach that doesn't require owner to pre-authorize each smart account; follows account abstraction principles",
+      "tradeoffs": "More complex verification logic (requires checking if caller is a contract and calling isValidSignature), but more flexible and standards-compliant"
+    },
+    {
+      "finding": "Systemic improvement",
+      "proposal": "Add a centralized emergency pause mechanism governed by multisig that can temporarily halt critical functions (like setP256Verifier, setProviderStatus) across all modules when attacks are detected",
+      "rationale": "Provides defense-in-depth; individual fixes prevent specific attacks but a circuit breaker protects against unknown or combined attack vectors",
+      "tradeoffs": "Adds centralization risk and complexity, but could be designed to require multiple signatures and automatic expiration"
+    }
+  ]
+}

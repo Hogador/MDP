@@ -460,9 +460,16 @@ contract SocialRecoveryModule is Ownable {
         recoveryDeposit[wallet] = 0;
         delete pendingRecovery[wallet];
 
-        // F-131: burn deposit on expiry (anti-spam — attacker loses 0.01 MDAO per spam cycle)
+        // F-153: refund deposit to initiator (not burn — legitimate initiator deserves recourse)
         if (deposit > 0) {
-            MDAOToken(address(mdaoToken)).burn(deposit);
+            (bool sent, bytes memory data) = address(mdaoToken).call(
+                abi.encodeWithSelector(IERC20.transfer.selector, initiator, deposit)
+            );
+            // USDT-style false return handling (same as F-004 in MDAOPaymaster)
+            bool success = sent && (data.length == 0 || abi.decode(data, (bool)));
+            if (!success) {
+                MDAOToken(address(mdaoToken)).burn(deposit);
+            }
         }
 
         emit RecoveryCleanedUp(wallet, deposit);
