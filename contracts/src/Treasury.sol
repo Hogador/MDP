@@ -137,20 +137,43 @@ contract Treasury is AccessControl, ReentrancyGuard, ITreasury {
         uint256[] memory amounts = alloc.amounts;
         address token = alloc.token;
 
+        uint256 totalFailed;
+        uint256 failedCount;
+
         for (uint256 i; i < recipients.length; i++) {
             alloc.amounts[i] = 0; // zero storage — double-spend protection
+            bool success;
+
             if (token == address(0)) {
-                (bool sent, ) = recipients[i].call{value: amounts[i]}("");
-                if (!sent) revert ErrTransferFailed();
+                (success, ) = recipients[i].call{value: amounts[i]}("");
             } else {
-                IERC20(token).safeTransfer(recipients[i], amounts[i]);
+                // F-149: low-level call + boolean return check (USDT-style false return)
+                (bool callOk, bytes memory data) = token.call(
+                    abi.encodeWithSelector(IERC20.transfer.selector, recipients[i], amounts[i])
+                );
+                success = callOk && (data.length == 0 || abi.decode(data, (bool)));
+            }
+
+            if (!success) {
+                totalFailed += amounts[i];
+                failedCount++;
+                emit TransferFailed(id, i, recipients[i], amounts[i]);
             }
         }
 
         delete alloc.recipients;
         delete alloc.amounts;
 
-        emit AllocationExecuted(id);
+        // F-149: rate limit as post-loop metric (NOT require inside loop — that reverts all successes)
+        if (failedCount * 100 / recipients.length > 10) {
+            emit HighFailureRateWarning(id, failedCount, recipients.length);
+        }
+
+        if (totalFailed > 0) {
+            emit PartialAllocationExecuted(id, totalFailed);
+        } else {
+            emit AllocationExecuted(id);
+        }
     }
 
     function cancelAllocation(bytes32 id) external {
