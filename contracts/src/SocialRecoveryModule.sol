@@ -30,6 +30,11 @@ contract SocialRecoveryModule is Ownable {
     error ErrNoExpiredRecovery();
     error ErrDerParsing();
     error ErrHookArrayEmpty();
+    error ErrMaxHooks();
+    error ErrHookNotApproved();
+
+    uint256 public constant MAX_HOOKS = 10;
+    uint256 public constant HOOK_GAS_LIMIT = 50_000;
 
     /// @notice P-256 verifier address. Defaults to RIP-7212 precompile (0x100).
     ///         Can be overridden via constructor or setP256Verifier() for chains without RIP-7212.
@@ -39,6 +44,8 @@ contract SocialRecoveryModule is Ownable {
     address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     // P-256 field prime
     uint256 public constant P256_P = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff;
+    uint256 public constant P256_A = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC; // -3 mod p
+    uint256 public constant P256_B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B;
     uint256 public constant TIMELOCK = 48 hours;
     uint256 public constant EXECUTION_WINDOW = 48 hours;
     uint256 public constant MAX_GUARDIANS = 5;
@@ -87,6 +94,9 @@ contract SocialRecoveryModule is Ownable {
     /// @dev executeRecovery calls smartAccount.transferOwnership(recoveryEOAOwner[wallet]).
     mapping(address => address) public recoverySmartAccount;
 
+    /// @notice Whitelist of approved hook addresses. Only approved hooks can be added.
+    mapping(address => bool) public approvedHookContracts;
+
     event WalletRegistered(address indexed wallet, bytes32 passkeyHash);
     event GuardianAdded(address indexed wallet, bytes32 indexed identityHash, uint256 index);
     event GuardianConfirmed(address indexed wallet, bytes32 indexed identityHash);
@@ -98,6 +108,10 @@ contract SocialRecoveryModule is Ownable {
     event RecoveryCleanedUp(address indexed wallet, uint256 depositBurned);
     event DepositBurned(address indexed wallet, uint256 amount);
     event P256VerifierUpdated(address indexed oldVerifier, address indexed newVerifier);
+    event HookApproved(address indexed hook);
+    event HookRevoked(address indexed hook);
+    event RecoveryHookFailed(address indexed wallet, address indexed hook, bytes reason);
+    event AllRecoveryHooksFailed(address indexed wallet, uint256 failedCount);
 
     constructor(address _mdaoToken, address _p256Verifier) Ownable(msg.sender) {
         mdaoToken = IERC20(_mdaoToken);
@@ -158,6 +172,7 @@ contract SocialRecoveryModule is Ownable {
         // P-256 coordinate validation: within field range and not point at infinity
         if (pubKeyX >= bytes32(P256_P) || pubKeyY >= bytes32(P256_P)) revert ErrInvalidPublicKey();
         if (pubKeyX == bytes32(0) && pubKeyY == bytes32(0)) revert ErrInvalidPublicKey();
+        if (!_isOnP256Curve(uint256(pubKeyX), uint256(pubKeyY))) revert ErrInvalidPublicKey();
 
         uint256 idx = guardianCount[wallet];
         guardians[wallet][idx] = Guardian(identityHash, pubKeyX, pubKeyY, block.timestamp, false);
@@ -331,9 +346,17 @@ contract SocialRecoveryModule is Ownable {
         emit RecoveryExecutedEv(wallet, newKeyHash);
 
         // Call registered recovery hooks (e.g., invalidate session keys)
+        // ponytail: try/catch + gas limit prevents a single malicious/expensive hook from DoS-ing recovery
         uint256 len = recoveryHooks.length;
+        uint256 failedHooks;
         for (uint256 i; i < len; i++) {
-            recoveryHooks[i].onRecoveryExecuted(wallet);
+            try recoveryHooks[i].onRecoveryExecuted{gas: HOOK_GAS_LIMIT}(wallet) {} catch (bytes memory reason) {
+                failedHooks++;
+                emit RecoveryHookFailed(wallet, address(recoveryHooks[i]), reason);
+            }
+        }
+        if (failedHooks > 0 && failedHooks == len) {
+            emit AllRecoveryHooksFailed(wallet, failedHooks);
         }
 
         // S-137: transfer MDAOSmartAccount ownership to new EOA if configured
@@ -351,9 +374,25 @@ contract SocialRecoveryModule is Ownable {
     }
 
     /// @notice Register a recovery hook contract.
+    /// @dev Hook must be pre-approved via approveHook() to prevent owner from adding malicious hooks.
     /// @param hook Address of the contract implementing IRecoveryHook.
     function addRecoveryHook(IRecoveryHook hook) external onlyOwner {
+        if (!approvedHookContracts[address(hook)]) revert ErrHookNotApproved();
+        if (recoveryHooks.length >= MAX_HOOKS) revert ErrMaxHooks();
         recoveryHooks.push(hook);
+    }
+
+    /// @notice Approve a hook address for future registration.
+    function approveHook(address hook) external onlyOwner {
+        require(hook.code.length > 0, "Not a contract");
+        approvedHookContracts[hook] = true;
+        emit HookApproved(hook);
+    }
+
+    /// @notice Revoke a previously approved hook address.
+    function revokeHook(address hook) external onlyOwner {
+        approvedHookContracts[hook] = false;
+        emit HookRevoked(hook);
     }
 
     /// @notice Remove a recovery hook by index (swap & pop).
@@ -438,6 +477,14 @@ contract SocialRecoveryModule is Ownable {
             }
         }
         return Guardian(bytes32(0), bytes32(0), bytes32(0), 0, false);
+    }
+
+    /// @notice Check that a point (x, y) is on the P-256 curve: y² ≡ x³ + ax + b (mod p)
+    function _isOnP256Curve(uint256 x, uint256 y) internal pure returns (bool) {
+        uint256 lhs = mulmod(y, y, P256_P);
+        uint256 rhs = addmod(mulmod(mulmod(x, x, P256_P), x, P256_P), mulmod(P256_A, x, P256_P), P256_P);
+        rhs = addmod(rhs, P256_B, P256_P);
+        return lhs == rhs;
     }
 
     /// @notice Convert ASN.1 DER-encoded ECDSA P-256 signature to raw r||s (64 bytes).

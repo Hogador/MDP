@@ -20,6 +20,10 @@ contract Treasury is AccessControl, ReentrancyGuard, ITreasury {
     address public splitterFactory;
 
     error ErrUnauthorized();
+    error ErrTooManyRecipients();
+
+    uint256 public constant ABSOLUTE_MAX_RECIPIENTS = 500;
+    uint256 public maxRecipients = 200; // configurable, hard cap ABSOLUTE_MAX_RECIPIENTS
 
     mapping(bytes32 id => Allocation) private _allocations;
 
@@ -38,6 +42,13 @@ contract Treasury is AccessControl, ReentrancyGuard, ITreasury {
     function setProposalContract(address _proposalContract) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_proposalContract == address(0)) revert ErrInvalidAddress();
         proposalContract = _proposalContract;
+    }
+
+    /// @notice Set the maximum number of recipients per allocation.
+    /// @param _maxRecipients New limit. Cannot exceed ABSOLUTE_MAX_RECIPIENTS (500).
+    function setMaxRecipients(uint256 _maxRecipients) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_maxRecipients == 0 || _maxRecipients > ABSOLUTE_MAX_RECIPIENTS) revert ErrTooManyRecipients();
+        maxRecipients = _maxRecipients;
     }
 
     /// @notice Set the SplitterFactory address for recipient validation.
@@ -73,6 +84,7 @@ contract Treasury is AccessControl, ReentrancyGuard, ITreasury {
     ) external onlyRole(FINANCE_ROLE) {
         if (id == bytes32(0)) revert ErrInvalidAllocation();
         if (recipients.length == 0) revert ErrInvalidAllocation();
+        if (recipients.length > maxRecipients) revert ErrTooManyRecipients();
         if (recipients.length != amounts.length) revert ErrInvalidAllocation();
         if (_allocations[id].executed || _allocations[id].cancelled) revert ErrInvalidAllocation();
         if (_allocations[id].recipients.length > 0) revert ErrAllocationExists();

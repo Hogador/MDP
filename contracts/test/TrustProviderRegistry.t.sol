@@ -109,4 +109,29 @@ contract TrustProviderRegistryTest is Test {
         bytes memory proof = abi.encodePacked(r, s, v);
         assertFalse(verifier.verify(intentHash, proof));
     }
+
+    // --- Proxy detection tests (SC-005 advisory) ---
+    // If registry is ever replaced with a proxy, staticcall assumptions break.
+    // These tests fail-fast if that happens.
+
+    function test_Registry_IsNotTransparentProxy() public {
+        // EIP-1967 implementation slot
+        bytes32 IMPL_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        bytes32 implAddr = vm.load(address(registry), IMPL_SLOT);
+        assertEq(implAddr, bytes32(0), "Registry has EIP-1967 impl slot — is a proxy");
+    }
+
+    function test_Registry_IsNotUUPSProxy() public {
+        // EIP-1822 implementation slot (ERC1967 alternate)
+        bytes32 UUPS_SLOT = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
+        bytes32 implAddr = vm.load(address(registry), UUPS_SLOT);
+        assertEq(implAddr, bytes32(0), "Registry has UUPS impl slot — is a proxy");
+    }
+
+    function test_Registry_IsNotBeaconProxy() public {
+        // EIP-1967 beacon slot
+        bytes32 BEACON_SLOT = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
+        bytes32 beaconAddr = vm.load(address(registry), BEACON_SLOT);
+        assertEq(beaconAddr, bytes32(0), "Registry has beacon slot — is a proxy");
+    }
 }

@@ -77,16 +77,14 @@ export async function verifySignature(
   timestamp: string,
   signature: string,
   relaySecret: string,
+  nonce: string = '',  // new parameter, optional for backward compat
 ): Promise<boolean> {
   if (!signature || !timestamp || !relaySecret) return false
-
   const ts = parseInt(timestamp, 10)
   if (isNaN(ts)) return false
-
   const now = Date.now()
   if (now - ts > TIMESTAMP_DRIFT_MS) return false
   if (ts - now > FUTURE_DRIFT_MS) return false
-
-  const expectedSig = await hmacSha256(relaySecret, `${timestamp}.${body}`)
+  const expectedSig = await hmacSha256(relaySecret, `${timestamp}.${nonce}.${body}`)
   return constantTimeEqual(signature, expectedSig)
 }
