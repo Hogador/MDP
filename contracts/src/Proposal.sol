@@ -24,6 +24,11 @@ contract Proposal is AccessControl, ReentrancyGuard, IProposal {
     /// @notice Quorum basis points (400 = 4%).
     uint256 public constant QUORUM_BPS = 400;
 
+    /// @notice F-146: max retry count per proposal.
+    uint8 public constant MAX_RETRIES = 3;
+
+    error ErrMaxRetriesExceeded();
+
     /// @notice Total number of proposals created.
     uint256 public proposalCount;
 
@@ -127,6 +132,9 @@ contract Proposal is AccessControl, ReentrancyGuard, IProposal {
             && prev.forVotes > prev.againstVotes;
         if (!prev.cancelled && !isFailed) revert ErrNotCancelled();
 
+        // F-146: cap retries to prevent infinite governance spam
+        if (prev.retryCount >= MAX_RETRIES) revert ErrMaxRetriesExceeded();
+
         if (!hasRole(FINANCE_ROLE, msg.sender) && msg.sender != prev.proposer) revert ErrUnauthorized();
 
         proposalId = ++proposalCount;
@@ -135,6 +143,7 @@ contract Proposal is AccessControl, ReentrancyGuard, IProposal {
         p.proposer = msg.sender;
         p.deadline = block.timestamp + VOTING_PERIOD;
         p.description = description;
+        p.retryCount = prev.retryCount + 1;
 
         emit ProposalCreated(proposalId, prev.allocId, msg.sender, p.deadline, description);
     }

@@ -12,6 +12,7 @@ interface IProposal {
         uint256 abstainVotes;
         bool executed;
         bool cancelled;
+        uint8 retryCount; // F-146
     }
 
     event ProposalCreated(

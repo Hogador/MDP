@@ -34,6 +34,10 @@ contract TrustProviderRegistry is Ownable {
     // F-156: emergency bypass for compromised providers
     address public emergencyGuardian;
 
+    // F-157: grace period — DEPRECATED→SUNSET requires MIN_DEPRECATED_PERIOD
+    uint256 public constant MIN_DEPRECATED_PERIOD = 7 days;
+    mapping(bytes32 => uint256) public deprecatedAt;
+
     constructor() Ownable(msg.sender) {}
 
     /// @notice Set the emergency guardian (multisig) who can bypass grace period.
@@ -61,6 +65,19 @@ contract TrustProviderRegistry is Ownable {
         }
         if (oldStatus == ProviderStatus.SUNSET) {
             revert InvalidTransition();
+        }
+
+        // F-157: track when deprecation started
+        if (oldStatus == ProviderStatus.ACTIVE && status == ProviderStatus.DEPRECATED) {
+            deprecatedAt[providerId] = block.timestamp;
+        }
+
+        // F-157: enforce grace period before SUNSET
+        if (oldStatus == ProviderStatus.DEPRECATED && status == ProviderStatus.SUNSET) {
+            require(
+                block.timestamp >= deprecatedAt[providerId] + MIN_DEPRECATED_PERIOD,
+                "Grace period not elapsed"
+            );
         }
 
         providers[providerId].status = status;

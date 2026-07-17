@@ -124,6 +124,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     uint256 public dailyWithdrawalCapBps = 5000;
     uint256 public dailyWithdrawnToday;
     uint256 public dailyWithdrawalResetAt;
+    uint256 public dailyBalanceSnapshot; // F-150: fixed cap at day start
 
     address public emergencyAdmin;
 
@@ -171,6 +172,8 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     event WithdrawalExecuted(bytes32 indexed id, address token, address to, uint256 amount);
     // Step 1b
     event RegistryUpdated(address indexed registry);
+    // F-151
+    event MalformedContext(bytes32 contextHash);
 
     struct TokenConfig {
         IERC20 token;
@@ -523,8 +526,12 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
         uint256 actualGasCost,
         uint256
     ) external onlyEntryPoint whenNotPaused {
-        (address sender, IERC20 token, uint256 maxTokenAmount) =
-            abi.decode(context, (address, IERC20, uint256));
+        // F-151: safe decode — malformed context doesn't revert entire UserOp
+        (bool decoded, address sender, IERC20 token, uint256 maxTokenAmount) = _tryDecodeContext(context);
+        if (!decoded) {
+            emit MalformedContext(keccak256(context));
+            return;
+        }
 
         if (mode == PostOpMode.opReverted) return;
 
@@ -576,6 +583,24 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
         }
 
         emit GasPaid(sender, token, amountToCharge, actualGasCost);
+    }
+
+    /// @dev F-151: safe decode for postOp context. Returns false if malformed.
+    function _tryDecodeContext(bytes calldata context) internal pure returns (
+        bool success, address sender, IERC20 token, uint256 maxTokenAmount
+    ) {
+        try this.decodeContext(context) returns (address s, IERC20 t, uint256 m) {
+            return (true, s, t, m);
+        } catch {
+            return (false, address(0), IERC20(address(0)), 0);
+        }
+    }
+
+    /// @dev External self-call to enable try/catch on abi.decode
+    function decodeContext(bytes calldata context) external pure returns (
+        address sender, IERC20 token, uint256 maxTokenAmount
+    ) {
+        (sender, token, maxTokenAmount) = abi.decode(context, (address, IERC20, uint256));
     }
 
     // C-1: verify EIP-712 backend quote signature (FP-AUTH-001)
@@ -673,12 +698,13 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
 
         if (block.timestamp > dailyWithdrawalResetAt) {
             dailyWithdrawnToday = 0;
+            // F-150: snapshot balance at day start — caps geometric series drain
+            dailyBalanceSnapshot = token == address(0)
+                ? IEntryPointView(entryPoint).balanceOf(address(this))
+                : IERC20(token).balanceOf(address(this));
             dailyWithdrawalResetAt = block.timestamp + 1 days;
         }
-        uint256 balance = token == address(0)
-            ? IEntryPointView(entryPoint).balanceOf(address(this))
-            : IERC20(token).balanceOf(address(this));
-        if (dailyWithdrawnToday + amount > balance * dailyWithdrawalCapBps / 10000) revert DailyCapExceeded();
+        if (dailyWithdrawnToday + amount > dailyBalanceSnapshot * dailyWithdrawalCapBps / 10000) revert DailyCapExceeded();
         dailyWithdrawnToday += amount;
 
         if (token == address(0)) {
