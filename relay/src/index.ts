@@ -64,16 +64,38 @@ export default {
     const path = url.pathname
     const method = request.method
 
+    // CORS preflight
+    if (method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': 'https://app.mdaopay.com',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, X-Timestamp, X-Signature, X-Nonce',
+          'Access-Control-Max-Age': '86400',
+        },
+      })
+    }
+
+    const SECURITY_HEADERS = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Access-Control-Allow-Origin': 'https://app.mdaopay.com',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Timestamp, X-Signature, X-Nonce',
+    }
+
     const json = <T>(data: T, status = 200): Response =>
       new Response(JSON.stringify({ success: true, data } satisfies ApiResponse<T>), {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: SECURITY_HEADERS,
       })
 
     const err = (msg: string, status = 400): Response =>
       new Response(JSON.stringify({ success: false, error: msg } satisfies ApiResponse), {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: SECURITY_HEADERS,
       })
 
     const requireAuth = async (bodyText: string): Promise<Response | null> => {
@@ -83,8 +105,9 @@ export default {
         return err('Internal server error', 500)
       }
       const ts = request.headers.get('X-Timestamp') || ''
+      const nonce = request.headers.get('X-Nonce') || ''
       const sig = request.headers.get('X-Signature') || ''
-      const valid = await verifySignature(bodyText, ts, sig, env.RELAY_SECRET)
+      const valid = await verifySignature(bodyText, ts, sig, env.RELAY_SECRET, nonce)
       if (!valid) return err('Unauthorized: invalid or missing signature', 401)
       return null
     }
@@ -328,11 +351,21 @@ export default {
           return err('Payload too large', 413)
         }
 
-        const recoveredAddress = verifySiweSignature(message, signature)
+        const recoveredAddress = verifySiweSignature(
+          message,
+          signature,
+          'app.mdaopay.com',  // expected domain
+          56,                  // expected chainId (BSC)
+        )
         if (!recoveredAddress) return err('Signature verification failed', 401)
 
         const jwt = await issueJwt(
-          { sub: recoveredAddress, method: 'siwe', iat: Math.floor(Date.now() / 1000) },
+          {
+            sub: recoveredAddress,
+            method: 'siwe',
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600,  // 1 hour expiry
+          },
           env.RELAY_SECRET,
         )
 

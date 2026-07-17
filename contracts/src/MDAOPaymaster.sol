@@ -436,8 +436,10 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
 
             bytes32 providerId = bytes32(uint256(uint160(trustedSigner)));
 
-            if (!IRegistry(registry_).verify(providerId, digest, quoteSig)) revert InvalidSigner();
+            // CEI: increment nonce BEFORE external call (SC-003 fix)
             nextQuoteNonce[sender] = nonce + 1;
+            // Note: IRegistry.verify() is `view` — compiler already generates STATICCALL (SC-005 is false positive)
+            if (!IRegistry(registry_).verify(providerId, digest, quoteSig)) revert InvalidSigner();
         } else if (trustedSigner != address(0)) {
             // Fallback: direct trusted signer verification (backward compat)
             if (paymasterData.length < _SUFFIX_LEN) revert InvalidSigner();
