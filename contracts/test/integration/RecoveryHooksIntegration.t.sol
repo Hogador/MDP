@@ -54,7 +54,12 @@ contract RecoveryHooksIntegrationTest is Test {
         vm.prank(address(dms.owner()));
         dms.setRecoveryCaller(address(recovery));
 
-        // Wire: register hooks on SocialRecoveryModule
+        // Wire: register hooks on SocialRecoveryModule (must approve first)
+        vm.prank(deployer);
+        recovery.approveHook(address(sessionKeys));
+        vm.prank(deployer);
+        recovery.approveHook(address(dms));
+
         vm.prank(deployer);
         recovery.addRecoveryHook(IRecoveryHook(address(sessionKeys)));
 
@@ -108,9 +113,10 @@ contract RecoveryHooksIntegrationTest is Test {
         bytes32 identityB = keccak256(abi.encodePacked(guardian2));
 
         vm.prank(alice);
-        recovery.addGuardian(alice, identityA, keccak256("guardian1-pub-x"), keccak256("guardian1-pub-y"));
+        // ponytail: valid P-256 points — keccak256("guardian1-pub-x") > P256_P, fails _isOnP256Curve
+        recovery.addGuardian(alice, identityA, hex"6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", hex"4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5");
         vm.prank(alice);
-        recovery.addGuardian(alice, identityB, keccak256("guardian2-pub-x"), keccak256("guardian2-pub-y"));
+        recovery.addGuardian(alice, identityB, hex"7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978", hex"07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1");
 
         // Guardians confirm their roles
         vm.prank(guardian1);

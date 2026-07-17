@@ -204,8 +204,9 @@ contract IntegrationTest is Test {
         vm.prank(alice);
         recovery.registerWallet(bytes32(uint256(0xa1)), bytes32(uint256(0xa2)));
 
-        bytes32[3] memory xs = [bytes32(uint256(1)), bytes32(uint256(3)), bytes32(uint256(5))];
-        bytes32[3] memory ys = [bytes32(uint256(2)), bytes32(uint256(4)), bytes32(uint256(6))];
+        // ponytail: valid P-256 points (G, 2G, 3G) — original (1,2)(3,4)(5,6) fails _isOnP256Curve
+        bytes32[3] memory xs = [bytes32(hex"6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"), bytes32(hex"7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978"), bytes32(hex"5ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c")];
+        bytes32[3] memory ys = [bytes32(hex"4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"), bytes32(hex"07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1"), bytes32(hex"8734640c4998ff7e374b06ce1a64a2ecd82ab036384fb83d9a79b127a27d5032")];
 
         for (uint256 i = 0; i < 3; i++) {
             ids[i] = keccak256(abi.encodePacked(guardians[i]));

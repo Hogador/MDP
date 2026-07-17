@@ -217,8 +217,9 @@ contract MDAOSmartAccountTest is Test {
         // Add guardians
         bytes32 id1 = keccak256(abi.encodePacked(guardian1));
         bytes32 id2 = keccak256(abi.encodePacked(guardian2));
-        recoveryModule.addGuardian(owner, id1, bytes32(uint256(3)), bytes32(uint256(4)));
-        recoveryModule.addGuardian(owner, id2, bytes32(uint256(5)), bytes32(uint256(6)));
+        // ponytail: valid P-256 points — original (1,2)(3,4)(5,6) fails _isOnP256Curve
+        recoveryModule.addGuardian(owner, id1, hex"6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", hex"4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5");
+        recoveryModule.addGuardian(owner, id2, hex"7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978", hex"07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1");
 
         // Confirm guardians
         vm.stopPrank();

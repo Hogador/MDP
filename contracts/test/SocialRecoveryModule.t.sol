@@ -16,12 +16,13 @@ contract SocialRecoveryModuleTest is Test {
     address public guardianB = makeAddr("guardianB");
     address public guardianC = makeAddr("guardianC");
 
-    bytes32 constant PUBKEY_X_A = bytes32(uint256(1));
-    bytes32 constant PUBKEY_Y_A = bytes32(uint256(2));
-    bytes32 constant PUBKEY_X_B = bytes32(uint256(3));
-    bytes32 constant PUBKEY_Y_B = bytes32(uint256(4));
-    bytes32 constant PUBKEY_X_C = bytes32(uint256(5));
-    bytes32 constant PUBKEY_Y_C = bytes32(uint256(6));
+    // ponytail: valid P-256 secp256r1 points (G, 2G, 3G) — original (1,2) fails _isOnP256Curve
+    bytes32 constant PUBKEY_X_A = hex"6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296";
+    bytes32 constant PUBKEY_Y_A = hex"4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5";
+    bytes32 constant PUBKEY_X_B = hex"7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978";
+    bytes32 constant PUBKEY_Y_B = hex"07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1";
+    bytes32 constant PUBKEY_X_C = hex"5ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c";
+    bytes32 constant PUBKEY_Y_C = hex"8734640c4998ff7e374b06ce1a64a2ecd82ab036384fb83d9a79b127a27d5032";
 
     bytes32 IDENTITY_A;
     bytes32 IDENTITY_B;
@@ -103,7 +104,8 @@ contract SocialRecoveryModuleTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             bytes32 id = keccak256(abi.encode(i));
             vm.prank(alice);
-            recovery.addGuardian(alice, id, bytes32(uint256(i * 10 + 1)), bytes32(uint256(i * 10 + 2)));
+            // ponytail: use valid P-256 point G for all — test only checks identity uniqueness, not key uniqueness
+            recovery.addGuardian(alice, id, PUBKEY_X_A, PUBKEY_Y_A);
         }
 
         bytes32 extra = keccak256("extra");
@@ -507,10 +509,10 @@ contract SocialRecoveryModuleTest is Test {
     //  C-3: Expiry & Cleanup
     // ──────────────────────────────────────────────
 
-    function test_CleanupExpiredRecoveryBurnsDeposit() public {
+    function test_CleanupExpiredRecoveryRefundsDeposit() public {
         _addGuardians();
 
-        // F-131: cleanup burns deposit instead of returning to initiator
+        // F-153: cleanup refunds deposit to initiator (not burn)
         vm.prank(alice);
         recovery.initiateRecovery(alice, NEW_PUBKEY);
 
@@ -519,8 +521,9 @@ contract SocialRecoveryModuleTest is Test {
 
         // Capture state BEFORE cleanup
         uint256 initiatorBalBefore = mdaoToken.balanceOf(alice);
-        uint256 actualDeposit = recovery.recoveryDeposit(alice); // may differ from EXPECTED_DEPOSIT due to burn fee
-        uint256 totalSupplyBefore = mdaoToken.totalSupply();
+        uint256 contractBalBefore = mdaoToken.balanceOf(address(recovery));
+        uint256 actualDeposit = recovery.recoveryDeposit(alice);
+        require(actualDeposit > 0, "deposit must be non-zero");
 
         vm.prank(makeAddr("anyone"));
         vm.expectEmit(true, true, true, true);
@@ -532,11 +535,18 @@ contract SocialRecoveryModuleTest is Test {
         assertEq(started, 0);
         assertEq(recovery.recoveryDeposit(alice), 0);
 
-        // Deposit burned on expiry (F-131: anti-spam)
-        assertEq(mdaoToken.balanceOf(alice), initiatorBalBefore, "initiator should NOT get deposit back");
-        assertEq(recovery.recoveryDeposit(alice), 0, "deposit cleared");
-        // Total supply reduced by burn amount
-        assertEq(mdaoToken.totalSupply(), totalSupplyBefore - actualDeposit, "total supply reduced by burn");
+        // F-153: deposit refunded to initiator — balance increased
+        uint256 initiatorBalAfter = mdaoToken.balanceOf(alice);
+        assertGt(initiatorBalAfter, initiatorBalBefore, "initiator balance should increase (refund)");
+        // Ponytail: refund <= deposit because MDAOToken charges burn fee on transfer
+        // (burn fee transfers to BURN_ADDRESS, not a true supply reduction)
+        assertLe(initiatorBalAfter, initiatorBalBefore + actualDeposit, "refund <= deposit (burn fee)");
+
+        // Contract balance decreased
+        uint256 contractBalAfter = mdaoToken.balanceOf(address(recovery));
+        assertLt(contractBalAfter, contractBalBefore, "contract balance should decrease");
+        // Ponytail: contract lost <= actualDeposit due to burn fee on refund transfer
+        assertGe(contractBalBefore - contractBalAfter, actualDeposit - 1, "contract lost approximately deposit");
     }
 
     function test_RevertWhen_CleanupNotExpired() public {
