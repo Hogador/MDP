@@ -694,15 +694,45 @@ contract SocialRecoveryModuleTest is Test {
     }
 
     // ──────────────────────────────────────────────
-    //  F-108: P256_VERIFIER setter
+    //  F-138a: P256_VERIFIER setter with timelock
     // ──────────────────────────────────────────────
 
     function test_SetP256Verifier() public {
         address newVerifier = makeAddr("newVerifier");
         vm.expectEmit(true, true, true, true);
-        emit SocialRecoveryModule.P256VerifierUpdated(address(mockP256), newVerifier);
+        emit SocialRecoveryModule.P256VerifierProposed(newVerifier, block.timestamp + 48 hours);
         recovery.setP256Verifier(newVerifier);
+        // Not immediately applied — still old verifier
+        assertEq(recovery.P256_VERIFIER(), address(mockP256));
+    }
+
+    function test_ConfirmP256Verifier() public {
+        address newVerifier = makeAddr("newVerifier");
+        vm.prank(recovery.owner());
+        recovery.setP256Verifier(newVerifier);
+        // Cannot confirm before timelock
+        vm.expectRevert("Timelock not elapsed");
+        recovery.confirmP256Verifier();
+        // Warp past timelock
+        vm.warp(block.timestamp + 48 hours);
+        vm.expectEmit(true, true, true, true);
+        emit SocialRecoveryModule.P256VerifierConfirmed(address(mockP256), newVerifier);
+        recovery.confirmP256Verifier();
         assertEq(recovery.P256_VERIFIER(), newVerifier);
+    }
+
+    function test_CancelP256VerifierUpdate() public {
+        address newVerifier = makeAddr("newVerifier");
+        vm.prank(recovery.owner());
+        recovery.setP256Verifier(newVerifier);
+        vm.expectEmit(true, true, true, true);
+        emit SocialRecoveryModule.P256VerifierUpdateCancelled();
+        recovery.cancelP256VerifierUpdate();
+        // Verifier unchanged
+        assertEq(recovery.P256_VERIFIER(), address(mockP256));
+        // Cannot confirm anymore
+        vm.expectRevert("No pending verifier");
+        recovery.confirmP256Verifier();
     }
 
     function test_RevertWhen_SetP256VerifierByNonOwner() public {

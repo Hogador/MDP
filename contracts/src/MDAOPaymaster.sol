@@ -586,7 +586,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     }
 
     /// @dev F-151: safe decode for postOp context. Returns false if malformed.
-    function _tryDecodeContext(bytes calldata context) internal pure returns (
+    function _tryDecodeContext(bytes calldata context) internal view returns (
         bool success, address sender, IERC20 token, uint256 maxTokenAmount
     ) {
         try this.decodeContext(context) returns (address s, IERC20 t, uint256 m) {
