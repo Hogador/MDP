@@ -235,7 +235,7 @@ Owner: Coordinator · Deadline: перед F-201 (mainnet deploy)
 - [x] C-01: moonpay-proxy 404 при отсутствии apiKey (860cce3)
 - [x] C-02: удалён мёртвый relay /auth/siwe + siwe.ts (189ca3a)
 - [x] C-03: veto nonce валидация в relay (860cce3)
-- [x] C-04: KV TOCTOU → ADR Durable Objects (ADRD-2026-001) · owner: Coordinator · deadline: до S-201
+- [x] C-04: KV TOCTOU → ADR-005 Durable Objects (docs/adr/ADR-005-durable-objects.md, статус proposed — реализация до S-201)
 - [x] C-05: RedisClient атомарный compute() (860cce3)
 - [x] C-06: quote deadline 300→120s + контракт buffer 300→60s (189ca3a)
 - [x] C-07: relay CHAIN_ID env (860cce3; endpoint удалён в 189ca3a)
