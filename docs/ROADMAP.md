@@ -266,4 +266,4 @@ Owner: Coordinator · обязателен до F-201 (mainnet)
 - [ ] EIP-170: runtime MDAOPaymaster = 14,869 B < 24,576 B (optimizer_runs=10000) — деплой не упадёт по size
 - [ ] «тесты на реальный USDT» (см. H-06): одна live-транзакция с 6-dec USDT на testnet до mainnet
 
-Отчёт: .hive/reports/audit-full-2026-07.md (14 фаз)
+Отчёты: security/COMPREHENSIVE-AUDIT-2026-07-20.md (3rd pass, 82 находки) · security/AUDIT-2026-07-14.md · security/COMPREHENSIVE-AUDIT-2026-07-16.md · индекс: security/FINDINGS-INDEX.md · уроки: security/LESSON-*.md
