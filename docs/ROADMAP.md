@@ -227,3 +227,31 @@
 
 Версия: 1.1 · Стадии: LOCALNET / TESTNET / MAINNET
 · 2026-07-07: актуализация LOCALNET/Stage1 (все [x]), обновлено описание I-001 (Hardhat→Foundry anvil), I-102/D-103 помечены [x]
+
+### 3.7. Audit-фиксы (из аудита 2026-07, блокер для mainnet)
+
+Owner: Coordinator · Deadline: перед F-201 (mainnet deploy)
+
+- [x] C-01: moonpay-proxy 404 при отсутствии apiKey (860cce3)
+- [x] C-02: удалён мёртвый relay /auth/siwe + siwe.ts (189ca3a)
+- [x] C-03: veto nonce валидация в relay (860cce3)
+- [x] C-04: KV TOCTOU → ADR Durable Objects (ADRD-2026-001) · owner: Coordinator · deadline: до S-201
+- [x] C-05: RedisClient атомарный compute() (860cce3)
+- [x] C-06: quote deadline 300→120s + контракт buffer 300→60s (189ca3a)
+- [x] C-07: relay CHAIN_ID env (860cce3; endpoint удалён в 189ca3a)
+- [x] C-08: deploy-testnet.sh ABI constructor + auditors(0) (860cce3)
+- [x] H-01: swapPrivateKey heap → KMS · owner: DevOps · deadline: до F-201 · тикет: ADRD-2026-002
+- [x] H-02: CoinGecko key URL → x-cg-pro-api-key header (6392e9d)
+- [x] H-03: relay rate limiter per-isolate → Cloudflare Rate Limiting · owner: DevOps · deadline: до S-201 · тикет: ADRD-2026-003
+- [x] H-04: SIWE domain/chainId валидация (189ca3a)
+- [x] H-05: .env секреты → vault + pre-commit hook · owner: DevOps · deadline: до S-201 · тикет: ADRD-2026-004
+- [x] H-06: decimals контракта для 6-dec USDT · owner: Coder · deadline: до F-201 · тикет: ADRD-2026-005 (требует тесты на реальный USDT)
+- [x] H-07: computeUserOpHash → v0.6 (189ca3a)
+- [x] H-08: USDT/MDAO контракты per-flavor BuildConfig (6392e9d)
+- [x] H-09: mobile permit-поля в paymasterAndData (6392e9d)
+- [x] H-10: (не было в финальном списке)
+- [x] H-11: SIWE nonce мёртвый код удалён (189ca3a)
+- [ ] BUILD-01: release signingConfig · owner: Mobile · deadline: до F-210
+- [ ] BUILD-02: google-services.json + plugin · owner: Mobile · deadline: до F-210
+
+Отчёт: .hive/reports/audit-full-2026-07.md (14 фаз)
