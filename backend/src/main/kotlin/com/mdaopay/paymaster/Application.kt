@@ -89,20 +89,78 @@ private fun isIpInCidr(ip: String, cidr: String): Boolean {
  * Extract the real client IP address behind a reverse proxy.
  * Only trusts X-Forwarded-For / X-Real-IP when the immediate
  * connection comes from a known trusted proxy (prevents header injection).
+ * 
+ * PT-006: IPv6 normalization — masks lower 64 bits to prevent rate limit bypass
+ * via IPv6 address rotation (e.g., 2001:db8::1, 2001:db8::2, etc.)
  */
 fun extractClientIp(request: io.ktor.server.request.ApplicationRequest): String {
     val remoteHost = request.local.remoteHost
     val isTrusted = TRUSTED_PROXIES.any { isIpInCidr(remoteHost, it) }
+    var clientIp = remoteHost
+    
     if (isTrusted) {
         val forwardedFor = request.headers["X-Forwarded-For"]
         if (forwardedFor != null) {
             val firstIp = forwardedFor.split(",").firstOrNull()?.trim()
-            if (firstIp != null && firstIp.isNotBlank()) return firstIp
+            if (firstIp != null && firstIp.isNotBlank()) clientIp = firstIp
         }
         val realIp = request.headers["X-Real-IP"]
-        if (realIp != null && realIp.isNotBlank()) return realIp
+        if (realIp != null && realIp.isNotBlank()) clientIp = realIp
     }
-    return remoteHost
+    
+    // PT-006: Normalize IPv6 addresses to /64 subnet
+    return normalizeIpAddress(clientIp)
+}
+
+/**
+ * PT-006: Normalize IP addresses for rate limiting
+ * - IPv4: returns as-is
+ * - IPv6: masks lower 64 bits to prevent bypass via address rotation
+ * 
+ * Examples:
+ *   "192.168.1.1" → "192.168.1.1"
+ *   "2001:db8:85a3::8d2:fe12:3456:789a" → "2001:db8:85a3:0:0:0:0:0/64"
+ *   "::1" → "::/64"
+ */
+fun normalizeIpAddress(ip: String): String {
+    // Check if IPv6
+    if (ip.contains(":")) {
+        try {
+            // Split into segments
+            val segments = ip.split(":")
+            
+            // Handle compressed IPv6 (::)
+            val expandedSegments = if (segments.size < 8) {
+                // Count empty segments to determine how many zeros to insert
+                val emptyCount = 8 - segments.size + 1
+                val result = mutableListOf<String>()
+                var expanded = false
+                
+                for ((index, segment) in segments.withIndex()) {
+                    if (segment.isEmpty() && !expanded) {
+                        // Insert zeros for ::
+                        repeat(emptyCount) { result.add("0") }
+                        expanded = true
+                    } else {
+                        result.add(segment.ifEmpty { "0" })
+                    }
+                }
+                result
+            } else {
+                segments.map { it.ifEmpty { "0" } }
+            }
+            
+            // Take first 4 segments (64 bits) and mask the rest
+            val firstFour = expandedSegments.take(4).joinToString(":")
+            return "$firstFour:0:0:0:0:0/64"
+        } catch (e: Exception) {
+            // If parsing fails, return original IP (fail-safe)
+            return ip
+        }
+    }
+    
+    // IPv4: return as-is
+    return ip
 }
 
 @Serializable
@@ -320,14 +378,15 @@ fun main() {
             swapService?.let { swapRoutes(it, swapIpRateLimiter) }
             } // ── end authenticate("auth-jwt") ──
 
-            // F-037: MoonPay proxy — no JWT (browser redirect)
-            if (config.moonpayApiKey != null) {
-                get("/moonpay-proxy") {
-                    val qs = call.request.queryString()
-                    val fullUrl = "https://buy.moonpay.com?apiKey=${config.moonpayApiKey}&$qs"
-                    call.response.header("Location", fullUrl)
-                    call.response.status(HttpStatusCode.Found)
-                }
+            // C-4: MoonPay proxy — Secure server-side proxy (API key NOT exposed to client)
+            // OLD vulnerable code (F-037): redirect with apiKey in URL — REMOVED
+            // NEW: Proxy endpoint that adds apiKey server-side
+            if (config.moonpayApiKey != null && config.moonpaySecretKey != null) {
+                moonPayProxy(
+                    moonpayApiKey = config.moonpayApiKey,
+                    moonpaySecretKey = config.moonpaySecretKey,
+                    relayHmacSecret = config.relayHmacSecret
+                )
             }
 
             // ── Open routes (no JWT required) ──
