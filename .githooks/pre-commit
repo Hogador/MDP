@@ -30,19 +30,22 @@ PATTERNS=(
 )
 
 # Сканируем только добавленные/изменённые строки в staged файлах
-STAGED=$(git diff --cached --diff-filter=ACM --name-only 2>/dev/null || true)
+# core.quotepath=false: имена с не-ASCII не квотятся кавычками (иначе git show :file падает).
+# Запрет -z в $(): NUL-байты обрезаются подстановкой, список молча теряет файлы.
+STAGED=$(git -c core.quotepath=false diff --cached --diff-filter=ACM --name-only 2>/dev/null || true)
 if [ -z "$STAGED" ]; then
   # Если не git-репозиторий (первые коммиты), используем ls-files
-  STAGED=$(git ls-files --cached 2>/dev/null || true)
+  STAGED=$(git -c core.quotepath=false ls-files --cached 2>/dev/null || true)
 fi
 
 HAS_LEAK=false
 
-for file in $STAGED; do
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
   # Пропускаем бинарные файлы и сторонние либы (contracts/lib/)
   case "$file" in
     contracts/lib/*) continue ;;
-    *.png|*.jpg|*.jpeg|*.gif|*.ico|*.woff2|*.ttf|*.keystore|*.jks|*.apk|*.aab) continue ;;
+    *.png|*.jpg|*.jpeg|*.gif|*.ico|*.webp|*.wav|*.woff2|*.ttf|*.jar|*.keystore|*.jks|*.apk|*.aab|*.pdf) continue ;;
   esac
 
   # Пропускаем сами хуки и baseline
@@ -83,7 +86,7 @@ for file in $STAGED; do
       done <<< "$MATCHES"
     fi
   done
-done
+done <<< "$STAGED"
 
 if [ "$HAS_LEAK" = true ]; then
   echo ""
