@@ -38,6 +38,11 @@ data class SignRequest(
     val signature: String = "0x",
     val mdaoMaxAmount: String? = null,
     val usdtMaxAmount: String? = null,
+    // H-09: ERC-2612 permit fields — backend uses permitV != null to build permit-based paymasterAndData
+    val permitDeadline: String? = null,
+    val permitV: String? = null,
+    val permitR: String? = null,
+    val permitS: String? = null,
 )
 
 // F-130: SignResponse matches backend PaymasterService.SignResponse exactly
@@ -75,6 +80,10 @@ class PaymasterClient @Inject constructor(
         maxFeePerGas: BigInteger,
         mdaoMaxAmount: BigInteger? = null,
         usdtMaxAmount: BigInteger? = null,
+        permitDeadline: BigInteger? = null,
+        permitV: Int? = null,
+        permitR: ByteArray? = null,
+        permitS: ByteArray? = null,
     ): SignResponse = withContext(Dispatchers.IO) {
         val req = SignRequest(
             sender = sender,
@@ -88,6 +97,10 @@ class PaymasterClient @Inject constructor(
             maxFeePerGas = Numeric.toHexStringWithPrefix(maxFeePerGas),
             mdaoMaxAmount = mdaoMaxAmount?.let { Numeric.toHexStringWithPrefix(it) },
             usdtMaxAmount = usdtMaxAmount?.let { Numeric.toHexStringWithPrefix(it) },
+            permitDeadline = permitDeadline?.let { Numeric.toHexStringWithPrefix(it) },
+            permitV = permitV?.let { Numeric.toHexStringWithPrefix(BigInteger.valueOf(it.toLong())) },
+            permitR = permitR?.let { Numeric.toHexString(it) },
+            permitS = permitS?.let { Numeric.toHexString(it) },
         )
 
         val bodyJson = JSONObject().apply {
@@ -104,6 +117,10 @@ class PaymasterClient @Inject constructor(
             put("signature", req.signature)
             req.mdaoMaxAmount?.let { put("mdaoMaxAmount", it) }
             req.usdtMaxAmount?.let { put("usdtMaxAmount", it) }
+            req.permitDeadline?.let { put("permitDeadline", it) }
+            req.permitV?.let { put("permitV", it) }
+            req.permitR?.let { put("permitR", it) }
+            req.permitS?.let { put("permitS", it) }
         }
 
         val request = Request.Builder()

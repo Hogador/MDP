@@ -9,8 +9,9 @@ object NetworkConfig {
     val RPC_URL: String get() = BuildConfig.RPC_URL_1
     val BUNDLER_URL: String get() = BuildConfig.BUNDLER_URL
     val CHAIN_ID: Long get() = BuildConfig.CHAIN_ID
-    const val USDT_CONTRACT = "0x7169D38820dfd117C3FA1f22a697dBA58d90ba06"
-    const val MDAO_CONTRACT = "0x0000000000000000000000000000000000000000" // Set by deploy script
+    // H-08: per-flavor token contracts (was mainnet USDT hardcode — broke dev/staging chainId=97)
+    val USDT_CONTRACT: String get() = BuildConfig.USDT_CONTRACT
+    val MDAO_CONTRACT: String get() = BuildConfig.MDAO_CONTRACT
     val ETHERSCAN_API_KEY: String get() = BuildConfig.ETHERSCAN_API_KEY
     const val ETHERSCAN_API_URL = "https://api.bscscan.com/api"
     const val EXPLORER_URL = "https://bscscan.com"

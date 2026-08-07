@@ -101,9 +101,13 @@ class CoinGeckoSource(
 
     override suspend fun getPrices(tokenAddresses: Map<String, String>): DexPrices? {
         return try {
-            val baseUrl = "https://api.coingecko.com/api/v3/simple/price?ids=binancecoin,tether&vs_currencies=usd"
-            val url = if (apiKey != null) "$baseUrl&x_cg_pro_api_key=$apiKey" else baseUrl
-            val resp = client.get(url)
+            // H-02: CoinGecko API key in header (x-cg-pro-api-key), NOT in URL — URL can be logged by proxy/CDN/client
+            val url = "https://api.coingecko.com/api/v3/simple/price?ids=binancecoin,tether&vs_currencies=usd"
+            val resp = if (apiKey != null) {
+                client.get(url) { header("x-cg-pro-api-key", apiKey) }
+            } else {
+                client.get(url)
+            }
             val body = resp.bodyAsText()
             val root = json.parseToJsonElement(body).jsonObject
             val bnbObj = root["binancecoin"]?.jsonObject
