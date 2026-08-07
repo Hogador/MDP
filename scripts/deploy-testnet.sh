@@ -354,7 +354,7 @@ verify_contract "$SOCIAL_RECOVERY" "src/SocialRecoveryModule.sol" "SocialRecover
     "$(cast abi-encode "constructor(address,address)" "$MDAO_TOKEN" "$P256_VERIFIER")"
 
 verify_contract "$INSURANCE_FUND" "src/InsuranceFund.sol" "InsuranceFund" \
-    "$(cast abi-encode "constructor(address)" "$INSURANCE_AUDITOR")"
+    "$(cast abi-encode "constructor(address[],uint256)" "[$INSURANCE_AUDITOR]" "1")"
 
 verify_contract "$NICKNAME_REGISTRY" "src/NicknameRegistry.sol" "NicknameRegistry" ""
 verify_contract "$DEAD_MAN_SWITCH" "src/DeadManSwitch.sol" "DeadManSwitch" ""
@@ -403,7 +403,8 @@ IS_EXEMPT=$(cast call "$MDAO_TOKEN" "isExempt(address)(bool)" "$SOCIAL_RECOVERY"
     || { log_error "setExempt for SocialRecoveryModule failed"; exit 1; }
 log_info "SocialRecoveryModule is exempt from MDAO fee-on-transfer"
 
-AUDITOR_ONCHAIN=$(cast call "$INSURANCE_FUND" "auditor()(address)" --rpc-url "$RPC_URL")
+# C-08: InsuranceFund uses auditors[] array — check index 0 (matching deploy: [addr], 1)
+AUDITOR_ONCHAIN=$(cast call "$INSURANCE_FUND" "auditors(uint256)(address)" 0 --rpc-url "$RPC_URL")
 AUDITOR_ONCHAIN=$(echo "$AUDITOR_ONCHAIN" | tr '[:upper:]' '[:lower:]')
 AUDITOR_ENV=$(echo "$INSURANCE_AUDITOR" | tr '[:upper:]' '[:lower:]')
 [ "$AUDITOR_ONCHAIN" = "$AUDITOR_ENV" ] \

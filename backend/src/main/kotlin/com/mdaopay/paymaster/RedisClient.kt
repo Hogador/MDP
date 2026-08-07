@@ -152,15 +152,16 @@ class RedisRateLimiter(private val prefix: String = "ratelimit") {
     private fun isLimitedInMemory(key: String, maxRequests: Int, windowSec: Long): Boolean {
         scavenge()
         val now = System.currentTimeMillis()
-        val entry = fallbackMap[key]
-        if (entry == null || now >= entry.expiresAt) {
-            fallbackMap[key] = RateLimitEntry(1, now + windowSec * 1000)
-            rateLimitLog.warn("Redis unavailable — rate limit fallback for key={}", key)
-            return false
-        }
-        val newCount = entry.count + 1
-        fallbackMap[key] = entry.copy(count = newCount)
-        return newCount > maxRequests
+        // C-05: atomic read-modify-write — concurrent requests can't lose increments
+        val count = fallbackMap.compute(key) { _, existing ->
+            if (existing == null || now >= existing.expiresAt) {
+                rateLimitLog.warn("Redis unavailable — rate limit fallback for key={}", key)
+                RateLimitEntry(1, now + windowSec * 1000)
+            } else {
+                existing.copy(count = existing.count + 1)
+            }
+        }!!.count
+        return count > maxRequests
     }
 }
 
