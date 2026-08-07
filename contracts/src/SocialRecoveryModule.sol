@@ -407,6 +407,8 @@ contract SocialRecoveryModule is Ownable {
         if (der.length < 8 || der.length > 74) revert ErrDerParsing();
 
         uint256 offset;
+        // DER parsing loop bounds are strictly checked above (length < 8 || > 74)
+        // and increment logic guarantees no overflow within valid DER structure.
         unchecked {
             // SEQUENCE tag
             if (der[offset] != 0x30) revert ErrDerParsing();
