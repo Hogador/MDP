@@ -1,127 +1,72 @@
-# ——— IDE ———
-.idea/
-*.iml
-*.iws
-*.ipr
-.vscode/
-*.swp
-*.swo
-*~
-
-# ——— Android / Kotlin ———
-.gradle/
-build/
-app/build/
-backend/build/
-captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-*.aab
-*.ap_
-*.dex
-local.properties
-.kotlin/
-*.kotlin_module
-
-# ——— Backend (Kotlin/Gradle) ———
-backend/.kotlin/
-backend/out/
-
-# ——— Foundry / Solidity ———
-contracts/out/
-contracts/cache/
-contracts/broadcast/
-
-# ——— Node.js ———
+```
+# Dependencies
 node_modules/
-relay/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# ——— Secrets & Config ———
+# Build outputs
+dist/
+build/
+coverage/
+
+# Environment variables
 .env
+.env.local
 .env.*
-*.env
-google-services.json
-app/google-services.json
-secrets/
-*.key
-*.pem
-*.jks
-*.keystore
-*.p12
 
-# ——— Logs & Temp ———
-*.log
-*.tmp
+# IDE specific
+.vscode/
+.idea/
 *.swp
 *.swo
-*.hprof
-crashlytics-*
-*.crash
 
-# ——— Docker ———
-docker-compose.override.yml
+# OS generated files
+.DS_Store
+Thumbs.db
 
-# ——— Python ———
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python specific
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
+*.pyd
+.Python
+*.so
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
 
-# ——— OS ———
-.DS_Store
-Thumbs.db
-Desktop.ini
+# Node.js specific
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# —── Backups ———
-backups/
-.backup/
-*.bak
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-# ——— OpenCode (AI config) ———
-.config/opencode/
-
-# ——— Misc ———
-out/
-cache/
-.terraform/
-*.tfstate
-*.tfstate.backup
-.history/
-ci.yml.additions
-
-# ——— Agent config (не часть проекта) ———
-.agents/
-.hive/
-ponytail/
-
-# ——— Root misc (не часть проекта) ———
-.editorconfig
-.gitleaksignore
-.pre-commit-config.yaml
-18913.png
-AGENTS.md
-Makefile
-Makefile.audit
-README.md
-backup-restore.sh
-docker-compose.yml
-gradlew.bat
-
-# === Swarm v9.0 — runtime artifacts (не коммитить) ===
-.hive/state.json
-.hive/escalations/
-.hive/audit/
-.hive/verifications/
-.hive/impact/
-.hive/reports/
-.hive/daily/
-
-# === Swarm v9.0 — коммитим (source of truth) ===
-# .hive/config.json       ← коммитим
-# .hive/prompts/          ← коммитим
-# .hive/memories.jsonl    ← коммитим (Tier 2 — знания)
-# docs/VISION.md          ← коммитим
-# docs/ROADMAP.md         ← коммитим
-# docs/adr/               ← коммитим
-# security/               ← коммитим
+# Archives
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.Z
+*.lz
+```
