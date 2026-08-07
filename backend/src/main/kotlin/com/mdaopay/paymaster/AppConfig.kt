@@ -10,6 +10,10 @@ data class AppConfig(
     val paymasterAddress: String,
     val mdaoAddress: String,
     val usdtAddress: String,
+    // H-06: token decimals — source of truth is the on-chain token (checked at deploy),
+    // mirrored here for backend amount math. Must match contract's TokenConfig registry.
+    val mdaoDecimals: Int = 18,
+    val usdtDecimals: Int = 18,
     val entryPoint: String,
     val wbnbAddress: String,
     val expectedChainId: Long,
@@ -61,6 +65,14 @@ data class AppConfig(
             catch (_: IllegalArgumentException) { throw IllegalArgumentException("JWT_SECRET must be valid Base64") }
         require(jwtBytes.size >= 32) { "JWT_SECRET must decode to at least 32 bytes (256-bit key)" }
         if (jwtBytes.distinct().size <= 4) throw IllegalArgumentException("JWT_SECRET has insufficient entropy (unique bytes <= 4)")
+        // H-06: decimals must match the contract's TokenConfig registry (6/8/18) — fail fast here.
+        val supportedDecimals = setOf(6, 8, 18)
+        require(mdaoDecimals in supportedDecimals) {
+            "Invalid MDAO_DECIMALS=$mdaoDecimals: must be one of ${supportedDecimals.sorted()}"
+        }
+        require(usdtDecimals in supportedDecimals) {
+            "Invalid USDT_DECIMALS=$usdtDecimals: must be one of ${supportedDecimals.sorted()}"
+        }
     }
 
     // F-111: runtime guard — fires on access, not on construction
@@ -94,6 +106,8 @@ data class AppConfig(
             val paymasterAddress = env["PAYMASTER_ADDRESS"] ?: error("PAYMASTER_ADDRESS required")
             val mdaoAddress = env["MDAO_ADDRESS"] ?: error("MDAO_ADDRESS required")
             val usdtAddress = env["USDT_ADDRESS"] ?: error("USDT_ADDRESS required")
+            val mdaoDecimals = env["MDAO_DECIMALS"]?.toIntOrNull() ?: 18
+            val usdtDecimals = env["USDT_DECIMALS"]?.toIntOrNull() ?: 18
             val wbnbAddress = env["WBNB_ADDRESS"] ?: error("WBNB_ADDRESS required")
             val entryPoint = env["ENTRY_POINT"] ?: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
             val expectedChainId = env["EXPECTED_CHAIN_ID"]?.toLongOrNull()
@@ -178,6 +192,8 @@ data class AppConfig(
                 paymasterAddress = paymasterAddress,
                 mdaoAddress = mdaoAddress,
                 usdtAddress = usdtAddress,
+                mdaoDecimals = mdaoDecimals,
+                usdtDecimals = usdtDecimals,
                 entryPoint = entryPoint,
                 wbnbAddress = wbnbAddress,
                 expectedChainId = expectedChainId,

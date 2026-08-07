@@ -4,6 +4,10 @@ out = "out"
 libs = ["lib"]
 solc = "0.8.28"
 via_ir = true
+# H-06: high optimizer runs required — MDAOPaymaster exceeded EIP-170 (24,576 B)
+# at default runs=200 (26,354 B). runs=10000 → 14,869 B runtime (9,707 B margin).
+optimizer = true
+optimizer_runs = 10000
 
 [fuzz]
 runs = 10000

@@ -190,6 +190,59 @@ class PaymasterServiceTest {
         assertTrue(msg.contains("Cannot afford gas")) { "Expected 'Cannot afford gas' in: $msg" }
     }
 
+    // H-06: 6-dec USDT path — amount must be in base units (not 18-dec notation)
+    @Test
+    fun `sign with 6-dec USDT returns amount in base units`() = runTest {
+        val cfg6 = config.copy(usdtDecimals = 6)
+        val service6 = PaymasterService(cfg6, rpcManager, signer, priceOracle)
+        mockChainId(56L)
+        mockNonce(10L)
+        mockBalances()
+        mockQuoteNonce(BigInteger.ZERO)
+        every { rpcManager.getBestProvider() } returns Result.success(web3j)
+        coEvery { priceOracle.getPrices() } returns DexPrices(600.0, 0.001, 1.0)
+
+        val req = baseSignRequest().copy(
+            mdaoMaxAmount = null,
+            usdtMaxAmount = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        )
+        val result = service6.sign(req)
+        assertEquals(cfg6.usdtAddress, result.token)
+        val pm = result.paymasterAndData.removePrefix("0x")
+        val amountHex = pm.substring(80, 144) // pmAddr(20) + token(20) + amount(32)
+        val amount = Numeric.toBigInt(amountHex)
+        // gasCostUsd = 3.244032e15 wei * 600 / 1e18 = 1.9464192 USD → * 1e6 = 1946419.2 → CEIL = 1946420 base units
+        assertEquals(BigInteger.valueOf(1_946_420), amount, "6-dec USDT amount must be in base units")
+    }
+
+    // H-06: 18-dec path unchanged — amount stays in 18-dec notation (1.9464192e18)
+    @Test
+    fun `sign with 18-dec token keeps 18-dec notation`() = runTest {
+        mockChainId(56L)
+        mockNonce(10L)
+        mockBalances()
+        mockQuoteNonce(BigInteger.ZERO)
+        every { rpcManager.getBestProvider() } returns Result.success(web3j)
+        coEvery { priceOracle.getPrices() } returns DexPrices(600.0, 0.001, 1.0)
+
+        val req = baseSignRequest().copy(
+            mdaoMaxAmount = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        )
+        val result = service.sign(req)
+        assertEquals(config.mdaoAddress, result.token)
+        val pm = result.paymasterAndData.removePrefix("0x")
+        val amountHex = pm.substring(80, 144)
+        val amount = Numeric.toBigInt(amountHex)
+        // same gas: 1.9464192 USD * 1e18 / 0.001 (mdao price) ≈ 1.9464192e21.
+        // Range ±1% tolerates float price rounding (600.0).
+        val expected = BigInteger("1946419200000000000000")
+        assertTrue(
+            amount > expected.multiply(BigInteger.valueOf(99)).divide(BigInteger.valueOf(100)) &&
+                amount < expected.multiply(BigInteger.valueOf(101)).divide(BigInteger.valueOf(100)),
+            "18-dec amount unchanged, got $amount expected ~$expected"
+        )
+    }
+
     // F-034: verify EIP-712 Quote signature matches contract-side verification
     @Test
     fun `testQuoteSignedWithEIP712MatchesContractVerification`() = runTest {

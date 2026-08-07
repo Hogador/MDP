@@ -154,8 +154,8 @@ class PaymasterService(
 
         log.info("gas: totalWei={} bnbUsd={} gasUsd={}", gasCostWei, bnbUsd, gasCostUsd)
 
-        val mdaoNeeded = calcTokenAmount(gasCostUsd, finalPrices.mdaoUsd)
-        val usdtNeeded = calcTokenAmount(gasCostUsd, finalPrices.usdtUsd)
+        val mdaoNeeded = calcTokenAmount(gasCostUsd, finalPrices.mdaoUsd, config.mdaoDecimals)
+        val usdtNeeded = calcTokenAmount(gasCostUsd, finalPrices.usdtUsd, config.usdtDecimals)
         val mdaoMax = req.mdaoMaxAmount?.hexToBigInt()
         val usdtMax = req.usdtMaxAmount?.hexToBigInt()
         val usePermit = req.permitV != null
@@ -359,9 +359,13 @@ class PaymasterService(
         return Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(outer)))
     }
 
-    private fun calcTokenAmount(gasCostUsd: BigDecimal, tokenUsd: Double): BigInteger {
-        return gasCostUsd.multiply(BigDecimal.TEN.pow(18))
-            .divide(BigDecimal(tokenUsd), 0, RoundingMode.HALF_UP)
+    // H-06: required token amount in BASE units (not 18-dec notation).
+    // For 18-dec tokens this equals the old formula; for 6/8-dec (USDT/USDC) it now matches
+    // what the contract actually transfers via transferFrom. CEILING keeps the quote above the
+    // contract's own _toBaseUnits(ceil) charge, so the paymaster never under-collects.
+    private fun calcTokenAmount(gasCostUsd: BigDecimal, tokenUsd: Double, decimals: Int): BigInteger {
+        return gasCostUsd.multiply(BigDecimal.TEN.pow(decimals))
+            .divide(BigDecimal(tokenUsd), 0, RoundingMode.CEILING)
             .toBigInteger()
     }
 

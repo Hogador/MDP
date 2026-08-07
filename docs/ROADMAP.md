@@ -254,4 +254,16 @@ Owner: Coordinator · Deadline: перед F-201 (mainnet deploy)
 - [ ] BUILD-01: release signingConfig · owner: Mobile · deadline: до F-210
 - [ ] BUILD-02: google-services.json + plugin · owner: Mobile · deadline: до F-210
 
+### 3.8. Pre-deploy checklist (H-06 decimals, перед каждым деплоем paymaster)
+
+Owner: Coordinator · обязателен до F-201 (mainnet)
+
+- [ ] chainId в `app/build.gradle.kts` == RPC chainId (97 testnet / 56 mainnet) — dev/staging на 97L, prod на 56L
+- [ ] адреса контрактов переданы через project properties (PAYMASTER/USDT/MDAO/PROPOSAL_CONTRACT_*), не хардкод-fallback в prod (см. H-08)
+- [ ] decimals токена on-chain подтверждён: BSC USDT = 6, MDAO = 18 → `setTokenDecimals(usdt, 6)` вызван owner после деплоя paymaster (whitelist {6,8,18}, иначе InvalidToken)
+- [ ] backend env: `USDT_DECIMALS=6` `MDAO_DECIMALS=18` — согласовано с on-chain registry (AppConfig валидирует ∈ {6,8,18})
+- [ ] `maxTokenAmountLimit` после setTokenDecimals = 10_000 * 10^decimals (base units) — проверить через view
+- [ ] EIP-170: runtime MDAOPaymaster = 14,869 B < 24,576 B (optimizer_runs=10000) — деплой не упадёт по size
+- [ ] «тесты на реальный USDT» (см. H-06): одна live-транзакция с 6-dec USDT на testnet до mainnet
+
 Отчёт: .hive/reports/audit-full-2026-07.md (14 фаз)
