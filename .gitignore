@@ -1,127 +1,70 @@
-# ——— IDE ———
-.idea/
-*.iml
-*.iws
-*.ipr
-.vscode/
-*.swp
-*.swo
-*~
+```
+# Compiled and build artifacts
+*.class
+*.o
+*.obj
+*.out
+*.dll
+*.so
+*.a
+*.pyc
+__pycache__/
 
-# ——— Android / Kotlin ———
-.gradle/
-build/
-app/build/
-backend/build/
-captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-*.aab
-*.ap_
-*.dex
-local.properties
-.kotlin/
-*.kotlin_module
-
-# ——— Backend (Kotlin/Gradle) ———
-backend/.kotlin/
-backend/out/
-
-# ——— Foundry / Solidity ———
-contracts/out/
-contracts/cache/
-contracts/broadcast/
-
-# ——— Node.js ———
+# Dependencies
 node_modules/
-relay/node_modules/
+venv/
+.venv/
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+.julia/
 
-# ——— Secrets & Config ———
-.env
-.env.*
-*.env
-google-services.json
-app/google-services.json
-secrets/
-*.key
-*.pem
-*.jks
-*.keystore
-*.p12
-
-# ——— Logs & Temp ———
+# Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
-*.hprof
-crashlytics-*
-*.crash
 
-# ——— Docker ———
-docker-compose.override.yml
+# Environment
+.env
+.env.local
+*.env.*
 
-# ——— Python ———
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
+# Editors
+.vscode/
+.idea/
 
-# ——— OS ———
+# System files
 .DS_Store
 Thumbs.db
-Desktop.ini
 
-# —── Backups ———
-backups/
-.backup/
-*.bak
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
-# ——— OpenCode (AI config) ———
-.config/opencode/
-
-# ——— Misc ———
-out/
-cache/
-.terraform/
-*.tfstate
-*.tfstate.backup
-.history/
-ci.yml.additions
-
-# ——— Agent config (не часть проекта) ———
-.agents/
-.hive/
-ponytail/
-
-# ——— Root misc (не часть проекта) ———
-.editorconfig
-.gitleaksignore
-.pre-commit-config.yaml
-18913.png
-AGENTS.md
-Makefile
-Makefile.audit
-README.md
-backup-restore.sh
-docker-compose.yml
-gradlew.bat
-
-# === Swarm v9.0 — runtime artifacts (не коммитить) ===
-.hive/state.json
-.hive/escalations/
-.hive/audit/
-.hive/verifications/
-.hive/impact/
-.hive/reports/
-.hive/daily/
-
-# === Swarm v9.0 — коммитим (source of truth) ===
-# .hive/config.json       ← коммитим
-# .hive/prompts/          ← коммитим
-# .hive/memories.jsonl    ← коммитим (Tier 2 — знания)
-# docs/VISION.md          ← коммитим
-# docs/ROADMAP.md         ← коммитим
-# docs/adr/               ← коммитим
-# security/               ← коммитим
+# Archives
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```

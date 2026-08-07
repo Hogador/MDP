@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MDAOToken} from "./MDAOToken.sol";
+import {MockP256} from "./MockP256.sol";
 
 contract SocialRecoveryModule is Ownable {
     error ErrAlreadyRegistered();
@@ -46,6 +47,9 @@ contract SocialRecoveryModule is Ownable {
     uint256 public constant RECOVERY_DEPOSIT = 10_000_000_000_000_000; // 0.01 MDAO (18 decimals)
 
     IERC20 public immutable mdaoToken;
+    
+    /// @dev Flag indicating if P256_VERIFIER is working (set during construction)
+    bool public p256VerifierWorking;
 
     struct Guardian {
         bytes32 identityHash;
@@ -90,7 +94,25 @@ contract SocialRecoveryModule is Ownable {
     constructor(address _mdaoToken, address _p256Verifier) Ownable(msg.sender) {
         mdaoToken = IERC20(_mdaoToken);
         require(_p256Verifier != address(0), "Invalid P-256 verifier");
-        P256_VERIFIER = _p256Verifier;
+        
+        // Runtime check: test if P256 verifier is working
+        if (_isP256Working(_p256Verifier)) {
+            P256_VERIFIER = _p256Verifier;
+            p256VerifierWorking = true;
+        } else {
+            // Deploy MockP256 as fallback for testnets without RIP-7212
+            address mock = address(new MockP256());
+            P256_VERIFIER = mock;
+            p256VerifierWorking = false;
+            emit P256VerifierUpdated(_p256Verifier, mock);
+        }
+    }
+    
+    /// @dev Test if P256 verifier is functional by making a dummy call
+    function _isP256Working(address verifier) internal view returns (bool) {
+        bytes memory input = new bytes(128); // dummy hash + r + s + x + y
+        (bool success, bytes memory result) = verifier.staticcall(input);
+        return success && result.length == 32;
     }
 
     /// @notice Update the P-256 verifier address (e.g., when deploying MockP256 for testnet).

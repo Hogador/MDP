@@ -30,8 +30,10 @@ data class AppConfig(
     val trustedSigner: String,
     // Q4: explicit testnet flag
     val isTestnet: Boolean,
-    // Q2: relay HMAC transport auth
-    val relaySecret: String,
+    // C-3: SEPARATED SECRETS — JWT for auth, HMAC for internal transport
+    // CRITICAL: These MUST be different values to prevent Confused Deputy attacks
+    val relayJwtSecret: String,
+    val relayHmacSecret: String,
     // F-035: separate key for swap operations (falls back to privateKey)
     val swapPrivateKey: String,
     // D-1 / F-129: GCP Cloud KMS key resource path
@@ -43,6 +45,19 @@ data class AppConfig(
             catch (_: IllegalArgumentException) { throw IllegalArgumentException("JWT_SECRET must be valid Base64") }
         require(jwtBytes.size >= 32) { "JWT_SECRET must decode to at least 32 bytes (256-bit key)" }
         if (jwtBytes.distinct().size <= 4) throw IllegalArgumentException("JWT_SECRET has insufficient entropy (unique bytes <= 4)")
+        
+        // C-3: Validate separated secrets
+        require(relayJwtSecret.isNotEmpty()) { "RELAY_JWT_SECRET is required" }
+        require(relayHmacSecret.isNotEmpty()) { "RELAY_HMAC_SECRET is required" }
+        require(relayJwtSecret != relayHmacSecret) { 
+            "CRITICAL SECURITY VIOLATION: RELAY_JWT_SECRET and RELAY_HMAC_SECRET must be different values. " +
+            "Using the same secret for both purposes allows Confused Deputy attacks." 
+        }
+        require(relayJwtSecret.length >= 32) { "RELAY_JWT_SECRET must be at least 32 characters" }
+        require(relayHmacSecret.length >= 64) { "RELAY_HMAC_SECRET must be at least 64 characters for HMAC-SHA256" }
+        
+        // Legacy support: if old RELAY_SECRET is set but new ones aren't, fail with helpful message
+        // This prevents accidental deployment with weak configuration
     }
 
     // F-111: runtime guard — fires on access, not on construction
@@ -97,8 +112,36 @@ data class AppConfig(
             val trustedSigner = env["TRUSTED_SIGNER"] ?: error("TRUSTED_SIGNER required")
             val isTestnet = env["IS_TESTNET"]?.toBooleanStrictOrNull()
                 ?: (expectedChainId !in listOf(1L, 56L))
-            val relaySecret = env["RELAY_SECRET"] ?: error("RELAY_SECRET required")
-            if (relaySecret.length < 32) error("RELAY_SECRET must be at least 32 characters")
+            
+            // C-3: SEPARATED SECRETS — Legacy RELAY_SECRET deprecated
+            val relayJwtSecret = env["RELAY_JWT_SECRET"] 
+                ?: env["RELAY_SECRET"]?.let { old ->
+                    error(
+                        "CRITICAL: RELAY_SECRET is deprecated. You must set both:\n" +
+                        "  RELAY_JWT_SECRET=<32+ char random string for JWT auth>\n" +
+                        "  RELAY_HMAC_SECRET=<64+ char random string for HMAC signatures>\n" +
+                        "These MUST be different values. Do NOT reuse the same secret."    
+                    )
+                }
+                ?: error("RELAY_JWT_SECRET required (or legacy RELAY_SECRET, but migration is mandatory)")
+            
+            val relayHmacSecret = env["RELAY_HMAC_SECRET"]
+                ?: env["RELAY_SECRET"]?.let { old ->
+                    error(
+                        "CRITICAL: RELAY_SECRET is deprecated. You must set both:\n" +
+                        "  RELAY_JWT_SECRET=<32+ char random string for JWT auth>\n" +
+                        "  RELAY_HMAC_SECRET=<64+ char random string for HMAC signatures>\n" +
+                        "These MUST be different values. Do NOT reuse the same secret."    
+                    )
+                }
+                ?: error("RELAY_HMAC_SECRET required (or legacy RELAY_SECRET, but migration is mandatory)")
+            
+            // Validate lengths early before AppConfig constructor
+            require(relayJwtSecret.length >= 32) { "RELAY_JWT_SECRET must be at least 32 characters" }
+            require(relayHmacSecret.length >= 64) { "RELAY_HMAC_SECRET must be at least 64 characters" }
+            require(relayJwtSecret != relayHmacSecret) {
+                "CRITICAL SECURITY VIOLATION: RELAY_JWT_SECRET and RELAY_HMAC_SECRET must be different values."    
+            }
 
             val swapPrivateKey = env["SWAP_PRIVATE_KEY"] ?: error("SWAP_PRIVATE_KEY is required — do not reuse PAYMASTER_PRIVATE_KEY for swap operations")
 
@@ -151,7 +194,8 @@ data class AppConfig(
                 jwtSecret = jwtSecret,
                 trustedSigner = trustedSigner,
                 isTestnet = isTestnet,
-                relaySecret = relaySecret,
+                relayJwtSecret = relayJwtSecret,
+                relayHmacSecret = relayHmacSecret,
                 swapPrivateKey = Numeric.cleanHexPrefix(swapPrivateKey),
                 kmsKeyName = kmsKeyName,
             )
