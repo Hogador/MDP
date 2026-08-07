@@ -244,7 +244,7 @@ Owner: Coordinator · Deadline: перед F-201 (mainnet deploy)
 - [x] H-02: CoinGecko key URL → x-cg-pro-api-key header (6392e9d)
 - [x] H-03: relay rate limiter per-isolate → Cloudflare Rate Limiting · owner: DevOps · deadline: до S-201 · тикет: ADRD-2026-003
 - [x] H-04: SIWE domain/chainId валидация (189ca3a)
-- [x] H-05: .env секреты → vault + pre-commit hook · owner: DevOps · deadline: до S-201 · тикет: ADRD-2026-004
+- [x] H-05: pre-commit hook включён (be5c163) · .env секреты → vault · owner: DevOps · deadline: до S-201 · тикет: ADRD-2026-004
 - [x] H-06: decimals контракта для 6-dec USDT · owner: Coder · deadline: до F-201 · тикет: ADRD-2026-005 (требует тесты на реальный USDT)
 - [x] H-07: computeUserOpHash → v0.6 (189ca3a)
 - [x] H-08: USDT/MDAO контракты per-flavor BuildConfig (6392e9d)
