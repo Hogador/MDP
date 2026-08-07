@@ -218,7 +218,9 @@ class PaymasterService(
         req: SignRequest, token: String, amount: BigInteger, usePermit: Boolean
     ): SignResponse {
         // F-034: compute quote deadline once, use in both encoding and signing
-        val quoteDeadline = (System.currentTimeMillis() / 1000) + 300
+        // C-06: 300s → 120s. Contract requires quoteDeadline >= block.timestamp + minimumDeadlineBuffer (60s),
+        // so execution window = 120 - 60 = 60s. Shorter window = less price slippage risk.
+        val quoteDeadline = (System.currentTimeMillis() / 1000) + 120
         val unsignedPm = buildPaymasterAndData(
             token, amount, quoteDeadline,
             if (usePermit) req.permitDeadline else null,
@@ -333,18 +335,28 @@ class PaymasterService(
         (decoded.first() as Uint256).value
     }
 
+    // H-07: ERC-4337 v0.6 getUserOpHash — must match EntryPoint v0.6 and mobile UserOperation.computeUserOpHash.
+    // Previous implementation used v0.7-style packed gas fields + signature hash + unpadded sender → wrong value.
     private fun computeUserOpHash(req: SignRequest, pmAndData: String): String {
-        val packed = "0x" +
-            req.sender.drop(2) +
-            req.nonce.drop(2) +
+        fun pad32(hex: String): String = hex.removePrefix("0x").padStart(64, '0')
+        val inner = "0x" +
+            pad32(req.sender) +
+            pad32(req.nonce) +
             Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(req.initCode))).drop(2) +
             Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(req.callData))).drop(2) +
-            req.accountGasLimits().drop(2) +
-            req.preVerificationGas.drop(2).padStart(64, '0') +
-            req.gasFees().drop(2) +
-            Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(pmAndData))).drop(2) +
-            Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(req.signature))).drop(2)
-        return Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(packed)))
+            pad32(req.callGasLimit) +
+            pad32(req.verificationGasLimit) +
+            pad32(req.preVerificationGas) +
+            pad32(req.maxFeePerGas) +
+            pad32(req.maxPriorityFeePerGas) +
+            Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(pmAndData))).drop(2)
+        val innerHash = Hash.sha3(Numeric.hexStringToByteArray(inner))
+        // outer: keccak(abi.encodePacked(innerHash, entryPoint, chainId))
+        val outer = "0x" +
+            Numeric.toHexString(innerHash).drop(2) +
+            pad32(config.entryPoint) +
+            pad32(Numeric.toHexStringWithPrefix(java.math.BigInteger.valueOf(config.expectedChainId)))
+        return Numeric.toHexString(Hash.sha3(Numeric.hexStringToByteArray(outer)))
     }
 
     private fun calcTokenAmount(gasCostUsd: BigDecimal, tokenUsd: Double): BigInteger {
@@ -387,18 +399,6 @@ private val Address.withoutPrefix: String get() = Numeric.cleanHexPrefix(value)
 internal fun addPaymasterSuffix(pmAndData: String, sigHex: String, lenHex: String, magic: String): String {
     val clean = pmAndData.removePrefix("0x")
     return "0x$clean$sigHex$lenHex$magic"
-}
-
-internal fun SignRequest.accountGasLimits(): String {
-    val vgl = verificationGasLimit.hexToBigInt()
-    val cgl = callGasLimit.hexToBigInt()
-    return vgl.multiply(BigInteger.valueOf(2).pow(128)).or(cgl).toString(16).padStart(64, '0')
-}
-
-internal fun SignRequest.gasFees(): String {
-    val mpfp = maxPriorityFeePerGas.hexToBigInt()
-    val mfp = maxFeePerGas.hexToBigInt()
-    return mpfp.multiply(BigInteger.valueOf(2).pow(128)).or(mfp).toString(16).padStart(64, '0')
 }
 
 class GasEstimationException(message: String) : Exception(message)
