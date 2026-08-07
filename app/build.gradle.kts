@@ -31,6 +31,9 @@ android {
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_DEV") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT") ?: "0x0000000000000000000000000000000000000000"}\"")
+            // H-08: token contracts per flavor — testnet USDT from deploy-testnet.sh
+            buildConfigField("String", "USDT_CONTRACT", "\"${project.findProperty("USDT_CONTRACT_DEV") ?: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDD"}\"")
+            buildConfigField("String", "MDAO_CONTRACT", "\"${project.findProperty("MDAO_CONTRACT_DEV") ?: "0x0000000000000000000000000000000000000000"}\"")
             // F-023: RPC URLs — override with private RPC URLs via project properties
             buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_DEV") ?: "https://bsc-testnet-rpc.publicnode.com"}\"")
             buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_DEV") ?: "https://data-seed-prebsc-1-s1.binance.org:8545"}\"")
@@ -50,6 +53,8 @@ android {
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_STAGING") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT_STAGING") ?: "0x0000000000000000000000000000000000000000"}\"")
+            buildConfigField("String", "USDT_CONTRACT", "\"${project.findProperty("USDT_CONTRACT_STAGING") ?: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDD"}\"")
+            buildConfigField("String", "MDAO_CONTRACT", "\"${project.findProperty("MDAO_CONTRACT_STAGING") ?: "0x0000000000000000000000000000000000000000"}\"")
             buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_STAGING") ?: "https://bsc-testnet-rpc.publicnode.com"}\"")
             buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_STAGING") ?: "https://data-seed-prebsc-1-s1.binance.org:8545"}\"")
             buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_STAGING") ?: "https://data-seed-prebsc-2-s1.binance.org:8545"}\"")
@@ -64,6 +69,8 @@ android {
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_PROD") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT_PROD") ?: ""}\"")
+            buildConfigField("String", "USDT_CONTRACT", "\"${project.findProperty("USDT_CONTRACT_PROD") ?: "0x7169D38820dfd117C3FA1f22a697dBA58d90ba06"}\"")
+            buildConfigField("String", "MDAO_CONTRACT", "\"${project.findProperty("MDAO_CONTRACT_PROD") ?: "0x0000000000000000000000000000000000000000"}\"")
             buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_PROD") ?: ""}\"")
             buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_PROD") ?: ""}\"")
             buildConfigField("String", "RPC_URL_3", "\"${project.findProperty("RPC_URL_3_PROD") ?: ""}\"")
