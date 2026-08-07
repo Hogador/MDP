@@ -19,7 +19,7 @@ import kotlin.test.*
 class AuthServiceSiweTest {
 
     private val mockRepo = mockk<AuthRepository>()
-    private val authService = AuthService(mockRepo, "test-jwt-secret")
+    private val authService = AuthService(mockRepo, "test-jwt-secret", expectedDomain = "app.mdaopay.com")
 
     // ponytail: Anvil #0 test key — same as NicknameServiceTest
     private val privateKeyHex = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -254,10 +254,10 @@ class AuthServiceSiweTest {
     fun `verifySiwe succeeds with valid message and signature`() {
         val nonce = "verify-siwe-nonce-001"
         val message = buildString {
-            appendLine("example.com wants you to sign in with your Ethereum account:")
+            appendLine("app.mdaopay.com wants you to sign in with your Ethereum account:")
             appendLine(walletAddress)
             appendLine()
-            appendLine("URI: https://example.com/login")
+            appendLine("URI: https://app.mdaopay.com/login")
             appendLine("Version: 1")
             appendLine("Chain ID: 1")
             appendLine("Nonce: $nonce")
@@ -345,7 +345,7 @@ class AuthServiceSiweTest {
     fun `parse then recover then verify full flow`() {
         val nonce = "integration-flow-nonce"
         val message = buildString {
-            appendLine("example.com wants you to sign in with your Ethereum account:")
+            appendLine("app.mdaopay.com wants you to sign in with your Ethereum account:")
             appendLine(walletAddress)
             appendLine()
             appendLine("Sign in to use MDAOPay")
@@ -360,7 +360,7 @@ class AuthServiceSiweTest {
         // 1. Parse
         val parsed = authService.parseSiweMessage(message)
         assertNotNull(parsed)
-        assertEquals("example.com", parsed!!.domain)
+        assertEquals("app.mdaopay.com", parsed!!.domain)
         assertEquals(walletAddress, parsed.address.lowercase())
         assertEquals("Sign in to use MDAOPay", parsed.statement)
         assertEquals("https://app.mdaopay.com/login", parsed.uri)

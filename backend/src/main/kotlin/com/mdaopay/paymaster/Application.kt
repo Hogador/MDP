@@ -140,7 +140,7 @@ fun main() {
         val ds = createDataSource(url, poolSize)
         appMetrics.dataSource = ds
         NicknameService.repo = NicknameRepository(ds)
-        authService = AuthService(AuthRepository(ds), config.jwtSecret)
+        authService = AuthService(AuthRepository(ds), config.jwtSecret, expectedChainId = config.expectedChainId, expectedDomain = "app.mdaopay.com")
         log.info("Database connected and migrated (pool=$poolSize)")
     }
 

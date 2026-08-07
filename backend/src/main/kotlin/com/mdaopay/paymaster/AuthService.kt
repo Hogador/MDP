@@ -40,6 +40,8 @@ class AuthService(
     private val jwtSecret: String,
     private val accessTtlMin: Long = 15,
     private val refreshTtlDays: Long = 30,
+    private val expectedChainId: Long? = null,
+    private val expectedDomain: String? = null,
 ) {
     private val log = LoggerFactory.getLogger(AuthService::class.java)
 
@@ -227,6 +229,19 @@ class AuthService(
         // Verify nonce exists and hasn't been consumed/expired
         val storedWallet = repo.findAndDeleteSiweNonce(siwe.nonce)
             ?: return Result.failure(IllegalArgumentException("Nonce not found or expired"))
+
+        // H-04: validate SIWE domain + chainId against expected values (anti cross-domain replay)
+        expectedDomain?.let { expected ->
+            if (!siwe.domain.equals(expected, ignoreCase = true)) {
+                return Result.failure(IllegalArgumentException("SIWE domain mismatch: expected $expected, got ${siwe.domain}"))
+            }
+        }
+        expectedChainId?.let { expected ->
+            val msgChainId = siwe.chainId ?: return Result.failure(IllegalArgumentException("SIWE Chain ID missing"))
+            if (msgChainId != expected) {
+                return Result.failure(IllegalArgumentException("SIWE Chain ID mismatch: expected $expected, got $msgChainId"))
+            }
+        }
 
         // Recover signer from signature
         val signer = recoverEthereumSigner(message, signature)

@@ -105,7 +105,9 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
 
     uint256 public deprecationTimestamp;
 
-    uint256 public minimumDeadlineBuffer = 300;
+    // C-06: buffer reduced 300s → 60s so backend's 120s quote window has 60s execution room.
+    // Previously buffer == quote window (300 == 300) → any on-chain delay reverted DeadlineTooSoon.
+    uint256 public minimumDeadlineBuffer = 60;
     mapping(address => uint256) public maxTokenAmountLimit;
     uint256 public maxGasPrice = 200 gwei;
 
