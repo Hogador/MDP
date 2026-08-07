@@ -282,6 +282,11 @@ export default {
         )
         if (!sigValid) return err('Invalid guardian signature', 401)
 
+        // C-03: nonce must match current recovery round (same as approve)
+        const recovery = await getPendingRecovery(env.KV, body.walletAddress)
+        if (!recovery) return err('No pending recovery')
+        if (body.nonce !== recovery.nonce) return err('Nonce mismatch: veto is for a different recovery round')
+
         await vetoRecovery(env.KV, body.walletAddress)
 
         const tokens = await getPushTokens(env.KV, body.walletAddress)
@@ -355,7 +360,7 @@ export default {
           message,
           signature,
           'app.mdaopay.com',  // expected domain
-          56,                  // expected chainId (BSC)
+          parseInt(env.CHAIN_ID || '56'),  // expected chainId (BSC); C-07: env-overridable for testnet 97
         )
         if (!recoveredAddress) return err('Signature verification failed', 401)
 
@@ -386,4 +391,5 @@ interface Env {
   SOCIAL_RECOVERY_MODULE: string
   RPC_URL: string
   RELAY_SECRET: string
+  CHAIN_ID?: string
 }

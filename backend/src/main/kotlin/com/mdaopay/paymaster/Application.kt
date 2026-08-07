@@ -433,10 +433,11 @@ fun main() {
             // F-037: MoonPay proxy — no JWT (browser redirect)
             if (config.moonpayApiKey != null) {
                 get("/moonpay-proxy") {
-                    val qs = call.request.queryString()
-                    val fullUrl = "https://buy.moonpay.com?apiKey=${config.moonpayApiKey}&$qs"
-                    call.response.header("Location", fullUrl)
-                    call.response.status(HttpStatusCode.Found)
+                    // C-01: apiKey must NOT go in the redirect URL (browser history / logs leak),
+                    // and client query params are NOT forwarded (open redirect via redirectUrl).
+                    // Mobile does not call this endpoint — MoonPay SDK runs on the client.
+                    log.warn("Deprecated /moonpay-proxy called — client should use MoonPay SDK")
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Deprecated: use MoonPay SDK directly"))
                 }
             }
 

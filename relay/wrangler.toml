@@ -26,3 +26,4 @@ kv_namespaces = [
 ]
 # Set testnet-specific vars via: wrangler secret put --env testnet
 #  RELAY_SECRET, FCM_SERVER_KEY, SOCIAL_RECOVERY_MODULE, RPC_URL
+#  CHAIN_ID (97 for BSC testnet, 56 mainnet — C-07)
