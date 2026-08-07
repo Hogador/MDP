@@ -78,6 +78,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     error QuoteExpired();
     error DeadlineTooSoon();
     error AmountTooHigh();
+    error AmountTooLow(); // H-06: charge rounds to 0 base units
     error GasPriceTooHigh();
     error PaymentBlocked();
     error NotEmergencyAdmin();
@@ -180,10 +181,21 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     struct TokenConfig {
         IERC20 token;
         bool supportsPermit;
+        uint8 decimals;
     }
 
     TokenConfig public mdaoConfig;
     TokenConfig public usdtConfig;
+
+    // H-06: decimals come from owner-set registry, not from runtime staticcall
+    // to the (potentially untrusted) token. Only 6/8/18 are supported initially.
+    function setTokenDecimals(address token, uint8 decimals) external onlyOwner {
+        if (decimals != 6 && decimals != 8 && decimals != 18) revert InvalidToken();
+        TokenConfig storage cfg = _getTokenConfig(token);
+        cfg.decimals = decimals;
+        maxTokenAmountLimit[token] = 10_000 * (10 ** decimals);
+        emit TokenDecimalsUpdated(token, decimals);
+    }
 
     function mdaoToken() external view returns (address) { return address(mdaoConfig.token); }
     function usdtToken() external view returns (address) { return address(usdtConfig.token); }
@@ -202,6 +214,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
 
     // F-12: event now includes oldPrice
     event PriceUpdated(address indexed token, uint256 oldPrice, uint256 newPrice);
+    event TokenDecimalsUpdated(address indexed token, uint8 decimals); // H-06
     event PriceBufferUpdated(uint256 oldValue, uint256 newValue);
     event PaymentFailed(address indexed user, IERC20 indexed token, uint256 amount, FailureReason reason);
     event DailyWithdrawalCapUpdated(uint256 oldValue, uint256 newValue);
@@ -219,12 +232,18 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
         if (size == 0) revert Unauthorized();
         if (_mdao == address(0) || _usdt == address(0)) revert InvalidToken();
         entryPoint = _entryPoint;
-        mdaoConfig = TokenConfig(IERC20(_mdao), true);
-        usdtConfig = TokenConfig(IERC20(_usdt), false);
+        // H-06: decimals read once at deploy (owner-chosen trusted tokens);
+        // afterwards registry-driven via setTokenDecimals — no runtime staticcall.
+        mdaoConfig = TokenConfig(IERC20(_mdao), true, _readDecimals(_mdao));
+        usdtConfig = TokenConfig(IERC20(_usdt), false, _readDecimals(_usdt));
+        // H-06: whitelist-only decimals — a token with unsupported decimals (e.g. 0)
+        // would silently break _toBaseUnits. Fail at deploy, not in production.
+        if (mdaoConfig.decimals != 6 && mdaoConfig.decimals != 8 && mdaoConfig.decimals != 18) revert InvalidToken();
+        if (usdtConfig.decimals != 6 && usdtConfig.decimals != 8 && usdtConfig.decimals != 18) revert InvalidToken();
         trustedSigner = _trustedSigner;
         // F-010: per-token max amount limits (10k whole tokens)
-        maxTokenAmountLimit[_mdao] = 10_000 * (10 ** _tokenDecimals(_mdao));
-        maxTokenAmountLimit[_usdt] = 10_000 * (10 ** _tokenDecimals(_usdt));
+        maxTokenAmountLimit[_mdao] = 10_000 * (10 ** mdaoConfig.decimals);
+        maxTokenAmountLimit[_usdt] = 10_000 * (10 ** usdtConfig.decimals);
     }
 
     modifier onlyEntryPoint() {
@@ -283,7 +302,7 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
     }
 
     function setMaxTokenAmountLimit(address token, uint256 newLimit) external onlyOwner {
-        uint8 dec = _tokenDecimals(token);
+        uint8 dec = _getTokenConfig(token).decimals;
         uint256 maxLimit = 10_000 * (10 ** dec);
         if (newLimit > maxLimit) revert AmountTooHigh();
         emit MaxTokenAmountLimitUpdated(token, maxTokenAmountLimit[token], newLimit);
@@ -393,7 +412,10 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
         revert InvalidToken();
     }
 
-    function _tokenDecimals(address token) internal view returns (uint8) {
+    /// @dev H-06: reads decimals ONCE at deploy time from owner-selected token.
+    ///      Runtime code must use `_getTokenConfig(token).decimals` (owner-set
+    ///      registry) instead — never call untrusted tokens in the hot path.
+    function _readDecimals(address token) internal view returns (uint8) {
         (bool success, bytes memory data) = token.staticcall(abi.encodeWithSelector(0x313ce567));
         if (success && data.length == 32) return abi.decode(data, (uint8));
         return 18;
@@ -468,7 +490,12 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
 
         uint256 price = tokenPrice[address(extra.token)];
         if (price > 0) {
-            uint256 maxAllowed = maxCost * price * (10000 + priceBufferBps) / 10000 / 1e18;
+            // H-06: maxAllowed computed in base token units (rounding UP) so the
+            // comparison against maxTokenAmount (also base units) is consistent.
+            uint256 maxAllowed = _toBaseUnits(
+                maxCost * price * (10000 + priceBufferBps) / 10000 / 1e18,
+                cfg.decimals
+            );
             if (extra.maxTokenAmount > maxAllowed) revert AmountTooHigh();
         } else if (extra.maxTokenAmount > 0) {
             revert AmountTooHigh();
@@ -500,11 +527,31 @@ contract MDAOPaymaster is IPaymasterV06, Ownable, Pausable, EIP712("MDAOPay", "1
         address tokenAddr
     ) public view returns (uint256 amountToCharge, uint256 refund) {
         uint256 price = tokenPrice[tokenAddr];
-        uint256 actualTokenAmount = actualGasCost * price / 1e18;
+        uint8 dec = _getTokenConfig(tokenAddr).decimals;
+        // H-06: 18-dec internal math → base token units at the charge boundary,
+        // rounding UP so the paymaster never under-collects. Guard rejects a
+        // charge that rounds to zero base units (e.g. dust on 6/8-dec tokens).
+        uint256 actualTokenAmount = _toBaseUnits(actualGasCost * price / 1e18, dec);
+        if (actualTokenAmount == 0) revert AmountTooLow();
         if (actualTokenAmount >= maxTokenAmount) {
             return (maxTokenAmount, 0);
         }
         return (actualTokenAmount, maxTokenAmount - actualTokenAmount);
+    }
+
+    /// @dev H-06: convert a 18-decimal-normalized amount into the token's base
+    ///      units using the owner-set decimals registry. Identity for 18-dec.
+    ///      Rounding is UP (Ceil) so a charge never under-collects.
+    /// ponytail: plain math instead of OZ Math.mulDiv — bounded by maxTokenAmountLimit
+    /// (10k whole tokens) + price cap, so amount18 * 10^decimals < 2^256; upgrade to
+    /// mulDiv only if unbounded amounts are ever introduced.
+    function _toBaseUnits(uint256 amount18, uint8 decimals) internal pure returns (uint256) {
+        if (decimals == 18) return amount18;
+        if (decimals < 18) {
+            uint256 scaled = amount18 * (10 ** decimals);
+            return scaled / 1e18 + (scaled % 1e18 > 0 ? 1 : 0); // Ceil
+        }
+        return amount18 * (10 ** (decimals - 18));
     }
 
     // F-004: diagnose failure by checking on-chain state (works for USDT false-return)

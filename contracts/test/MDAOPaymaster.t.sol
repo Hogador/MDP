@@ -66,13 +66,17 @@ contract MockPermitToken {
 contract MockLegacyToken {
     string public name;
     string public symbol;
-    uint8 public constant decimals = 18;
+    uint8 public immutable decimals; // H-06: parametrized (6/8/18) — was constant 18
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
     // F-004: simulate USDT false-return (not revert) on next transferFrom
     bool public failNextTransferFrom;
 
-    constructor(string memory _name, string memory _symbol) { name = _name; symbol = _symbol; }
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+    }
     function mint(address to, uint256 amount) external { balanceOf[to] += amount; }
     function setFailNextTransferFrom(bool f) external { failNextTransferFrom = f; }
     function approve(address spender, uint256 amount) external returns (bool) {
@@ -113,7 +117,7 @@ contract MDAOPaymasterTest is Test {
     function setUp() public {
         vm.etch(ENTRY_POINT, hex"00"); // STOP — allows value receipts + passes extcodesize check
         mdao = new MockPermitToken("MDAO", "MDAO");
-        usdt = new MockLegacyToken("USDTv1", "USDTv1");
+        usdt = new MockLegacyToken("USDTv1", "USDTv1", 18);
         paymaster = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt), address(0));
 
         // Set token prices so amountToCharge >= maxTokenAmount → no refund (paymaster has no tokens)
@@ -1143,8 +1147,8 @@ contract MDAOPaymasterTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             // Re-mint tokens and re-approve for each iteration
             if (i > 0) {
-                usdt.mint(alice, 1000e18);
-                vm.prank(alice); usdt.approve(address(paymaster), 1000e18);
+        usdt.mint(alice, 1000e18);
+        vm.prank(alice); usdt.approve(address(paymaster), 1000e18);
             }
 
             bytes memory customData = abi.encodePacked(address(usdt), uint256(1000e18), block.timestamp + 1 hours);
@@ -1531,5 +1535,220 @@ contract MDAOPaymasterTest is Test {
         (bytes memory ctx, uint256 vd) = paymaster.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
         assertEq(vd, 0);
         assertEq(paymaster.nextQuoteNonce(alice), 1);
+    }
+
+    // ── H-06: decimals handling ─────────────────────────────────────
+
+    // 6-dec token: charge must be computed in base units (not 18-dec notation)
+    function test_H06_SixDecimalsChargeInBaseUnits() public {
+        MockLegacyToken usdt6 = new MockLegacyToken("USDT6", "USDT6", 6);
+        MDAOPaymaster pm6 = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt6), address(0));
+        vm.etch(ENTRY_POINT, hex"00"); // re-etch after new contract creation (extcodesize check at deploy)
+        vm.mockCall(ENTRY_POINT,
+            abi.encodeWithSelector(IEntryPointView.balanceOf.selector, address(pm6)),
+            abi.encode(uint256(10 ether)));
+        vm.prank(pm6.owner());
+        pm6.setTokenPrice(address(usdt6), 1e24);
+        vm.prank(pm6.owner());
+        pm6.setMaxGasPrice(1000 gwei);
+
+        usdt6.mint(alice, 1000e6);
+        vm.prank(alice); usdt6.approve(address(pm6), 1000e6);
+
+        // maxAmt = 500 USDT6 in base units (500 * 1e6)
+        bytes memory customData = abi.encodePacked(address(usdt6), uint256(500e6), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(pm6), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        (bytes memory ctx,) = pm6.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+
+        uint256 before = usdt6.balanceOf(address(pm6));
+        vm.prank(ENTRY_POINT);
+        pm6.postOp(IPaymasterV06.PostOpMode.opSucceeded, ctx, 1e15, 1e12);
+        uint256 transferred = usdt6.balanceOf(address(pm6)) - before;
+        // computeAmountToCharge(actualGasCost=1e15): 1e15*1e24/1e18 = 1e21 (18-dec) → 6-dec base = 1e15 units.
+        // Clamped to maxTokenAmount = 500e6 base units.
+        assertEq(transferred, 500e6, "6-dec charge must be clamped to maxTokenAmount in base units");
+    }
+
+    // 8-dec token: same flow, base units = 8-decimals
+    function test_H06_EightDecimalsChargeInBaseUnits() public {
+        MockLegacyToken usdt8 = new MockLegacyToken("USDT8", "USDT8", 8);
+        MDAOPaymaster pm8 = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt8), address(0));
+        vm.etch(ENTRY_POINT, hex"00");
+        vm.mockCall(ENTRY_POINT,
+            abi.encodeWithSelector(IEntryPointView.balanceOf.selector, address(pm8)),
+            abi.encode(uint256(10 ether)));
+        vm.prank(pm8.owner());
+        pm8.setTokenPrice(address(usdt8), 1e24);
+        vm.prank(pm8.owner());
+        pm8.setMaxGasPrice(1000 gwei);
+
+        usdt8.mint(alice, 1000e8);
+        vm.prank(alice); usdt8.approve(address(pm8), 1000e8);
+
+        bytes memory customData = abi.encodePacked(address(usdt8), uint256(500e8), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(pm8), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        (bytes memory ctx,) = pm8.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+
+        uint256 before = usdt8.balanceOf(address(pm8));
+        vm.prank(ENTRY_POINT);
+        pm8.postOp(IPaymasterV06.PostOpMode.opSucceeded, ctx, 1e15, 1e12);
+        uint256 transferred = usdt8.balanceOf(address(pm8)) - before;
+        assertEq(transferred, 500e8, "8-dec charge must be in base units");
+    }
+
+    // Rounding UP integration: 18-dec amount with fractional base units charges ceil
+    function test_H06_PostOpChargesCeilForFractionalBaseUnits() public {
+        MockLegacyToken usdt6 = new MockLegacyToken("USDT6", "USDT6", 6);
+        MDAOPaymaster pm6 = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt6), address(0));
+        vm.etch(ENTRY_POINT, hex"00");
+        vm.mockCall(ENTRY_POINT,
+            abi.encodeWithSelector(IEntryPointView.balanceOf.selector, address(pm6)),
+            abi.encode(uint256(10 ether)));
+        vm.prank(pm6.owner());
+        pm6.setTokenPrice(address(usdt6), 1e24);
+        vm.prank(pm6.owner());
+        pm6.setMaxGasPrice(1000 gwei);
+
+        usdt6.mint(alice, 1000e6);
+        vm.prank(alice); usdt6.approve(address(pm6), 1000e6);
+
+        // maxAmt large enough not to clamp: 900e6 base units.
+        bytes memory customData = abi.encodePacked(address(usdt6), uint256(900e6), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(pm6), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        (bytes memory ctx,) = pm6.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+
+        uint256 before = usdt6.balanceOf(address(pm6));
+        vm.prank(ENTRY_POINT);
+        // actualGasCost = 1234567890123 wei → 18-dec amount = 1234567890123 * 1e24 / 1e18
+        // = 1.234567890123e18 → base6 = 1.234567890123e18 * 1e6 / 1e18 = 1234567.890123
+        // → ceil = 1234568 (< maxAmt 900e6, no clamp)
+        pm6.postOp(IPaymasterV06.PostOpMode.opSucceeded, ctx, 1234567890123, 1e12);
+        uint256 transferred = usdt6.balanceOf(address(pm6)) - before;
+        assertEq(transferred, 1234568, "fractional base units must round UP");
+    }
+
+    // Charge that rounds to 0 base units must revert AmountTooLow
+    function test_H06_RevertWhen_AmountTooLow() public {
+        MockLegacyToken usdt6 = new MockLegacyToken("USDT6", "USDT6", 6);
+        MDAOPaymaster pm6 = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt6), address(0));
+        vm.etch(ENTRY_POINT, hex"00");
+        vm.mockCall(ENTRY_POINT,
+            abi.encodeWithSelector(IEntryPointView.balanceOf.selector, address(pm6)),
+            abi.encode(uint256(10 ether)));
+        // price=100 (set once, no cooldown/deviation issue): actualGasCost=1e15 →
+        // 18-dec amount = 1e15*100/1e18 = 0.1 → 0 base units → AmountTooLow.
+        // maxTokenAmount=1 passes maxAllowed (maxAllowed = ceil(1.05) = 1).
+        vm.prank(pm6.owner());
+        pm6.setTokenPrice(address(usdt6), 100);
+        vm.prank(pm6.owner());
+        pm6.setMaxGasPrice(1000 gwei);
+
+        usdt6.mint(alice, 1000e6);
+        vm.prank(alice); usdt6.approve(address(pm6), 1000e6);
+
+        bytes memory customData = abi.encodePacked(address(usdt6), uint256(1), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(pm6), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        (bytes memory ctx,) = pm6.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+
+        vm.prank(ENTRY_POINT);
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.AmountTooLow.selector));
+        pm6.postOp(IPaymasterV06.PostOpMode.opSucceeded, ctx, 1e15, 1e12);
+    }
+
+    // setTokenDecimals: only 6/8/18 accepted; registry updated; limit recalculated
+    function test_H06_SetTokenDecimalsValidationAndLimit() public {
+        vm.prank(paymaster.owner());
+        paymaster.setTokenDecimals(address(usdt), 6);
+        (,, uint8 d6) = paymaster.usdtConfig();
+        assertEq(d6, 6);
+        assertEq(paymaster.maxTokenAmountLimit(address(usdt)), 10_000 * 1e6, "limit must follow decimals");
+
+        vm.prank(paymaster.owner());
+        paymaster.setTokenDecimals(address(usdt), 8);
+        (,, uint8 d8) = paymaster.usdtConfig();
+        assertEq(d8, 8);
+        assertEq(paymaster.maxTokenAmountLimit(address(usdt)), 10_000 * 1e8);
+
+        vm.prank(paymaster.owner());
+        paymaster.setTokenDecimals(address(usdt), 18);
+        (,, uint8 d18) = paymaster.usdtConfig();
+        assertEq(d18, 18);
+
+        address own = paymaster.owner(); // owner() before expectRevert — else it consumes the revert expectation
+        vm.prank(own);
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.InvalidToken.selector));
+        paymaster.setTokenDecimals(address(usdt), 0);
+        vm.prank(own);
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.InvalidToken.selector));
+        paymaster.setTokenDecimals(address(usdt), 4);
+    }
+
+    // constructor must reject tokens with unsupported decimals (e.g. 0)
+    function test_H06_RevertWhen_ConstructorUnsupportedDecimals() public {
+        MockLegacyToken usdt0 = new MockLegacyToken("USDT0", "USDT0", 0);
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.InvalidToken.selector));
+        new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt0), address(0));
+    }
+
+    // maxAllowed uses decimals: for 6-dec token a large 18-dec maxTokenAmount is rejected
+    function test_H06_MaxAllowedDecimalsAware() public {
+        MockLegacyToken usdt6 = new MockLegacyToken("USDT6", "USDT6", 6);
+        MDAOPaymaster pm6 = new MDAOPaymaster(ENTRY_POINT, address(mdao), address(usdt6), address(0));
+        vm.etch(ENTRY_POINT, hex"00");
+        vm.mockCall(ENTRY_POINT,
+            abi.encodeWithSelector(IEntryPointView.balanceOf.selector, address(pm6)),
+            abi.encode(uint256(10 ether)));
+        vm.prank(pm6.owner());
+        pm6.setTokenPrice(address(usdt6), 1e24);
+        vm.prank(pm6.owner());
+        pm6.setMaxGasPrice(1000 gwei);
+
+        usdt6.mint(alice, 1000e6);
+        vm.prank(alice); usdt6.approve(address(pm6), 1000e6);
+
+        // maxCost=1e16, price=1e24, buffer 500bps → maxAllowed18 = 1e16*1e24*1.05/1e18 = 1.05e22
+        // base6 = ceil(1.05e22 * 1e6 / 1e18) = 1.05e10. maxTokenAmount = 2e10 > 1.05e10 → revert
+        bytes memory customData = abi.encodePacked(address(usdt6), uint256(2e10), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(pm6), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        vm.expectRevert(abi.encodeWithSelector(MDAOPaymaster.AmountTooHigh.selector));
+        pm6.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+    }
+
+    // 18-dec token (default config): maxAllowed stays in 18-dec notation — regression
+    function test_H06_EighteenDecimalsMaxAllowedUnchanged() public {
+        usdt.mint(alice, 2e22);
+        vm.prank(alice); usdt.approve(address(paymaster), 2e22);
+
+        // maxCost=1e16, price=1e24, buffer 500bps → maxAllowed18 = 1.05e22.
+        // maxTokenAmount = 1e22 < 1.05e22 → accepted (18-dec notation, no conversion).
+        bytes memory customData = abi.encodePacked(address(usdt), uint256(1e22), block.timestamp + 1 hours);
+        bytes memory pmAndData = abi.encode(address(paymaster), customData);
+        UserOperation memory op = _op(alice, pmAndData);
+        op.maxFeePerGas = 100 gwei;
+
+        vm.prank(ENTRY_POINT);
+        (bytes memory ctx, uint256 vd) = paymaster.validatePaymasterUserOp(op, bytes32(0), 1e16, customData);
+        assertEq(vd, 0);
+        assertGt(ctx.length, 0);
     }
 }

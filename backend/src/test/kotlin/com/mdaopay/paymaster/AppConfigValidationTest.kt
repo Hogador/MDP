@@ -108,4 +108,45 @@ class AppConfigValidationTest {
         config.allowLocalSigning = true
         assert(config.allowLocalSigning)
     }
+
+    // H-06: decimals must be in the contract's TokenConfig registry {6,8,18}
+    private fun baseConfig(
+        mdaoDecimals: Int = 18,
+        usdtDecimals: Int = 18,
+    ) = AppConfig(
+        rpcUrls = validRpcUrls,
+        privateKey = validPrivateKey,
+        paymasterAddress = validAddress,
+        mdaoAddress = "0x0000000000000000000000000000000000000001",
+        usdtAddress = "0x0000000000000000000000000000000000000002",
+        entryPoint = validEntryPoint,
+        wbnbAddress = "0x0000000000000000000000000000000000000003",
+        expectedChainId = 97L,
+        redisUrl = validRedisUrl,
+        jwtSecret = validJwtSecret,
+        trustedSigner = validAddress,
+        isTestnet = true,
+        relaySecret = validRelaySecret,
+        swapPrivateKey = validPrivateKey,
+        mdaoDecimals = mdaoDecimals,
+        usdtDecimals = usdtDecimals,
+    )
+
+    @Test
+    fun `H-06 accepts 6 8 18 decimals`() {
+        for (d in listOf(6, 8, 18)) {
+            assert(baseConfig(mdaoDecimals = d).mdaoDecimals == d)
+            assert(baseConfig(usdtDecimals = d).usdtDecimals == d)
+        }
+    }
+
+    @Test
+    fun `H-06 rejects unsupported mdao decimals`() {
+        assertThrows<IllegalArgumentException> { baseConfig(mdaoDecimals = 4) }
+    }
+
+    @Test
+    fun `H-06 rejects unsupported usdt decimals`() {
+        assertThrows<IllegalArgumentException> { baseConfig(usdtDecimals = 0) }
+    }
 }

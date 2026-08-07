@@ -69,7 +69,9 @@ android {
             buildConfigField("String", "BUNDLER_URL", "\"${project.findProperty("BUNDLER_URL_PROD") ?: ""}\"")
             buildConfigField("String", "ETHERSCAN_API_KEY", "\"${project.findProperty("ETHERSCAN_API_KEY") ?: ""}\"")
             buildConfigField("String", "PAYMASTER_CONTRACT", "\"${project.findProperty("PAYMASTER_CONTRACT_PROD") ?: ""}\"")
-            buildConfigField("String", "USDT_CONTRACT", "\"${project.findProperty("USDT_CONTRACT_PROD") ?: "0x7169D38820dfd117C3FA1f22a697dBA58d90ba06"}\"")
+            // H-08: token contracts per flavor — prod addresses MUST come from project
+            // properties at deploy time, not hardcoded fallbacks (see ROADMAP pre-deploy checklist)
+            buildConfigField("String", "USDT_CONTRACT", "\"${project.findProperty("USDT_CONTRACT_PROD") ?: ""}\"")
             buildConfigField("String", "MDAO_CONTRACT", "\"${project.findProperty("MDAO_CONTRACT_PROD") ?: "0x0000000000000000000000000000000000000000"}\"")
             buildConfigField("String", "RPC_URL_1", "\"${project.findProperty("RPC_URL_1_PROD") ?: ""}\"")
             buildConfigField("String", "RPC_URL_2", "\"${project.findProperty("RPC_URL_2_PROD") ?: ""}\"")
