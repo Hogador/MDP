@@ -196,6 +196,7 @@
 - [ ] I-203: Monitoring + alerting (Grafana/Prometheus)
 - [ ] I-204: Backup-стратегия для backend state
 - [ ] I-205: Incident response playbook
+- [x] I-206: GitHub-публикация репо Hogador/MDP (push 1171974, история очищена от Cloudflare токена, репо PRIVATE) · owner: Coordinator · 2026-08-07
 
 ### 3.3. Смартконтракты
 - [ ] F-201: Финальный деплой mainnet (через HSM/KMS)
@@ -265,5 +266,6 @@ Owner: Coordinator · обязателен до F-201 (mainnet)
 - [ ] `maxTokenAmountLimit` после setTokenDecimals = 10_000 * 10^decimals (base units) — проверить через view
 - [ ] EIP-170: runtime MDAOPaymaster = 14,869 B < 24,576 B (optimizer_runs=10000) — деплой не упадёт по size
 - [ ] «тесты на реальный USDT» (см. H-06): одна live-транзакция с 6-dec USDT на testnet до mainnet
+- [ ] **РОТАЦИЯ Cloudflare API токена** (cfat_EG7… попал в git-историю локально, НЕ опубликован, но считается скомпрометированным): Cloudflare Dashboard → My Profile → API Tokens → Roll · owner: DevOps · deadline: до F-201 · тикет: ADRD-2026-006
 
 Отчёты: security/COMPREHENSIVE-AUDIT-2026-07-20.md (3rd pass, 82 находки) · security/AUDIT-2026-07-14.md · security/COMPREHENSIVE-AUDIT-2026-07-16.md · индекс: security/FINDINGS-INDEX.md · уроки: security/LESSON-*.md
