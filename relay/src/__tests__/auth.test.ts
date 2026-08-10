@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { verifySignature, hmacSha256, verifyP256Signature } from '../auth'
 
-const RELAY_SECRET = 'test-secret-key-for-testing'
+const RELAY_HMAC_SECRET = 'test-secret-key-for-testing'
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
@@ -71,50 +71,50 @@ describe('verifySignature', () => {
   it('returns true for valid signature', async () => {
     const body = JSON.stringify({ walletAddress: '0x123', action: 'approve' })
     const ts = Date.now()
-    const sig = await hmacSha256(RELAY_SECRET, `${ts}.${body}`)
-    expect(await verifySignature(body, ts.toString(), sig, RELAY_SECRET)).toBe(true)
+    const sig = await hmacSha256(RELAY_HMAC_SECRET, `${ts}.${body}`)
+    expect(await verifySignature(body, ts.toString(), sig, RELAY_HMAC_SECRET)).toBe(true)
   })
 
   it('returns false for wrong signature', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now()
-    expect(await verifySignature(body, ts.toString(), 'deadbeef', RELAY_SECRET)).toBe(false)
+    expect(await verifySignature(body, ts.toString(), 'deadbeef', RELAY_HMAC_SECRET)).toBe(false)
   })
 
   it('returns false for wrong secret', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now()
     const sig = await hmacSha256('wrong-secret', `${ts}.${body}`)
-    expect(await verifySignature(body, ts.toString(), sig, RELAY_SECRET)).toBe(false)
+    expect(await verifySignature(body, ts.toString(), sig, RELAY_HMAC_SECRET)).toBe(false)
   })
 
   it('returns false for empty signature', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now()
-    expect(await verifySignature(body, ts.toString(), '', RELAY_SECRET)).toBe(false)
+    expect(await verifySignature(body, ts.toString(), '', RELAY_HMAC_SECRET)).toBe(false)
   })
 
   it('returns false for tampered body', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now()
-    const sig = await hmacSha256(RELAY_SECRET, `${ts}.${body}`)
+    const sig = await hmacSha256(RELAY_HMAC_SECRET, `${ts}.${body}`)
     expect(await verifySignature(
       JSON.stringify({ walletAddress: '0x456' }),
       ts.toString(),
       sig,
-      RELAY_SECRET,
+      RELAY_HMAC_SECRET,
     )).toBe(false)
   })
 
   it('returns false for expired timestamp (older than 5 min)', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now() - 6 * 60 * 1000
-    expect(await verifySignature(body, ts.toString(), 'any', RELAY_SECRET)).toBe(false)
+    expect(await verifySignature(body, ts.toString(), 'any', RELAY_HMAC_SECRET)).toBe(false)
   })
 
   it('returns false for future timestamp (>30s ahead)', async () => {
     const body = JSON.stringify({ walletAddress: '0x123' })
     const ts = Date.now() + 60 * 1000
-    expect(await verifySignature(body, ts.toString(), 'any', RELAY_SECRET)).toBe(false)
+    expect(await verifySignature(body, ts.toString(), 'any', RELAY_HMAC_SECRET)).toBe(false)
   })
 })

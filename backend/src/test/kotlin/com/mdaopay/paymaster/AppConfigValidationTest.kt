@@ -17,6 +17,7 @@ class AppConfigValidationTest {
     private val validRedisUrl = "redis://localhost:6379"
     private val validJwtSecret = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="  // Base64, decodes to 32 bytes (all unique)
     private val validRelaySecret = "test-relay-secret-at-least-32-chars!!"
+    private val validHmacSecret = "test-hmac-secret-64-chars-minimum-abcdefghijklmnopqrstuvwxyz-0123456789!!"
 
     @Test
     fun `F-110 rejects low-entropy JWT_SECRET at construction`() {
@@ -34,7 +35,8 @@ class AppConfigValidationTest {
                 jwtSecret = "c2hvcnQ=",  // Base64 "short" — only 5 decoded bytes
                 trustedSigner = validAddress,
                 isTestnet = true,
-                relaySecret = validRelaySecret,
+                relayJwtSecret = validRelaySecret,
+                relayHmacSecret = validHmacSecret,
                 swapPrivateKey = validPrivateKey,
             )
         }
@@ -55,7 +57,8 @@ class AppConfigValidationTest {
             jwtSecret = validJwtSecret,
             trustedSigner = validAddress,
             isTestnet = true,
-            relaySecret = validRelaySecret,
+            relayJwtSecret = validRelaySecret,
+                relayHmacSecret = validHmacSecret,
             swapPrivateKey = validPrivateKey,
         )
         assert(config.jwtSecret == validJwtSecret)
@@ -77,7 +80,8 @@ class AppConfigValidationTest {
             jwtSecret = validJwtSecret,
             trustedSigner = validAddress,
             isTestnet = false,     // production
-            relaySecret = validRelaySecret,
+            relayJwtSecret = validRelaySecret,
+                relayHmacSecret = validHmacSecret,
             swapPrivateKey = validPrivateKey,
         )
         config.allowLocalSigning = true
@@ -102,7 +106,8 @@ class AppConfigValidationTest {
             jwtSecret = validJwtSecret,
             trustedSigner = validAddress,
             isTestnet = true,
-            relaySecret = validRelaySecret,
+            relayJwtSecret = validRelaySecret,
+                relayHmacSecret = validHmacSecret,
             swapPrivateKey = validPrivateKey,
         )
         config.allowLocalSigning = true
@@ -126,7 +131,8 @@ class AppConfigValidationTest {
         jwtSecret = validJwtSecret,
         trustedSigner = validAddress,
         isTestnet = true,
-        relaySecret = validRelaySecret,
+        relayJwtSecret = validRelaySecret,
+                relayHmacSecret = validHmacSecret,
         swapPrivateKey = validPrivateKey,
         mdaoDecimals = mdaoDecimals,
         usdtDecimals = usdtDecimals,

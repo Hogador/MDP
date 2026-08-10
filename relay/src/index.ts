@@ -98,15 +98,15 @@ export default {
       })
 
     const requireAuth = async (bodyText: string): Promise<Response | null> => {
-      // ponytail: fail-closed — missing RELAY_SECRET means auth is bypassed, reject all requests
-      if (!env.RELAY_SECRET) {
+      // ponytail: fail-closed — missing RELAY_HMAC_SECRET means auth is bypassed, reject all requests
+      if (!env.RELAY_HMAC_SECRET) {
         console.error('Server misconfigured — all requests rejected')
         return err('Internal server error', 500)
       }
       const ts = request.headers.get('X-Timestamp') || ''
       const nonce = request.headers.get('X-Nonce') || ''
       const sig = request.headers.get('X-Signature') || ''
-      const valid = await verifySignature(bodyText, ts, sig, env.RELAY_SECRET, nonce)
+      const valid = await verifySignature(bodyText, ts, sig, env.RELAY_HMAC_SECRET, nonce)
       if (!valid) return err('Unauthorized: invalid or missing signature', 401)
       return null
     }
@@ -344,5 +344,5 @@ interface Env {
   FCM_SERVER_KEY: string
   SOCIAL_RECOVERY_MODULE: string
   RPC_URL: string
-  RELAY_SECRET: string
+  RELAY_HMAC_SECRET: string
 }

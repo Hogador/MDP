@@ -41,7 +41,8 @@ class PaymasterServiceTest {
         jwtSecret = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
         trustedSigner = "0x0000000000000000000000000000000000000000",
         isTestnet = true,
-        relaySecret = "test-relay-secret-at-least-32-chars!!",
+        relayJwtSecret = "test-relay-secret-at-least-32-chars!!",
+        relayHmacSecret = "test-hmac-secret-64-chars-minimum-abcdefghijklmnopqrstuvwxyz-0123456789!!",
         swapPrivateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     )
     init { config.allowLocalSigning = true } // testnet — allowed

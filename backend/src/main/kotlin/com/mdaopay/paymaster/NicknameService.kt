@@ -91,6 +91,14 @@ object NicknameService {
         val key = nickname.lowercase()
         val normalizedAddress = address.lowercase()
 
+        // BR-003: Atomic nonce verification via Redis Lua script (prevents replay attacks)
+        val replayKey = "${normalizedAddress}:${nonce}"
+        runBlocking {
+            if (!Redis.verifyNonceAtomic(replayKey, ttlSec = 3600)) {
+                return@runBlocking Result.failure<NicknameEntry>(IllegalArgumentException("Signature already used (replay detected)"))
+            }
+        }
+
         when (val result = NicknamePolicy.validate(nickname)) {
             is ValidationResult.Valid -> { }
             is ValidationResult.TooShort -> return Result.failure(
@@ -107,6 +115,7 @@ object NicknameService {
             )
         }
 
+        // Additional nonce time window check (defense in depth)
         val now = System.currentTimeMillis()
         if (nonce < now - NONCE_WINDOW_MS || nonce > now + 10_000) {
             return Result.failure(IllegalArgumentException("Nonce expired or invalid"))

@@ -88,6 +88,33 @@ object Redis {
     suspend fun setNx(key: String, value: ByteArray = byteArrayOf(1)): Boolean =
         retry { it.setnx(key.encodeToByteArray(), value) ?: false } ?: false
 
+    /**
+     * C-2/BR-003: Atomic nonce verification with Lua script.
+     * Prevents replay attacks by ensuring each nonce is used exactly once.
+     * Returns true if nonce was accepted (not previously used), false if replayed.
+     */
+    suspend fun verifyNonceAtomic(nonce: String, ttlSec: Long = 300): Boolean {
+        val luaScript = """
+            local key = KEYS[1]
+            local ttl = tonumber(ARGV[1])
+            local exists = redis.call('GET', key)
+            if exists then return 0 end
+            redis.call('SET', key, 'used', 'EX', ttl)
+            return 1
+        """.trimIndent()
+        
+        val redisKey = "nonce:$nonce"
+        return retry { c ->
+            val result: Long? = c.eval(
+                luaScript,
+                io.lettuce.core.ScriptOutputType.INTEGER,
+                arrayOf(redisKey.encodeToByteArray()),
+                ttlSec.toString().encodeToByteArray(),
+            )
+            result == 1L
+        } ?: false
+    }
+
     suspend fun del(key: ByteArray): Boolean = retry { it.del(key); true } ?: false
     suspend fun del(key: String): Boolean = del(key.encodeToByteArray())
 
