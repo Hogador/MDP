@@ -99,7 +99,7 @@ if [ "$CLOUDFLARE" = "1" ]; then
         }
         log_info "Cloudflare: $name обновлён"
     done
-    log_warn "ВАЖНО: RELAY_SECRET больше не используется. Обновите relay/src/index.ts:102,109 на RELAY_HMAC_SECRET."
+    log_info "relay worker уже мигрирован на RELAY_HMAC_SECRET (checkout-7 merge)."
 else
     log_info "Cloudflare secrets НЕ обновлены (без --cloudflare). Значения в $ENV_FILE."
     log_info "Далее: wrangler secret put RELAY_HMAC_SECRET / RELAY_JWT_SECRET"
