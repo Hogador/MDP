@@ -16,7 +16,7 @@ import handler, { __resetRateLimit } from '../index'
 
 function mockEnv() {
   return {
-    RELAY_SECRET: 'test-secret',
+    RELAY_HMAC_SECRET: 'test-secret',
     FCM_SERVER_KEY: 'test-key',
     SOCIAL_RECOVERY_MODULE: '0x0000000000000000000000000000000000000000',
     RPC_URL: 'https://rpc.test',
@@ -295,9 +295,9 @@ describe('auth on invite endpoints', () => {
   })
 
   // F-071: error message does not leak auth details
-  it('returns 500 without revealing RELAY_SECRET details when secret is missing', async () => {
+  it('returns 500 without revealing RELAY_HMAC_SECRET details when secret is missing', async () => {
     const env = mockEnv()
-    env.RELAY_SECRET = ''
+    env.RELAY_HMAC_SECRET = ''
     const req = new Request('http://localhost/guardian/invite', {
       method: 'POST',
       body: JSON.stringify({ walletAddress: '0x123' }),
@@ -306,7 +306,7 @@ describe('auth on invite endpoints', () => {
     const res = await handler.fetch(req, env)
     expect(res.status).toBe(500)
     const body = await res.json()
-    expect(body.error).not.toMatch(/RELAY_SECRET/i)
+    expect(body.error).not.toMatch(/RELAY_HMAC_SECRET/i)
     expect(body.error).toMatch(/internal server error/i)
   })
 })

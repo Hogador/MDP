@@ -11,8 +11,8 @@ compatibility_date = "2025-02-14"
 # RPC_URL = ""
 
 # Shared secret for HMAC request signing (required for write endpoints)
-#   wrangler secret put RELAY_SECRET
-# RELAY_SECRET = ""
+#   wrangler secret put RELAY_HMAC_SECRET
+# RELAY_HMAC_SECRET = ""
 
 [[kv_namespaces]]
 binding = "KV"
@@ -25,4 +25,4 @@ kv_namespaces = [
   { binding = "KV", id = "", preview_id = "" }
 ]
 # Set testnet-specific vars via: wrangler secret put --env testnet
-#  RELAY_SECRET, FCM_SERVER_KEY, SOCIAL_RECOVERY_MODULE, RPC_URL
+#  RELAY_HMAC_SECRET, FCM_SERVER_KEY, SOCIAL_RECOVERY_MODULE, RPC_URL
