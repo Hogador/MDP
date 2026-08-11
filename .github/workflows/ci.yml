@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: foundry-rs/foundry-toolchain@v1
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.foundry/cache
@@ -55,7 +55,7 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -74,7 +74,7 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
