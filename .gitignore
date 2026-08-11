@@ -97,11 +97,10 @@ ci.yml.additions
 .agents/
 ponytail/
 .opencode/
+.zcode/            # ⚠️ содержал API-ключи (утечка 29627bd) — НИКОГДА не коммитить
 
 # ——— Root misc (не часть проекта) ———
 .editorconfig
-.gitleaksignore
-.pre-commit-config.yaml
 18913.png
 AGENTS.md
 Makefile
