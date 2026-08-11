@@ -1,0 +1,29 @@
+# Gitleaks конфиг — MDAOPay
+# Ложные срабатывания исключаются через allowlist, НЕ через отключение правил.
+# Реальные утечки (историю) чистить через git filter-repo, не через ignore!
+
+title = "MDAOPay gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "False positives: вендорская либа OpenZeppelin, тестовые ключи backend, старые отчёты аудита"
+  paths = [
+    "contracts/lib/openzeppelin-contracts/",
+    "docs/audit/MDAOPay_Audit_Technical_Solutions.md",
+    "docs/audit/MDAOPay_full_audit_v3.md",
+    "backend/src/main/kotlin/com/mdaopay/paymaster/SwapService.kt",
+    ".env",  # локальный, НЕ в git (см. .gitignore); содержит реальные ключи — не коммитить никогда
+  ]
+  regexes = [
+    # стандартный anvil dev key #0 — используется в тестах
+    "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    # Base64 0x00..0x1F — тестовый jwtSecret (32 байта, все уникальные)
+    "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+    # Stripe test-mode ключи из тестов (pk_test_123..., sk_test_...)
+    "pk_test_123[0-9a-f]*",
+    "sk_test_[0-9a-f]+",
+    # Base64 "short" из AppConfigValidationTest
+    "c2hvcnQ=",
+  ]

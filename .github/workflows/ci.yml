@@ -141,6 +141,20 @@ jobs:
           cd relay
           npm audit --audit-level=high || echo "⚠️ npm audit found issues (non-blocking)"
 
+  gitleaks-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Gitleaks — scan full history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+
   cert-pin-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
