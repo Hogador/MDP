@@ -134,11 +134,19 @@ contract SocialRecoveryModule is Ownable {
     }
     
     /// @dev Test if P256 verifier is functional by making a dummy call
-    function _isP256Working(address verifier) internal view returns (bool) {
-        bytes memory input = new bytes(128); // dummy hash + r + s + x + y
-        (bool success, bytes memory result) = verifier.staticcall(input);
-        return success && result.length == 32;
-    }
+bytes32 private constant P256_PROBE_HASH = 0xaf2bdbe1aa9b6ec1e2ade1d694f41fc71a831d0268e9891562113d8a62add1bf;
+bytes32 private constant P256_PROBE_R = 0xefd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716;
+bytes32 private constant P256_PROBE_S = 0x0834e36ad29a83bf2bc9385e491d6099c8fdf9d1ed67aa7ea5f51f93782857a9;
+bytes32 private constant P256_PROBE_X = 0x60fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6;
+bytes32 private constant P256_PROBE_Y = 0x7903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299;
+
+function _isP256Working(address verifier) internal view returns (bool) {
+    // RIP-7212 format: abi.encodePacked(hash, r, s, x, y) = 160 bytes.
+    // Valid RFC 6979 A.2.5 vector (verified) — proves the verifier actually validates a real signature.
+    bytes memory input = abi.encodePacked(P256_PROBE_HASH, P256_PROBE_R, P256_PROBE_S, P256_PROBE_X, P256_PROBE_Y);
+    (bool success, bytes memory result) = verifier.staticcall(input);
+    return success && result.length == 32 && abi.decode(result, (uint256)) == 1;
+}
 
     // ── F-138a: P-256 verifier timelock ──
     address public pendingP256Verifier;
