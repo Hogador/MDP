@@ -19,6 +19,7 @@ import {P256Verifier} from "../src/helpers/P256Verifier.sol";
 import {Treasury} from "../src/Treasury.sol";
 import {Proposal} from "../src/Proposal.sol";
 import {PaymentSplitterFactory} from "../src/PaymentSplitterFactory.sol";
+import {MDAOSmartAccountFactory} from "../src/MDAOSmartAccountFactory.sol";
 
 contract Deploy is Script {
     function run() external {
@@ -64,6 +65,12 @@ contract Deploy is Script {
         );
         vm.stopBroadcast();
         console.log("MDAOPaymaster:", address(paymaster));
+
+        // ── MDAOSmartAccountFactory (v0.6, same EntryPoint as paymaster) ──
+        vm.startBroadcast();
+        MDAOSmartAccountFactory smartAccountFactory = new MDAOSmartAccountFactory(vm.envAddress("ENTRY_POINT"));
+        vm.stopBroadcast();
+        console.log("MDAOSmartAccountFactory:", address(smartAccountFactory));
 
         // ── InsuranceFund (after paymaster, needs paymaster for fee collection) ──
         address insuranceAuditor = vm.envAddress("INSURANCE_AUDITOR_ADDRESS");
