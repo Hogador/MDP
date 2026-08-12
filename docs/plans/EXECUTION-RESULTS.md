@@ -114,3 +114,19 @@
   4. v0.7-остатков (PackedUserOperation) в проверенных файлах нет.
 - **Self-challenge**: (a) reviewer отработал на модели mistral-medium-2505, а не big-pickle (fallback в рантайме task tool) — результат полный и корректный, все claims с цитатами строк; (b) единственное, что не проверил reviewer отдельным прогоном — повторный forge test (это уже сделано Coordinator'ом при S7: 3/3 + регрессия 67/67); (c) гипотез, блокирующих корректность, нет.
 - **Статус**: ✅ завершено. Фаза 1 закрыта ревью. Следующий шаг — S9 (фаза 2, backend: миграция UNIQUE nickname).
+
+## S9 — Шаг 2.1 (TD-06): UNIQUE-индекс на nickname
+
+- **Задача (по плану)**: миграция `V7__unique_nickname.sql` — `ALTER TABLE users ADD CONSTRAINT uq_users_nickname UNIQUE (LOWER(nickname))`.
+- **Что сделано** (coder deepseek-v4-flash-free): создан `backend/src/main/resources/db/migration/V7__unique_nickname.sql`:
+  ```sql
+  CREATE UNIQUE INDEX uq_nicknames_nickname ON nicknames (LOWER(nickname));
+  DROP INDEX idx_nicknames_nickname_lower;
+  ```
+- **Отклонения от плана (обоснованные, перепроверены Coordinator'ом по коду V1)**:
+  1. Таблица — **`nicknames`, не `users`**: V1 L27 `CREATE TABLE nicknames`, L29 `nickname VARCHAR(20) UNIQUE NOT NULL`; у `users` (L17) колонки nickname НЕТ. План исходил из неверного допущения.
+  2. `ALTER TABLE ... UNIQUE (LOWER(...))` — **не существует в PostgreSQL** (выраженческие UNIQUE-ограничения не поддерживаются; только UNIQUE INDEX). Использован эквивалент по смыслу.
+  3. `DROP INDEX idx_nicknames_nickname_lower` (V1 L37, тот же expression LOWER(nickname)) — новый UNIQUE INDEX полностью его заменяет, удаление не вредит (индексы не ссылаются по имени в приложении).
+- **Верификация**: `./gradlew build` заблокирован pre-existing поломкой конфигурации (Ktor plugin 3.1.2 vs Kotlin 2.0.21, `mainClassName` — зафиксировано в репо до нашего изменения, git diff по build-файлам пуст). Coder вместо этого прогнал SQL на реальном Postgres 16 (Docker, scratch-схема по V1): CREATE ок; fail-fast подтверждён — существующие `ALICE`/`Alice` → `ERROR: duplicate key value violates unique constraint "uq_nicknames_nickname"`; будущие дубли (`INSERT 'ALICE'` после `'Alice'`) → та же ошибка. Контейнер очищен.
+- **Self-challenge**: (a) старый UNIQUE на колонке (V1 L29, case-sensitive) остаётся — избыточен (новый UNIQUE INDEX покрывает и точные дубли), но не конфликтует, удалять не стали (минимальный дифф); (b) если бы в БД уже были case-insensitive дубли — миграция упала бы (fail-fast, задумано, dedup не добавляем); (c) допущение: Flyway — единственный источник схемы (проверено: schema.sql/ddl-auto в репо нет) — подтверждено.
+- **Статус**: ✅ завершено. Следующий шаг — S10 (2.2 SwapService: recipient = JWT-кошелёк).
