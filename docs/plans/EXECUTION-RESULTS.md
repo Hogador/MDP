@@ -74,3 +74,14 @@
 - **Верификация**: `forge build` ✅ (только pre-existing lint-warning на addRecoveryHook-касте); `forge test --match-path test/MDAOSmartAccountFactory.t.sol` 4/4 PASS (2 прогона); повторная проверка Coordinator'ом: `git diff` = ровно +1 строка, корректно.
 - **Self-challenge**: (a) approveHook не требует отдельного broadcast-блока — она включена в существующий `vm.startBroadcast()...stopBroadcast()`, вызов external от deployer'а — корректно; (b) риск: hook-контракт (DeadManSwitch) одобряется, но сама функция добавления в approvedHookContracts сработает только если вызвана от owner — socialRecovery на момент вызова принадлежит deployer'у (передача владения timelock'у идёт позже в скрипте) — верно; (c) альтернатива «вызвать approveHook позже в скрипте» — хуже, т.к. addRecoveryHook упадёт раньше; (d) допущение: `approveHook` вызывается от deployer'а, который на этот момент — owner SRM (проверено по порядку скрипта).
 - **Статус**: ✅ завершено.
+
+## S6 — Шаг 1.3 (TD-05): P256_VERIFIER без дефолта, fail-fast
+
+- **Задача**: DeploySocialRecoveryModule.s.sol L11 — `vm.envOr("P256_VERIFIER", address(0x100))`: RIP-7212 precompile 0x100 не существует на BSC (56/97) → SRM деплоился бы с мёртвым verifier'ом (только WARNING, без stop).
+- **Что сделано**: coder (deepseek-v4-flash-free):
+  1. `vm.envAddress("P256_VERIFIER")` без fallback (ревертит, если env не задан — fail-fast);
+  2. два require: `!= address(0)` и `code.length > 0` (адрес обязан указывать на задеплоенный P256Verifier);
+  3. мёртвая ветка `p256Verifier == address(0x100)` + chainId-блок удалены, console.log безусловный.
+- **Верификация**: `forge build` ✅; `forge test --match-path test/MDAOSmartAccountFactory.t.sol` 4/4 PASS; повторная проверка Coordinator'ом: дифф −7/+6 строк, все 4 пункта выполнены, цепочка require необратимо останавливает до broadcast.
+- **Self-challenge**: (a) удаление chainId-блока безопасно — проверки chainId больше не нужны, fail-fast покрывает все сети; (b) `vm.envAddress` ревертит при отсутствии переменной — это и есть fail-fast, отдельный require на пустую env не нужен; (c) код в require (`code.length > 0`) защищает от опечатки в адресе — при деплое на неверный адрес без кода скрипт упадёт ДО broadcast; (d) допущение: P256Verifier всегда деплоится на BSC в рамках основного Deploy.s.sol — подтверждено (Deploy.s.sol L216 логирует EcdsaVerifier/P256).
+- **Статус**: ✅ завершено.
