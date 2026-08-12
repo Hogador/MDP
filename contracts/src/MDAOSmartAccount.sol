@@ -6,13 +6,12 @@ pragma solidity ^0.8.28;
 
 import {BaseAccount} from "account-abstraction/core/BaseAccount.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
-import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @notice ERC-4337 smart account with ECDSA ownership and social recovery support.
-/// @dev Single EOA owner, EntryPoint-only execution, transferOwnership for recovery.
-/// Inherits execute/executeBatch from BaseAccount (EntryPoint-only via _requireFromEntryPoint).
+/// @dev Single EOA owner, EntryPoint-only validation, transferOwnership for recovery.
+/// Inherits validateUserOp from BaseAccount (EntryPoint-only via _requireFromEntryPoint).
 contract MDAOSmartAccount is BaseAccount {
     IEntryPoint private immutable _entryPoint;
     address public owner;
@@ -60,13 +59,13 @@ contract MDAOSmartAccount is BaseAccount {
 
     /// @inheritdoc BaseAccount
     function _validateSignature(
-        PackedUserOperation calldata userOp,
+        UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal virtual override returns (uint256 validationData) {
         if (owner != ECDSA.recover(userOpHash, userOp.signature)) {
             return SIG_VALIDATION_FAILED;
         }
-        return SIG_VALIDATION_SUCCESS;
+        return 0; // SIG_VALIDATION_SUCCESS
     }
 
     /// @notice Transfer ownership (for social recovery integration).

@@ -1,10 +1,7 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.28;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity ^0.8.12;
 
-/* solhint-disable gas-custom-errors */
-
-import "../accounts/SimpleAccount.sol";
-import "../core/Helpers.sol";
+import "../samples/SimpleAccount.sol";
 
 /**
  * A test account, for testing expiry.
@@ -14,6 +11,7 @@ import "../core/Helpers.sol";
  * also, the "since" value is not really useful, only for testing the entrypoint.
  */
 contract TestExpiryAccount is SimpleAccount {
+    using ECDSA for bytes32;
 
     mapping(address => uint48) public ownerAfter;
     mapping(address => uint48) public ownerUntil;
@@ -37,13 +35,14 @@ contract TestExpiryAccount is SimpleAccount {
     }
 
     /// implement template method of BaseAccount
-    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override view returns (uint256 validationData) {
-        address signer = ECDSA.recover(userOpHash,userOp.signature);
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        address signer = hash.recover(userOp.signature);
         uint48 _until = ownerUntil[signer];
         uint48 _after = ownerAfter[signer];
 
-        // We have "until" value for all valid owners. so zero means "invalid signature"
+        //we have "until" value for all valid owners. so zero means "invalid signature"
         bool sigFailed = _until == 0;
         return _packValidationData(sigFailed, _until, _after);
     }

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.12;
 
-import "../accounts/SimpleAccount.sol";
-import "../core/Helpers.sol";
+import "../samples/SimpleAccount.sol";
 
 /**
  * test aggregated-signature account.
@@ -23,7 +22,7 @@ contract TestAggregatedAccount is SimpleAccount {
         super._initialize(address(0));
     }
 
-    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override view returns (uint256 validationData) {
         (userOp, userOpHash);
         return _packValidationData(ValidationData(aggregator, 0, 0));

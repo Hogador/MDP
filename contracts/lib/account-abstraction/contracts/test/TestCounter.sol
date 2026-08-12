@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.12;
 
-/* solhint-disable gas-custom-errors */
-
-// Sample "receiver" contract, for testing "exec" from account.
+//sample "receiver" contract, for testing "exec" from account.
 contract TestCounter {
     mapping(address => uint256) public counters;
 
@@ -21,7 +19,7 @@ contract TestCounter {
 
     event CalledFrom(address sender);
 
-    // Helper method to waste gas
+    //helper method to waste gas
     // repeat - waste gas on writing storage in a loop
     // junk - dynamic buffer to stress the function size.
     mapping(uint256 => uint256) public xxx;

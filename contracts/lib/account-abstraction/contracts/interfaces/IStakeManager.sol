@@ -1,22 +1,17 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity ^0.8.12;
 
 /**
- * Manage deposits and stakes.
- * Deposit is just a balance used to pay for UserOperations (either by a paymaster or an account).
- * Stake is value locked for at least "unstakeDelay" by the staked entity.
+ * manage deposits and stakes.
+ * deposit is just a balance used to pay for UserOperations (either by a paymaster or an account)
+ * stake is value locked for at least "unstakeDelay" by the staked entity.
  */
 interface IStakeManager {
-    error InvalidUnstakeDelay(uint256 newUnstakeDelaySec, uint256 currentUnstakeDelaySec);
-    error InvalidStake(uint256 msgValue, uint256 currentStake);
-    error NotStaked(uint256 currentStake, uint256 unstakeDelaySec, bool staked);
-    error InsufficientDeposit(uint256 currentDeposit, uint256 withdrawAmount);
-    error StakeNotUnlocked(uint256 withdrawTime, uint256 blockTimestamp);
-    error WithdrawalNotDue(uint256 withdrawTime, uint256 blockTimestamp);
-    error StakeWithdrawalFailed(address account, address withdrawAddress, uint256 amount, bytes revertReason);
-    error DepositWithdrawalFailed(address account, address withdrawAddress, uint256 amount, bytes revertReason);
 
-    event Deposited(address indexed account, uint256 totalDeposit);
+    event Deposited(
+        address indexed account,
+        uint256 totalDeposit
+    );
 
     event Withdrawn(
         address indexed account,
@@ -24,15 +19,18 @@ interface IStakeManager {
         uint256 amount
     );
 
-    // Emitted when stake or unstake delay are modified.
+    /// Emitted when stake or unstake delay are modified
     event StakeLocked(
         address indexed account,
         uint256 totalStaked,
         uint256 unstakeDelaySec
     );
 
-    // Emitted once a stake is scheduled for withdrawal.
-    event StakeUnlocked(address indexed account, uint256 withdrawTime);
+    /// Emitted once a stake is scheduled for withdrawal
+    event StakeUnlocked(
+        address indexed account,
+        uint256 withdrawTime
+    );
 
     event StakeWithdrawn(
         address indexed account,
@@ -41,80 +39,66 @@ interface IStakeManager {
     );
 
     /**
-     * @param deposit         - The entity's deposit.
-     * @param staked          - True if this entity is staked.
-     * @param stake           - Actual amount of ether staked for this entity.
-     * @param unstakeDelaySec - Minimum delay to withdraw the stake.
-     * @param withdrawTime    - First block timestamp where 'withdrawStake' will be callable, or zero if already locked.
-     * @dev Sizes were chosen so that deposit fits into one cell (used during handleOp)
-     *      and the rest fit into a 2nd cell (used during stake/unstake)
-     *      - 112 bit allows for 10^15 eth
-     *      - 48 bit for full timestamp
-     *      - 32 bit allows 150 years for unstake delay
+     * @param deposit the entity's deposit
+     * @param staked true if this entity is staked.
+     * @param stake actual amount of ether staked for this entity.
+     * @param unstakeDelaySec minimum delay to withdraw the stake.
+     * @param withdrawTime - first block timestamp where 'withdrawStake' will be callable, or zero if already locked
+     * @dev sizes were chosen so that (deposit,staked, stake) fit into one cell (used during handleOps)
+     *    and the rest fit into a 2nd cell.
+     *    112 bit allows for 10^15 eth
+     *    48 bit for full timestamp
+     *    32 bit allows 150 years for unstake delay
      */
     struct DepositInfo {
-        uint256 deposit;
+        uint112 deposit;
         bool staked;
         uint112 stake;
         uint32 unstakeDelaySec;
         uint48 withdrawTime;
     }
 
-    // API struct used by getStakeInfo and simulateValidation.
+    //API struct used by getStakeInfo and simulateValidation
     struct StakeInfo {
         uint256 stake;
         uint256 unstakeDelaySec;
     }
 
-    /**
-     * Get deposit info.
-     * @param account - The account to query.
-     * @return info   - Full deposit information of given account.
-     */
-    function getDepositInfo(
-        address account
-    ) external view returns (DepositInfo memory info);
+    /// @return info - full deposit information of given account
+    function getDepositInfo(address account) external view returns (DepositInfo memory info);
 
-    /**
-     * Get account balance.
-     * @param account - The account to query.
-     * @return        - The deposit (for gas payment) of the account.
-     */
+    /// @return the deposit (for gas payment) of the account
     function balanceOf(address account) external view returns (uint256);
 
     /**
-     * Add to the deposit of the given account.
-     * @param account - The account to add to.
+     * add to the deposit of the given account
      */
     function depositTo(address account) external payable;
 
     /**
-     * Add to the account's stake - amount and delay
+     * add to the account's stake - amount and delay
      * any pending unstake is first cancelled.
-     * @param unstakeDelaySec - The new lock duration before the deposit can be withdrawn.
+     * @param _unstakeDelaySec the new lock duration before the deposit can be withdrawn.
      */
-    function addStake(uint32 unstakeDelaySec) external payable;
+    function addStake(uint32 _unstakeDelaySec) external payable;
 
     /**
-     * Attempt to unlock the stake.
-     * The value can be withdrawn (using withdrawStake) after the unstake delay.
+     * attempt to unlock the stake.
+     * the value can be withdrawn (using withdrawStake) after the unstake delay.
      */
     function unlockStake() external;
 
     /**
-     * Withdraw from the (unlocked) stake.
-     * Must first call unlockStake and wait for the unstakeDelay to pass.
-     * @param withdrawAddress - The address to send withdrawn value.
+     * withdraw from the (unlocked) stake.
+     * must first call unlockStake and wait for the unstakeDelay to pass
+     * @param withdrawAddress the address to send withdrawn value.
      */
     function withdrawStake(address payable withdrawAddress) external;
 
     /**
-     * Withdraw from the deposit.
-     * @param withdrawAddress - The address to send withdrawn value.
-     * @param withdrawAmount  - The amount to withdraw.
+     * withdraw from the deposit.
+     * @param withdrawAddress the address to send withdrawn value.
+     * @param withdrawAmount the amount to withdraw.
      */
-    function withdrawTo(
-        address payable withdrawAddress,
-        uint256 withdrawAmount
-    ) external;
+    function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount) external;
 }

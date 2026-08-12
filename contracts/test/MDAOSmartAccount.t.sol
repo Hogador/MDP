@@ -7,8 +7,7 @@ import {SocialRecoveryModule} from "../src/SocialRecoveryModule.sol";
 import {MDAOToken} from "../src/MDAOToken.sol";
 import {MockP256} from "./mocks/MockP256.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
-import {ISenderCreator} from "account-abstraction/interfaces/ISenderCreator.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MDAOSmartAccountTest is Test {
@@ -48,7 +47,7 @@ contract MDAOSmartAccountTest is Test {
     // ── 2. Signature validation ────────────────────────────────────
 
     function test_ValidateUserOpValidSignature() public {
-        PackedUserOperation memory userOp = _dummyUserOp();
+        UserOperation memory userOp = _dummyUserOp();
         bytes32 userOpHash = _hashUserOp(userOp);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerKey, userOpHash);
@@ -60,7 +59,7 @@ contract MDAOSmartAccountTest is Test {
     }
 
     function test_ValidateUserOpInvalidSignature() public {
-        PackedUserOperation memory userOp = _dummyUserOp();
+        UserOperation memory userOp = _dummyUserOp();
         bytes32 userOpHash = _hashUserOp(userOp);
 
         // Sign with a wrong key
@@ -141,14 +140,6 @@ contract MDAOSmartAccountTest is Test {
         assertEq(account.owner(), newOwner);
     }
 
-    // ── 4. execute (reverts if not EntryPoint) ─────────────────────
-
-    function test_ExecuteRevertsNotEntryPoint() public {
-        vm.prank(makeAddr("stranger"));
-        vm.expectRevert();
-        account.execute(makeAddr("to"), 0, "");
-    }
-
     // ── 5. addDeposit / withdrawDepositTo ───────────────────────────
 
     function test_AddDeposit() public {
@@ -166,30 +157,34 @@ contract MDAOSmartAccountTest is Test {
 
     // ── Helpers ────────────────────────────────────────────────────
 
-    function _dummyUserOp() internal view returns (PackedUserOperation memory) {
-        return PackedUserOperation({
+    function _dummyUserOp() internal view returns (UserOperation memory) {
+        return UserOperation({
             sender: address(account),
             nonce: 0,
             initCode: new bytes(0),
             callData: new bytes(0),
-            accountGasLimits: bytes32(uint256(50000) << 128 | uint256(21000)),
+            callGasLimit: 50000,
+            verificationGasLimit: 21000,
             preVerificationGas: 21000,
-            gasFees: bytes32(uint256(1 ether) << 128 | uint256(1 gwei)),
+            maxFeePerGas: 1 gwei,
+            maxPriorityFeePerGas: 1 gwei,
             paymasterAndData: new bytes(0),
             signature: new bytes(65)
         });
     }
 
-    function _hashUserOp(PackedUserOperation memory userOp) internal view returns (bytes32) {
+    function _hashUserOp(UserOperation memory userOp) internal view returns (bytes32) {
         return keccak256(
             abi.encode(
                 userOp.sender,
                 userOp.nonce,
                 keccak256(userOp.initCode),
                 keccak256(userOp.callData),
-                userOp.accountGasLimits,
+                userOp.callGasLimit,
+                userOp.verificationGasLimit,
                 userOp.preVerificationGas,
-                userOp.gasFees,
+                userOp.maxFeePerGas,
+                userOp.maxPriorityFeePerGas,
                 keccak256(userOp.paymasterAndData)
             )
         );
@@ -283,7 +278,7 @@ contract MDAOSmartAccountTest is Test {
         (uint8 vOld, bytes32 rOld, bytes32 sOld) = vm.sign(ownerKey, userOpHash);
         bytes memory oldSig = abi.encodePacked(rOld, sOld, vOld);
 
-        PackedUserOperation memory userOpOld = _dummyUserOp();
+        UserOperation memory userOpOld = _dummyUserOp();
         userOpOld.signature = oldSig;
         vm.prank(address(ep));
         uint256 resultOld = account.validateUserOp(userOpOld, userOpHash, 0);
@@ -293,7 +288,7 @@ contract MDAOSmartAccountTest is Test {
         (uint8 vNew, bytes32 rNew, bytes32 sNew) = vm.sign(newOwnerKey, userOpHash);
         bytes memory newSig = abi.encodePacked(rNew, sNew, vNew);
 
-        PackedUserOperation memory userOpNew = _dummyUserOp();
+        UserOperation memory userOpNew = _dummyUserOp();
         userOpNew.signature = newSig;
         vm.prank(address(ep));
         uint256 resultNew = account.validateUserOp(userOpNew, userOpHash, 0);
@@ -303,18 +298,14 @@ contract MDAOSmartAccountTest is Test {
 
 /// @notice Minimal EntryPoint mock implementing IEntryPoint + parents (IStakeManager, INonceManager).
 contract MockEntryPoint is IEntryPoint {
-    function getUserOpHash(PackedUserOperation calldata) external pure returns (bytes32) {
+    function getUserOpHash(UserOperation calldata) external pure returns (bytes32) {
         return keccak256("test");
     }
-    function getCurrentUserOpHash() external pure returns (bytes32) { return keccak256("test"); }
-    function simulateValidation(PackedUserOperation calldata) external {}
-    function simulateHandleOp(PackedUserOperation calldata, address, bytes calldata) external {}
-    function handleOps(PackedUserOperation[] calldata, address payable) external {}
-    function handleOp(PackedUserOperation calldata, address payable) external {}
+    function simulateValidation(UserOperation calldata) external {}
+    function simulateHandleOp(UserOperation calldata, address, bytes calldata) external {}
+    function handleOps(UserOperation[] calldata, address payable) external {}
     function handleAggregatedOps(UserOpsPerAggregator[] calldata, address payable) external {}
     function getSenderAddress(bytes calldata) external pure { revert SenderAddressResult(address(0)); }
-    function delegateAndRevert(address, bytes calldata) external pure { revert DelegateAndRevert(false, ""); }
-    function senderCreator() external view returns (ISenderCreator) { return ISenderCreator(address(0)); }
     // IStakeManager
     function getDepositInfo(address) external pure returns (DepositInfo memory) { return DepositInfo(0, false, 0, 0, 0); }
     function balanceOf(address) external pure returns (uint256) { return 0; }

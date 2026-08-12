@@ -23,7 +23,7 @@ export class Create2Factory {
    * deploy a contract using our deterministic deployer.
    * The deployer is deployed (unless it is already deployed)
    * NOTE: this transaction will fail if already deployed. use getDeployedAddress to check it first.
-   * @param initCode deployment code. can be a hex string or factory.getDeploymentTransaction(..)
+   * @param initCode delpoyment code. can be a hex string or factory.getDeploymentTransaction(..)
    * @param salt specific salt for deployment
    * @param gasLimit gas limit or 'estimate' to use estimateGas. by default, calculate gas based on data size.
    */
@@ -61,8 +61,8 @@ export class Create2Factory {
       gasLimit = Math.floor(gasLimit * 64 / 63)
     }
 
-    await this.signer.sendTransaction({ ...deployTx, gasLimit }).then(async tx => tx.wait())
-
+    const ret = await this.signer.sendTransaction({ ...deployTx, gasLimit })
+    await ret.wait()
     if (await this.provider.getCode(addr).then(code => code.length) === 2) {
       throw new Error('failed to deploy')
     }
@@ -98,16 +98,11 @@ export class Create2Factory {
     if (await this._isFactoryDeployed()) {
       return
     }
-
     await (signer ?? this.signer).sendTransaction({
       to: Create2Factory.factoryDeployer,
       value: BigNumber.from(Create2Factory.factoryDeploymentFee)
     })
-    // (with latest geth, can't tx.wait on the very first tx: reverts with "transaction indexing is in progress")
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    await this.provider.sendTransaction(Create2Factory.factoryTx).then(async tx => tx.wait())
-
+    await this.provider.sendTransaction(Create2Factory.factoryTx)
     if (!await this._isFactoryDeployed()) {
       throw new Error('fatal: failed to deploy deterministic deployer')
     }

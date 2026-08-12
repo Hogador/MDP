@@ -1,21 +1,23 @@
-import { TransactionResponse } from '@ethersproject/abstract-provider'
-import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/index'
-import { BytesLike, hexValue } from '@ethersproject/bytes'
-import { Deferrable, resolveProperties } from '@ethersproject/properties'
-import { BaseProvider, Provider, TransactionRequest } from '@ethersproject/providers'
 import { BigNumber, Bytes, ethers, Event, Signer } from 'ethers'
-import { clearInterval } from 'timers'
-import { decodeRevertReason, getAccountAddress, getAccountFactoryData } from '../test/testutils'
-import { fillAndSign, getUserOpHash, packUserOp } from '../test/UserOp'
-import { PackedUserOperation, UserOperation } from '../test/UserOperation'
+import { zeroAddress } from 'ethereumjs-util'
+import { BaseProvider, Provider, TransactionRequest } from '@ethersproject/providers'
+import { Deferrable, resolveProperties } from '@ethersproject/properties'
 import {
   EntryPoint,
   EntryPoint__factory,
+  ERC1967Proxy__factory,
   SimpleAccount,
-  SimpleAccountFactory,
-  SimpleAccountFactory__factory,
   SimpleAccount__factory
 } from '../typechain'
+import { BytesLike, hexValue } from '@ethersproject/bytes'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
+import { fillAndSign, getUserOpHash } from '../test/UserOp'
+import { UserOperation } from '../test/UserOperation'
+import { TransactionReceipt } from '@ethersproject/abstract-provider/src.ts/index'
+import { clearInterval } from 'timers'
+import { Create2Factory } from './Create2Factory'
+import { getCreate2Address, hexConcat, Interface, keccak256 } from 'ethers/lib/utils'
+import { HashZero } from '../test/testutils'
 
 export type SendUserOp = (userOp: UserOperation) => Promise<TransactionResponse | undefined>
 
@@ -33,8 +35,7 @@ export function rpcUserOpSender (provider: ethers.providers.JsonRpcProvider, ent
     if (debug) {
       console.log('sending eth_sendUserOperation', {
         ...userOp,
-        facotry: (userOp.factory ?? '').length,
-        facotryData: (userOp.factoryData ?? '').length,
+        initCode: (userOp.initCode ?? '').length,
         callData: (userOp.callData ?? '').length
       }, entryPointAddress)
     }
@@ -119,7 +120,7 @@ let sending = false
 // after that much time with no new TX, send whatever you can.
 const IDLE_TIME = 5000
 
-// when reaching this threshold, don't wait anymore and send a bundle
+// when reaching this theshold, don't wait anymore and send a bundle
 const BUNDLE_SIZE_IMMEDIATE = 3
 
 async function sendQueuedUserOps (queueSender: QueueSendUserOp, entryPoint: EntryPoint): Promise<void> {
@@ -133,12 +134,12 @@ async function sendQueuedUserOps (queueSender: QueueSendUserOp, entryPoint: Entr
       console.log('queue too small/too young. waiting')
       return
     }
-    const ops: PackedUserOperation[] = []
+    const ops: UserOperation[] = []
     const queue = queueSender.queue
     Object.keys(queue).forEach(sender => {
       const op = queue[sender].shift()
       if (op != null) {
-        ops.push(packUserOp(op))
+        ops.push(op)
         queueSender.queueSize--
       }
     })
@@ -170,24 +171,16 @@ export function localUserOpSender (entryPointAddress: string, signer: Signer, be
     if (debug) {
       console.log('sending', {
         ...userOp,
-        factory: userOp.factory,
-        factoryData: (userOp.factoryData != null && userOp.factoryData.length <= 2) ? userOp.factoryData : `<len=${userOp.factoryData?.length}>`
+        initCode: userOp.initCode.length <= 2 ? userOp.initCode : `<len=${userOp.initCode.length}>`
       })
     }
     const gasLimit = BigNumber.from(userOp.preVerificationGas).add(userOp.verificationGasLimit).add(userOp.callGasLimit)
     console.log('calc gaslimit=', gasLimit.toString())
-    try {
-      const ret = await entryPoint.handleOps([packUserOp(userOp)], beneficiary ?? await signer.getAddress(), {
-        maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
-        maxFeePerGas: userOp.maxFeePerGas,
-        gasLimit: 1e6
-
-      })
-      await ret.wait()
-    } catch (e: any) {
-      console.log('decoded err=', decodeRevertReason(e))
-      throw e
-    }
+    const ret = await entryPoint.handleOps([userOp], beneficiary ?? await signer.getAddress(), {
+      maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+      maxFeePerGas: userOp.maxFeePerGas
+    })
+    await ret.wait()
     return undefined
   }
 }
@@ -209,7 +202,6 @@ export class AASigner extends Signer {
 
   private _isPhantom = true
   public entryPoint: EntryPoint
-  public accountFactory: SimpleAccountFactory
 
   private _chainId: Promise<number> | undefined
 
@@ -220,10 +212,9 @@ export class AASigner extends Signer {
    * @param sendUserOp function to actually send the UserOp to the entryPoint.
    * @param index - index of this account for this signer.
    */
-  constructor (readonly signer: Signer, readonly entryPointAddress: string, readonly sendUserOp: SendUserOp, readonly accountFactoryAddress: string, readonly index = 0, readonly provider = signer.provider) {
+  constructor (readonly signer: Signer, readonly entryPointAddress: string, readonly sendUserOp: SendUserOp, readonly index = 0, readonly provider = signer.provider) {
     super()
     this.entryPoint = EntryPoint__factory.connect(entryPointAddress, signer)
-    this.accountFactory = SimpleAccountFactory__factory.connect(accountFactoryAddress, signer)
   }
 
   // connect to a specific pre-deployed address
@@ -241,6 +232,18 @@ export class AASigner extends Signer {
 
   connect (provider: Provider): Signer {
     throw new Error('connect not implemented')
+  }
+
+  async _deploymentAddress (): Promise<string> {
+    return getCreate2Address(Create2Factory.contractAddress, HashZero, keccak256(await this._deploymentTransaction()))
+  }
+
+  // TODO TODO: THERE IS UTILS.getAccountInitCode - why not use that?
+  async _deploymentTransaction (): Promise<BytesLike> {
+    const implementationAddress = zeroAddress() // TODO: pass implementation in here
+    const ownerAddress = await this.signer.getAddress()
+    const initializeCall = new Interface(SimpleAccount__factory.abi).encodeFunctionData('initialize', [ownerAddress])
+    return new ERC1967Proxy__factory(this.signer).getDeployTransaction(implementationAddress, initializeCall).data!
   }
 
   async getAddress (): Promise<string> {
@@ -343,14 +346,14 @@ export class AASigner extends Signer {
   async sendTransaction (transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
     const userOp = await this._createUserOperation(transaction)
     // get response BEFORE sending request: the response waits for events, which might be triggered before the actual send returns.
-    const response = await this.userEventResponse(userOp)
+    const reponse = await this.userEventResponse(userOp)
     await this.sendUserOp(userOp)
-    return response
+    return reponse
   }
 
   async syncAccount (): Promise<void> {
     if (this._account == null) {
-      const address = await getAccountAddress(await this.signer.getAddress(), this.accountFactory)
+      const address = await this._deploymentAddress()
       this._account = SimpleAccount__factory.connect(address, this.signer)
     }
 
@@ -375,11 +378,14 @@ export class AASigner extends Signer {
     const tx: TransactionRequest = await resolveProperties(transaction)
     await this.syncAccount()
 
-    let factory: string | undefined
-    let factoryData: BytesLike | undefined
+    let initCode: BytesLike | undefined
     if (this._isPhantom) {
-      factory = this.accountFactory.address
-      factoryData = getAccountFactoryData(await this.signer.getAddress(), this.accountFactory)
+      const initCallData = new Create2Factory(this.provider!).getDeployTransactionCallData(hexValue(await this._deploymentTransaction()), HashZero)
+
+      initCode = hexConcat([
+        Create2Factory.contractAddress,
+        initCallData
+      ])
     }
     const execFromEntryPoint = await this._account!.populateTransaction.execute(tx.to!, tx.value ?? 0, tx.data!)
 
@@ -392,9 +398,8 @@ export class AASigner extends Signer {
     }
     const userOp = await fillAndSign({
       sender: this._account!.address,
-      factory,
-      factoryData,
-      nonce: factoryData == null ? tx.nonce : this.index,
+      initCode,
+      nonce: initCode == null ? tx.nonce : this.index,
       callData: execFromEntryPoint.data!,
       callGasLimit: tx.gasLimit,
       maxPriorityFeePerGas,
