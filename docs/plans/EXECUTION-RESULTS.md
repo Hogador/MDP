@@ -49,3 +49,14 @@
 - **Верификация**: `forge build` ✅; `forge test` фабрики — 4/4 PASS (2 прогона, повторён Coordinator'ом — ✅).
 - **Self-challenge**: (a) конструктор `address` вместо `IEntryPoint` — отклонение от v0.6-референса, поведение идентично; (b) v0.6 SimpleAccountFactory использует ERC1967Proxy+initialize, а задача дала явную формулу с creationCode — прямое CREATE2, т.к. MDAOSmartAccount не upgradeable и без initialize(); (c) YAGNI-альтернатива «не делать фабрику» отклонена — явно заказана задачей; (d) допущение: salt uint256→bytes32 (как v0.6), ENTRY_POINT из env — тот же v0.6, что у paymaster.
 - **Статус**: ✅ завершено.
+
+## S4 — Reviewer: ревью фазы 0 (0.1 + 0.2), снятие допущений coder'а
+
+- **Задача**: пользователь потребовал «никаких допущений» — проверить 2 допущения S3 по коду, а не по доверию. Reviewer (big-pickle, разнесён ≥2 шага от S1) + повторная верификация Coordinator'ом по цитатам кода.
+- **Результат reviewer**: verdict **OK**, оба допущения CONFIRMED, критических findings нет (все severity low/medium — подтверждения корректности, не баги).
+- **Доказательства (цитаты кода, проверены Coordinator'ом)**:
+  1. **Допущение salt uint256→bytes32 — CONFIRMED**: v0.6 `SimpleAccountFactory.getAddress` → `Create2.computeAddress(bytes32(salt), ...)` — тот же каст `bytes32(salt)`. Наш `getAddress` идентичен по формуле: `keccak256(0xff, this, bytes32(salt), keccak256(creationCode, abi.encode(entryPoint, owner)))`.
+  2. **Допущение ENTRY_POINT из env — CONFIRMED**: `Deploy.s.sol` строка 61 (paymaster) и строка 71 (factory) — оба `vm.envAddress("ENTRY_POINT")`, один и тот же адрес.
+  3. **Различие с v0.6 SimpleAccountFactory** (осознанное, не баг): v0.6 деплоит ERC1967Proxy + `initialize(owner)`; наш деплоит `new MDAOSmartAccount{salt}(entryPoint, owner)` напрямую — корректно, т.к. MDAOSmartAccount не upgradeable и без `initialize()` (его конструктор принимает оба аргумента). v0.6-референс использует только owner в initialize, наш — entryPoint+owner в конструкторе: формула консистентна с конструктором.
+  4. **Прочее проверено reviewer'ом**: salt-синтаксис `new X{salt: bytes32}` поддерживается solc 0.8.28; `account.code.length > 0` — защита от редеплоя на месте; конструктор аккаунта проверяет zero для entryPoint и owner; фабрика деплоится после paymaster (зависимостей нет, порядок не ломает); адреса логируются для шага 4.1 (NetworkConfig).
+- **Статус**: ✅ завершено. Фаза 0 (Шаг 0.1 + 0.2) закрыта с OK.
