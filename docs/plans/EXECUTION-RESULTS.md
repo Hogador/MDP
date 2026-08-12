@@ -60,3 +60,17 @@
   3. **Различие с v0.6 SimpleAccountFactory** (осознанное, не баг): v0.6 деплоит ERC1967Proxy + `initialize(owner)`; наш деплоит `new MDAOSmartAccount{salt}(entryPoint, owner)` напрямую — корректно, т.к. MDAOSmartAccount не upgradeable и без `initialize()` (его конструктор принимает оба аргумента). v0.6-референс использует только owner в initialize, наш — entryPoint+owner в конструкторе: формула консистентна с конструктором.
   4. **Прочее проверено reviewer'ом**: salt-синтаксис `new X{salt: bytes32}` поддерживается solc 0.8.28; `account.code.length > 0` — защита от редеплоя на месте; конструктор аккаунта проверяет zero для entryPoint и owner; фабрика деплоится после paymaster (зависимостей нет, порядок не ломает); адреса логируются для шага 4.1 (NetworkConfig).
 - **Статус**: ✅ завершено. Фаза 0 (Шаг 0.1 + 0.2) закрыта с OK.
+
+## S5 — Шаг 1.2 (TD-04): approveHook перед addRecoveryHook в Deploy.s.sol
+
+- **Задача**: Deploy.s.sol L113-114 вызывает `deadManSwitch.setRecoveryCaller(...)` + `socialRecovery.addRecoveryHook(IRecoveryHook(address(deadManSwitch)))` БЕЗ предварительного `approveHook` → деплой падал бы с `ErrHookNotApproved` (SocialRecoveryModule.sol L430: `if (!approvedHookContracts[address(hook)]) revert ErrHookNotApproved();`).
+- **Что сделано**: coder (deepseek-v4-flash-free) вставил +1 строку в существующий broadcast-блок:
+  ```
+  deadManSwitch.setRecoveryCaller(address(socialRecovery));
+  + socialRecovery.approveHook(address(deadManSwitch));
+  socialRecovery.addRecoveryHook(IRecoveryHook(address(deadManSwitch)));
+  ```
+  Порядок соблюдён (approveHook ПЕРЕД addRecoveryHook, иначе revert). Новых broadcast-блоков не добавлял.
+- **Верификация**: `forge build` ✅ (только pre-existing lint-warning на addRecoveryHook-касте); `forge test --match-path test/MDAOSmartAccountFactory.t.sol` 4/4 PASS (2 прогона); повторная проверка Coordinator'ом: `git diff` = ровно +1 строка, корректно.
+- **Self-challenge**: (a) approveHook не требует отдельного broadcast-блока — она включена в существующий `vm.startBroadcast()...stopBroadcast()`, вызов external от deployer'а — корректно; (b) риск: hook-контракт (DeadManSwitch) одобряется, но сама функция добавления в approvedHookContracts сработает только если вызвана от owner — socialRecovery на момент вызова принадлежит deployer'у (передача владения timelock'у идёт позже в скрипте) — верно; (c) альтернатива «вызвать approveHook позже в скрипте» — хуже, т.к. addRecoveryHook упадёт раньше; (d) допущение: `approveHook` вызывается от deployer'а, который на этот момент — owner SRM (проверено по порядку скрипта).
+- **Статус**: ✅ завершено.

@@ -111,6 +111,7 @@ contract Deploy is Script {
         // Wire DeadManSwitch ↔ SocialRecoveryModule (4.3)
         vm.startBroadcast();
         deadManSwitch.setRecoveryCaller(address(socialRecovery));
+        socialRecovery.approveHook(address(deadManSwitch));
         socialRecovery.addRecoveryHook(IRecoveryHook(address(deadManSwitch)));
         vm.stopBroadcast();
         console.log("DeadManSwitch: recoveryCaller set, hook registered on SocialRecoveryModule");
