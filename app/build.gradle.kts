@@ -212,6 +212,20 @@ tasks.named("preBuild") {
     dependsOn(generateDeploymentConfig)
 }
 
+// TD-12: BUNDLER_URL fail-fast — генерация BuildConfig требует -PBUNDLER_URL_<FLAVOR>.
+// Проверка на execution time (doFirst), чтобы generateDeploymentConfig и прочие
+// конфигурационные таски работали без свойства; падает только реальная сборка.
+tasks.matching { it.name.matches(Regex("generate(Dev|Staging|Prod)(Debug|Release)BuildConfig")) }.configureEach {
+    doFirst {
+        val flavor = name.removePrefix("generate").removeSuffix("BuildConfig")
+            .removeSuffix("Debug").removeSuffix("Release")
+        val prop = "BUNDLER_URL_${flavor.uppercase()}"
+        requireNotNull(project.findProperty(prop)) {
+            "$prop is required for ${flavor.lowercase()} build. Pass -P$prop=..."
+        }
+    }
+}
+
 dependencies {
     // Core
     implementation(libs.androidx.core.ktx)

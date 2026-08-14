@@ -81,7 +81,7 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
-      - run: ./gradlew assembleDevDebug
+      - run: ./gradlew assembleDevDebug -PBUNDLER_URL_DEV=http://bundler.local:4337
 
   relay:
     runs-on: ubuntu-latest

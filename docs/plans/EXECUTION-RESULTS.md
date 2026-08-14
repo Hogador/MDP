@@ -267,3 +267,10 @@
 - Diff: 56 строк gradle + 8 строк NetworkConfig (opencode.json — pre-existing, не наш).
 - Сгенерированный файл в build/ — не коммитится.
 - Известный футган (self-challenge): chainId из -PCHAIN_ID на конфигурации (flavor-переменная не читается на этапе таска); prod-сборка обязана передавать -PCHAIN_ID=56, иначе тихий 0x0 + WARN. Fail-closed, не использование чужого адреса.
+
+## S17 — 4.2 BUNDLER_URL fail-fast (TD-12)
+- **Задача:** BUNDLER_URL fail-fast при сборке (BuildConfig).
+- **Что сделано:** coder (deepseek-v4-flash-free). 1-я попытка — STOP: `error()` в productFlavors срабатывает в configuration phase → ломает ЛЮБУЮ таску :app (generateDeploymentConfig, CI assembleDevDebug). Решение Architect'а: вариант B. Откат config-time error → `tasks.matching { generate(Dev|Staging|Prod)(Debug|Release)BuildConfig }.configureEach { doFirst { requireNotNull(findProperty("BUNDLER_URL_<FLAVOR>")) } }`. ci.yml:84: assembleDevDebug + `-PBUNDLER_URL_DEV=http://bundler.local:4337`. test.yml/deploy-testnet.yml собирают только backend — не тронуты.
+- **Файлы:** app/build.gradle.kts, .github/workflows/ci.yml.
+- **Верификация (эмпирическая):** generateDeploymentConfig без -P → PASS; compileDevDebugKotlin -PBUNDLER_URL_DEV → PASS; без -P → FAIL «BUNDLER_URL_DEV is required for dev build...»; все 3 -P → PASS; generateStagingDebugBuildConfig без -P → FAIL «BUNDLER_URL_STAGING...»; generateProdDebugBuildConfig без -P → FAIL «BUNDLER_URL_PROD...». Release покрыты тем же matching-блоком.
+- **Self-challenge:** regex завязан на конвенцию имён AGP — новый flavor молча выпадет из guard (риск принят, YAGNI); release-таски не прогнаны (только debug), поведение идентично по matching-блоку.
