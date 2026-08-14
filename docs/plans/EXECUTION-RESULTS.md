@@ -315,3 +315,20 @@
 **Верификация (независимо, Coordinator):** :app:testDevDebugUnitTest --tests "com.mdaopay.app.core.guardian.*" BUILD SUCCESSFUL (8 тестов, 2 новых) — с -PBUNDLER_URL_DEV=http://bundler.local:4337 (иначе S17 fail-fast валит generateDevDebugBuildConfig). grep подтвердил: authenticateWithPasskey L78, buildWebAuthnProof L386, relay `accept:` L192.
 
 **Статус:** DONE. Коммит 9628bdf. Зафиксировано в ISSUES-кандидатах: relay accept-флоу несовместим с passkey-подписью.
+
+## S20 — 4.3c e2e recovery-флоу (qa_tester → fallback coder)
+
+**Задача:** сквозной e2e recovery-флоу: register → invite → accept → initiate → execute с реальной P-256 WebAuthn-подписью.
+
+**Что сделано** (fallback: qa_tester codestral-2508 дважды провалил — создал каталог вместо файла, компиляция падала 30+ раз; задача передана coder deepseek-v4-flash-free):
+- `contracts/test/E2ERecoveryFlow.t.sol` (209 строк): деплой аккаунта через MDAOSmartAccountFactory → setRecoveryCaller(SRM) → 2 guardian'а → initiateRecovery → 2 approve с реальными P-256 sig (RFC-6979, messageHash = SHA-256(authData||SHA-256(clientDataJSON)), формула _verifyWebAuthn) → warp 48h → executeRecovery → owner сменён, старый EOA больше не owner.
+- Использован РЕАЛЬНЫЙ P256Verifier (не MockP256): требование «мусорный r/s → revert» физически невыполнимо на MockP256 (fallback возвращает 1 на любой ввод).
+- Негативные: test_RevertWhen_NonGuardianApproves (ErrNotGuardian), test_RevertWhen_GarbageSignature (ErrInvalidSignature).
+
+**Верификация (независимо, Coordinator):**
+- forge test --match-path test/E2ERecoveryFlow.t.sol → 3/3 PASS ×2 прогона
+- Регрессия test/{SocialRecoveryModule,Integration}.t.sol → 51/51 PASS (совпадает с baseline)
+
+**Отклонения:** qa_tester → coder (fallback модели); MockP256 → P256Verifier (обосновано, см. выше).
+
+**Коммит:** 8aa720e.
