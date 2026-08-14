@@ -13,7 +13,10 @@ import com.mdaopay.app.core.guardian.GuardianInfo
 import com.mdaopay.app.core.guardian.GuardianInvite
 import com.mdaopay.app.core.guardian.GuardianManager
 import com.mdaopay.app.core.guardian.GuardianStorage
+import com.mdaopay.app.core.guardian.RelayClient
+import com.mdaopay.app.core.notification.FCMTokenHolder
 import com.mdaopay.app.core.security.DeviceIntegrityManager
+import com.google.firebase.messaging.FirebaseMessaging
 import com.mdaopay.app.core.security.PasskeyManager
 import com.mdaopay.app.core.security.RecoveryShareManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,12 +25,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.web3j.crypto.MnemonicUtils
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
 @HiltViewModel
 class RecoveryViewModel @Inject constructor(
@@ -36,6 +41,7 @@ class RecoveryViewModel @Inject constructor(
     private val passkeyManager: PasskeyManager,
     private val guardianManager: GuardianManager,
     private val guardianStorage: GuardianStorage,
+    private val relayClient: RelayClient,
     private val recoveryUserOpBuilder: RecoveryUserOpBuilder,
     private val userPreferences: UserPreferences,
     private val integrityManager: DeviceIntegrityManager,
@@ -501,11 +507,16 @@ class RecoveryViewModel @Inject constructor(
                     _guardianError.value = "Кошелёк не загружен"
                     return@launch
                 }
+                val fcmToken = fetchFcmToken()
+                // register through relay POST /push/register (idempotent; invite route also stores it)
+                if (fcmToken.isNotEmpty()) {
+                    relayClient.registerPushToken(wallet.address, fcmToken)
+                }
                 val result = guardianManager.inviteGuardian(
                     walletAddress = wallet.address,
                     guardianLabel = guardianLabel,
                     shareIndex = shareIndex,
-                    fcmToken = ""
+                    fcmToken = fcmToken
                 )
                 result.onFailure { e ->
                     _guardianError.value = e.localizedMessage ?: "Ошибка приглашения"
@@ -517,6 +528,17 @@ class RecoveryViewModel @Inject constructor(
                 _guardianLoading.value = false
             }
         }
+    }
+
+    // ponytail: FCMTokenHolder caches onNewToken; FirebaseMessaging task covers cold start before onNewToken fires
+    private suspend fun fetchFcmToken(): String = try {
+        FCMTokenHolder.token ?: suspendCancellableCoroutine { cont ->
+            FirebaseMessaging.getInstance().token
+                .addOnSuccessListener { FCMTokenHolder.token = it; cont.resume(it) }
+                .addOnFailureListener { cont.resume("") }
+        }
+    } catch (e: Exception) {
+        "" // Firebase not configured for this flavor — push unavailable, invite still proceeds
     }
 
     fun removeGuardian(identityHash: String) {

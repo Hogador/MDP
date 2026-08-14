@@ -455,3 +455,15 @@
 **Файлы:** backend/src/main/kotlin/com/mdaopay/paymaster/Application.kt (1 строка).
 
 **Коммит:** (следующий в цепочке S26)
+
+## S27 — 5.6 FCM push: убрать хардкод fcmToken="" (TD-19)
+- **Задача**: RecoveryViewModel.kt L508 `fcmToken = ""` → реальный токен; роут POST /push/register уже в relay (index.ts L303-310), RelayClient.registerPushToken существует (L141-145).
+- **Кто**: coder (deepseek-v4-flash-free), 1 запуск.
+- **Что сделано** (RecoveryViewModel.kt, +24/−1):
+  1. L510: `fcmToken = ""` → `fetchFcmToken()`.
+  2. L512-514: `relayClient.registerPushToken(wallet.address, fcmToken)` — guard isNotEmpty (не засоряем KV пустышками).
+  3. L534-542: `fetchFcmToken()` — FCMTokenHolder.token (кэш onNewToken) ?: FirebaseMessaging.getInstance().token через suspendCancellableCoroutine (паттерн SocialAuthManager L80); catch → "" (Firebase не настроен для flavor).
+  4. Конструктор: +relayClient (Hilt @Singleton, HMAC-подписан RelayHmacInterceptor).
+- **Root cause**: relay-инвайт сам регистрирует токен (index.ts L139) — раньше уходил "", теперь реальный.
+- **Верификация**: compileDevDebugKotlin PASS ×2; testDevDebugUnitTest BUILD SUCCESSFUL ×2 (1-й запуск — OOM gradle daemon, retry -Xmx2g ок); контракт payload RelayClient ↔ relay types.ts L60-64 совпадает. Coordinator: git diff подтверждён, компиляция + тесты перепрогнаны.
+- **Допущения**: onNewToken срабатывает при первом запуске; dev-флавор без Firebase → "" (инвайт не падает).
