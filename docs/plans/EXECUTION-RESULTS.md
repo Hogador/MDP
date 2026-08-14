@@ -413,3 +413,20 @@
 **Верификация (независимо, Coordinator):** bash -n SYNTAX OK; grep: envAddress + 2 require на месте, log_error + exit 1 на месте; forge build — 0 errors (только pre-existing lint unsafe-typecast); .env.example grep INSURANCE_AUDITOR найден.
 
 **Коммит:** 5b96a65 (2 файла, +6/−4). .env.example в коммит не вошёл (gitignored).
+
+## S25 — 5.4 ProposalRepository: contract_address по use-case (TD-17)
+
+**Задача:** `/events?contract=Proposal&limit=500` — бекенд ищет по `contract_address` (lowercase), клиент слал имя контракта → пусто всегда (аудит A2 HIGH).
+
+**Агент:** coder (deepseek-v4-flash-free).
+
+**Что сделано:**
+1. Бекенд read-only: `/v1/events` (Application.kt:372-379) — query-параметр называется `contract`, но сравнивается с колонкой `contract_address` и приводится к lowercase (L393); параметров `params`/`chainId` в роуте НЕТ (TD-17-идея «слать сигнатуры» нереализуема против текущего бекенда); ответ содержит ключ `params` (L438).
+2. ProposalRepository.kt: URL → `/v1/events?contract=${NetworkConfig.PROPOSAL_CONTRACT}` (адрес, источник — NetworkConfig.kt:24 → BuildConfig.PROPOSAL_CONTRACT, тот же, что в VoteRepository.kt:58). Убран 404-путь (нет `/v1`).
+3. Бонус (H-A3): `OnChainEvent.param_json` → `params` (бекенд возвращает именно `params`; с ignoreUnknownKeys=true старое поле всегда было "{}" → фича мертва). 9 использований обновлены.
+4. URL вынесен в `internal fun proposalEventsUrl(baseUrl, contractAddress)` — для тестируемости.
+5. Новый тест ProposalRepositoryTest.kt (2 теста): формат URL + разбор ответа.
+
+**Верификация (Coordinator, независимо):** git diff подтверждён (ProposalRepository.kt 26 строк, тест новый); grep: `/v1/events?contract=` L135, `params` L30/77-96, `PROPOSAL_CONTRACT` L63; VoteRepository.kt:58 уже использует тот же источник — консистентно. `./gradlew :app:compileDevDebugKotlin :app:testDevDebugUnitTest --tests "*Proposal*" -PBUNDLER_URL_DEV=http://bundler.local:4337` → EXIT=0 (BUILD SUCCESSFUL).
+
+**Self-challenge:** dev-конфиг без PROPOSAL_CONTRACT_DEV даёт 0x0 → пусто (конфиг деплоя, не код); расширение скоупа param_json→params обосновано (иначе TD-17 не закрыт); значение адреса Proposal на тестнете не верифицировано (вне app-кода).

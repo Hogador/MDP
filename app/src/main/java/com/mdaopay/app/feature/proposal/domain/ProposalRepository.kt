@@ -1,6 +1,7 @@
 package com.mdaopay.app.feature.proposal.domain
 
 import com.mdaopay.app.BuildConfig
+import com.mdaopay.app.core.blockchain.NetworkConfig
 import com.mdaopay.app.core.common.AppError
 import com.mdaopay.app.core.common.Result
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,7 @@ data class OnChainEvent(
     val tx_hash: String = "",
     val log_index: Int = 0,
     val wallet: String? = null,
-    val param_json: String = "{}"
+    val params: String = "{}"
 )
 
 data class ProposalSummary(
@@ -59,7 +60,7 @@ class ProposalRepository @Inject constructor(
 
     suspend fun getProposals(): Result<List<ProposalSummary>> = withContext(Dispatchers.IO) {
         try {
-            val url = "${BuildConfig.BACKEND_URL}/events?contract=Proposal&limit=500"
+            val url = proposalEventsUrl(BuildConfig.BACKEND_URL, NetworkConfig.PROPOSAL_CONTRACT)
             val request = Request.Builder().url(url).get().build()
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
@@ -73,19 +74,19 @@ class ProposalRepository @Inject constructor(
 
             val created = events.filter { it.event_name == "ProposalCreated" }
             val votes = events.filter { it.event_name == "VoteCast" }
-            val executedIds = events.filter { it.event_name == "ProposalExecuted" }.mapNotNull { parseParam(it.param_json, "proposalId")?.toLongOrNull() }.toSet()
-            val cancelledIds = events.filter { it.event_name == "ProposalCancelled" }.mapNotNull { parseParam(it.param_json, "proposalId")?.toLongOrNull() }.toSet()
+            val executedIds = events.filter { it.event_name == "ProposalExecuted" }.mapNotNull { parseParam(it.params, "proposalId")?.toLongOrNull() }.toSet()
+            val cancelledIds = events.filter { it.event_name == "ProposalCancelled" }.mapNotNull { parseParam(it.params, "proposalId")?.toLongOrNull() }.toSet()
 
             val proposals = created.mapNotNull { ev ->
-                val params = parseParams(ev.param_json)
+                val params = parseParams(ev.params)
                 val pid = params["proposalId"]?.toLongOrNull() ?: return@mapNotNull null
 
-                val forVotes = votes.filter { v -> parseParam(v.param_json, "proposalId")?.toLongOrNull() == pid && parseParam(v.param_json, "support") == "1" }
-                    .sumOf { parseParam(it.param_json, "weight")?.toLongOrNull() ?: 0L }
-                val againstVotes = votes.filter { v -> parseParam(v.param_json, "proposalId")?.toLongOrNull() == pid && parseParam(v.param_json, "support") == "0" }
-                    .sumOf { parseParam(it.param_json, "weight")?.toLongOrNull() ?: 0L }
-                val abstainVotes = votes.filter { v -> parseParam(v.param_json, "proposalId")?.toLongOrNull() == pid && parseParam(v.param_json, "support") == "2" }
-                    .sumOf { parseParam(it.param_json, "weight")?.toLongOrNull() ?: 0L }
+                val forVotes = votes.filter { v -> parseParam(v.params, "proposalId")?.toLongOrNull() == pid && parseParam(v.params, "support") == "1" }
+                    .sumOf { parseParam(it.params, "weight")?.toLongOrNull() ?: 0L }
+                val againstVotes = votes.filter { v -> parseParam(v.params, "proposalId")?.toLongOrNull() == pid && parseParam(v.params, "support") == "0" }
+                    .sumOf { parseParam(it.params, "weight")?.toLongOrNull() ?: 0L }
+                val abstainVotes = votes.filter { v -> parseParam(v.params, "proposalId")?.toLongOrNull() == pid && parseParam(v.params, "support") == "2" }
+                    .sumOf { parseParam(it.params, "weight")?.toLongOrNull() ?: 0L }
 
                 ProposalSummary(
                     id = pid,
@@ -129,3 +130,6 @@ class ProposalRepository @Inject constructor(
 
     private fun parseParam(paramJson: String, key: String): String? = parseParams(paramJson)[key]
 }
+
+internal fun proposalEventsUrl(baseUrl: String, contractAddress: String): String =
+    "$baseUrl/v1/events?contract=$contractAddress&limit=500"
