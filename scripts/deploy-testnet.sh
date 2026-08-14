@@ -221,6 +221,34 @@ log_step "Deploying contracts via forge script"
 
 cd "$REPO_ROOT/contracts"
 
+# ── Step 1/2: dry-run — show deployment plan, do NOT broadcast ──
+log_step "Step 1/2: Dry-run (plan only, no broadcast)"
+
+forge script script/Deploy.s.sol \
+    --rpc-url "$RPC_URL" \
+    --private-key "$BSC_TESTNET_DEPLOYER_KEY" \
+    --dry-run \
+    --slow
+
+# ── HITL pause: review dry-run plan before broadcast ──
+log_info "DRY-RUN OK — подтвердите план перед broadcast"
+
+if [ "${CONFIRM_DEPLOY:-}" = "no" ]; then
+    log_info "CONFIRM_DEPLOY=no — dry-run only, exiting"
+    exit 0
+fi
+
+if [ -z "${CONFIRM_DEPLOY:-}" ] && [ -t 0 ]; then
+    read -r -p "Proceed with broadcast? [Y/n] " answer
+    if [[ "$answer" =~ ^[nN](o)?$ ]]; then
+        log_error "Aborted by user"
+        exit 1
+    fi
+fi
+
+# ── Step 2/2: real deployment (broadcast + verify) ──
+log_step "Step 2/2: Broadcast (real deployment)"
+
 forge script script/Deploy.s.sol \
     --rpc-url "$RPC_URL" \
     --private-key "$BSC_TESTNET_DEPLOYER_KEY" \

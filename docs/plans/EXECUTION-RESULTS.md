@@ -372,3 +372,23 @@
 **Self-challenge (coder):** метка «canonical» — из комментария NetworkConfig.kt, не выдумана. Адрес не предполагался — проверен grep'ом.
 
 **Коммит:** S22.
+
+---
+
+## S23 — 5.2 dry-run в 2 шага (TD-15) — DONE
+
+**Задача:** разделить деплой на dry-run (план) и broadcast (реальный) с HITL-паузой.
+
+**Агент:** coder (deepseek-v4-flash-free). **Коммит:** TBD.
+
+**Что сделано** (scripts/deploy-testnet.sh, L224-260, +28 строк):
+- Шаг 1/2: `forge script script/Deploy.s.sol --rpc-url "$RPC_URL" --private-key "$BSC_TESTNET_DEPLOYER_KEY" --dry-run --slow`
+- HITL-пауза: маркер `DRY-RUN OK — подтвердите план перед broadcast`; `CONFIRM_DEPLOY=no` → exit 0 (dry-run-only, CI); TTY + не задано → `read -p "Proceed with broadcast? [Y/n]"`, n/N → exit 1; не-TTY без переменной → идёт дальше (обратная совместимость)
+- Шаг 2/2: исходный broadcast с `--verify --etherscan-api-key "$BSCSCAN_API_KEY" --slow`
+
+**Верификация (независимо, Coordinator):**
+- `bash -n scripts/deploy-testnet.sh` → SYNTAX OK
+- grep: `--dry-run` (L230), `--broadcast` (L255), `--verify` (L256), `CONFIRM_DEPLOY` (L236/241), маркер (L234)
+- Переменные подтверждены в скрипте: RPC_URL (L47), BSC_TESTNET_DEPLOYER_KEY (L6), BSCSCAN_API_KEY (L9), log_* (L37-40)
+
+**Self-challenge coder:** dry-run с `--private-key`/`--slow` отличается от буквы спеки, но без private-key симуляция в headless упадёт (reuse существующих флагов). Риск: не-TTY без CONFIRM_DEPLOY продолжает деплой (обратная совместимость, CI должен задавать переменную явно).
