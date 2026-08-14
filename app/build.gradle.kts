@@ -93,6 +93,8 @@ android {
         // F-106: Certificate pinning hashes — replace with real values via CI/project properties
         buildConfigField("String", "CERT_PIN_API", "\"${project.findProperty("CERT_PIN_API") ?: "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}\"")
         buildConfigField("String", "CERT_PIN_BACKUP", "\"${project.findProperty("CERT_PIN_BACKUP") ?: "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="}\"")
+        // F-104: Relay HMAC secret — set via -PRELAY_HMAC_SECRET at build time; empty = fail-fast in RelayHmacInterceptor
+        buildConfigField("String", "RELAY_HMAC_SECRET", "\"${project.findProperty("RELAY_HMAC_SECRET") ?: ""}\"")
     }
 
     buildTypes {

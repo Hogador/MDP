@@ -190,3 +190,31 @@
 4. Допущение: что app вообще использует эти роуты (createInvite/registerPushToken) — да, RelayClient их вызывает.
 
 **Коммит:** нет (read-only шаг). Журнал: этот блок.
+
+## S13 — 3.2 RelayHmacInterceptor (OkHttp)
+
+**Задача:** добавить HMAC-подпись в Android-клиент (relay требует X-Timestamp/X-Nonce/X-Signature для всех POST).
+
+**Инцидент — STOP и отклонение от плана:**
+- Coder остановился (STOP protocol): план TD-09 требовал base64, но relay/src/auth.ts L60-72 реально ожидает **hex lowercase** (64 символа): `b.toString(16).padStart(2, '0')`. Base64 → 401 навсегда.
+- Coordinator перепроверил факт по auth.ts (строка hmacSha256) → подтверждено.
+- Решение: hex. Relay НЕ меняется (он — единый источник формата). План исправлен (строка 275: Base64.encodeToString → joinToString %02x).
+
+**Что сделано (4 файла):**
+1. `RelayHmacInterceptor.kt` (новый): ts=сек, nonce=16 байт→32 hex, sig=hex HMAC-SHA256(`$ts.$nonce.$body`), body через Buffer().writeTo (НЕ потребляется), fail-fast на пустом секрете в intercept() (не конструкторе — старые тесты с пустым секретом не падают).
+2. `RelayClient.kt`: `client.newBuilder().addInterceptor(...)` — НЕ в NetworkModule (тот клиент делят 8+ потребителей: PaymasterClient, BundlerClient, RpcProviderManager, EtherscanRepository, EthereumClient, TokenRegistrationWorker, ProposalRepository — подпись сломала бы не-relay трафик).
+3. `app/build.gradle.kts`: +buildConfigField RELAY_HMAC_SECRET (buildFeatures.buildConfig уже true; секрета нигде не было — grep пуст).
+4. `RelayClientTest.kt`: +2 теста (POST: заголовки/пересчёт HMAC/body читается; GET: sig = hex(`$ts.$nonce.`)).
+
+**Верификация (независимая, Coordinator):** `./gradlew :app:compileDevDebugKotlin` BUILD SUCCESSFUL; `./gradlew :app:testDevDebugUnitTest --tests "*RelayClient*" --rerun-tasks` — BUILD SUCCESSFUL 29s, 13/13 (11 старых + 2 новых), прогон 2 раза. Pre-existing Ktor/Kotlin поломок НЕ обнаружено (в отличие от backend).
+
+**Self-challenge (coder):**
+1. hex завязан на текущий relay — смена формата на base64 → молчаливый 401.
+2. Секрет в BuildConfig — реверс-инжиниринг клиента возможен; HMAC = аутентификация приложения, не секретность (та же модель, что у relay-воркера).
+3. Проще некуда: Interceptor + constructor secret — минимально.
+4. Допущения: lowercase hex (подтверждено auth.ts + auth.test.ts), %02x = lowercase, SecureRandom thread-safe, ts-дрейф 5 мин ок.
+
+**Коммит:** следующий (после S14 или отдельно — журнал пополнен).
+
+## S13.5 — Coordinator: отклонение TD-09 (base64 → hex) зафиксировано
+План строка 275 исправлен: `.header("X-Signature", sig.joinToString("") { "%02x".format(it) }) // hex lowercase 64 chars — relay hmacSha256 (auth.ts L60-72)`. Причина: факт кода перевешивает букву плана (тот же паттерн, что S9: таблица nicknames вместо users).

@@ -1,11 +1,23 @@
 package com.mdaopay.app.core.guardian
 
 import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Connection
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * F-104 regression: RelayClient circuit breaker + retry.
@@ -150,5 +162,93 @@ class RelayClientTest {
         val result = json.decodeFromString<ApiResponse<String>>(jsonStr)
         assertTrue(result.success)
         assertNull(result.data)
+    }
+
+    // ── RelayHmacInterceptor ──
+
+    private class RecordingChain(
+        private val initial: Request
+    ) : Interceptor.Chain {
+        var sent: Request? = null
+            private set
+
+        override fun request(): Request = initial
+
+        override fun proceed(request: Request): Response {
+            sent = request
+            return Response.Builder()
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body("{}".toResponseBody(null))
+                .build()
+        }
+
+        override fun connection(): Connection? = null
+        override fun call(): Call = error("not used")
+
+        override fun connectTimeoutMillis(): Int = 10_000
+        override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit): Interceptor.Chain = this
+        override fun readTimeoutMillis(): Int = 10_000
+        override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit): Interceptor.Chain = this
+        override fun writeTimeoutMillis(): Int = 10_000
+        override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit): Interceptor.Chain = this
+    }
+
+    private fun hmacHex(secret: String, data: String): String {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secret.toByteArray(), "HmacSHA256"))
+        return mac.doFinal(data.toByteArray()).joinToString("") { "%02x".format(it) }
+    }
+
+    @Test
+    fun `interceptor signs post with hmac hex headers and keeps body readable`() {
+        val secret = "test-relay-secret"
+        val interceptor = RelayHmacInterceptor(secret)
+        val bodyText = """{"walletAddress":"0xabc"}"""
+        val request = Request.Builder()
+            .url("https://relay.test/guardian/invite")
+            .post(bodyText.toRequestBody("application/json".toMediaType()))
+            .build()
+        val chain = RecordingChain(request)
+
+        interceptor.intercept(chain)
+
+        val sent = checkNotNull(chain.sent) { "interceptor did not proceed" }
+        val ts = checkNotNull(sent.header("X-Timestamp")) { "missing X-Timestamp" }
+        val nonce = checkNotNull(sent.header("X-Nonce")) { "missing X-Nonce" }
+        val sig = checkNotNull(sent.header("X-Signature")) { "missing X-Signature" }
+
+        assertTrue("nonce must be 32 hex chars", nonce.matches(Regex("[0-9a-f]{32}")))
+        assertTrue("signature must be lowercase hex, 64 chars", sig.matches(Regex("[0-9a-f]{64}")))
+
+        // recompute with same secret/ts/nonce — must match relay/src/auth.ts format
+        assertEquals(hmacHex(secret, "$ts.$nonce.$bodyText"), sig)
+
+        // body not consumed — still readable after interceptor
+        val buffer = Buffer()
+        sent.body!!.writeTo(buffer)
+        assertEquals(bodyText, buffer.readUtf8())
+    }
+
+    @Test
+    fun `interceptor signs get with empty body`() {
+        val secret = "test-relay-secret"
+        val interceptor = RelayHmacInterceptor(secret)
+        val request = Request.Builder()
+            .url("https://relay.test/guardian/invite/1")
+            .get()
+            .build()
+        val chain = RecordingChain(request)
+
+        interceptor.intercept(chain)
+
+                val sent = checkNotNull(chain.sent) { "interceptor did not proceed" }
+        val ts = checkNotNull(sent.header("X-Timestamp")) { "missing X-Timestamp" }
+        val nonce = checkNotNull(sent.header("X-Nonce")) { "missing X-Nonce" }
+        val sig = checkNotNull(sent.header("X-Signature")) { "missing X-Signature" }
+
+        assertEquals(hmacHex(secret, "$ts.$nonce."), sig)
     }
 }

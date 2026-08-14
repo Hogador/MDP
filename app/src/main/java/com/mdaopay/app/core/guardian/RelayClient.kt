@@ -25,8 +25,13 @@ data class ApiResponse<T>(
 
 @Singleton
 class RelayClient @Inject constructor(
-    private val client: OkHttpClient
+    client: OkHttpClient
 ) {
+    // ponytail: HMAC interceptor scoped to relay only — shared NetworkModule client serves 8+ consumers
+    private val client: OkHttpClient = client.newBuilder()
+        .addInterceptor(RelayHmacInterceptor())
+        .build()
+
     private val json = Json { ignoreUnknownKeys = true }
 
     companion object {
