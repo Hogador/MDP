@@ -332,3 +332,24 @@
 **Отклонения:** qa_tester → coder (fallback модели); MockP256 → P256Verifier (обосновано, см. выше).
 
 **Коммит:** 8aa720e.
+
+## S21 — Reviewer: ревью фазы 4 (4.1 NetworkConfig, 4.2 BUNDLER_URL, 4.3a/b/c guardian)
+
+**Задача:** внешняя перепроверка всех изменений фазы 4 по claims-списку (6 claims).
+
+**Результат (reviewer, рантайм-fallback big-pickle → mistral-medium-2505, результат полный):**
+- Verdict: **approve, score 95**.
+- Claims 1-5 — все FACT, подтверждены по коду:
+  1. generateDeploymentConfig парсит broadcast run-latest.json (CREATE), извлекает SOCIAL_RECOVERY_MODULE + SMART_ACCOUNT_FACTORY, генерирует DeploymentConfig.kt; нет JSON → 0x0 + WARN.
+  2. BUNDLER_URL fail-fast на execution-time (regex generate(Dev|Staging|Prod)(Debug|Release)BuildConfig + doFirst requireNotNull), ci.yml с -PBUNDLER_URL_DEV; config-time error() откачен.
+  3. CreateInviteRequest +guardianPubKeyX/Y (без дефолтов); inviteGuardian создаёт реальный passkey, X/Y через extractP256PublicKey; 64-char hex без 0x.
+  4. buildWebAuthnProof собирает 160 байт messageHash||r||s||x||y, messageHash=SHA-256(authData||SHA-256(clientDataJSON)); fail-closed на не-64-байт sig.
+  5. E2ERecoveryFlow.t.sol: e2e через реальный P256Verifier + реальные RFC-6979 sig; негативные ErrNotGuardian/ErrInvalidSignature.
+  6. OBSERVATION подтверждена: relay accept верифицирует над строкой `accept:${inviteId}:${walletAddress}` против invite.guardianPubKeyX/Y (index.ts L191-198) — структурно несовместим с passkey assertion. Известный дизайн-разрыв, зафиксирован ранее, НЕ новый баг.
+
+**Findings (все приняты к сведению, НЕ исправлялись — YAGNI/известные):**
+- low: app/build.gradle.kts L22 — путь к JSON хардкод (осознанно, монолитный репозиторий).
+- low: GuardianUserOpBuilder.kt L327 — magic numbers gas-лимитов (пре-существующие).
+- medium: relay/src/index.ts L191 — это НАШ известный дизайн-разрыв (claim 6), подтверждён как существующий.
+
+**Коммит:** (журнал; код фазы 4 в коммитах 75e0d6f, 34e18a7, 0af6ab1, 9628bdf, 8aa720e).
