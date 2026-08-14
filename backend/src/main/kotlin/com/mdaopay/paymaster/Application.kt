@@ -231,6 +231,7 @@ fun main() {
         config.sessionKeyModuleAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.sessionKeyEvents)) }
         config.recoveryModuleAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.socialRecoveryEvents)) }
         config.deadManSwitchAddress?.let { addr -> add(IndexedContract(addr, EventDefinitions.deadManSwitchEvents)) }
+        add(IndexedContract(config.paymasterAddress, EventDefinitions.paymasterEvents))
     }
     if (indexerContracts.isNotEmpty() && config.databaseUrl != null) {
         rpcManager.getBestProvider().onSuccess { web3j ->

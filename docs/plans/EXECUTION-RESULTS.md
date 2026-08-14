@@ -430,3 +430,28 @@
 **Верификация (Coordinator, независимо):** git diff подтверждён (ProposalRepository.kt 26 строк, тест новый); grep: `/v1/events?contract=` L135, `params` L30/77-96, `PROPOSAL_CONTRACT` L63; VoteRepository.kt:58 уже использует тот же источник — консистентно. `./gradlew :app:compileDevDebugKotlin :app:testDevDebugUnitTest --tests "*Proposal*" -PBUNDLER_URL_DEV=http://bundler.local:4337` → EXIT=0 (BUILD SUCCESSFUL).
 
 **Self-challenge:** dev-конфиг без PROPOSAL_CONTRACT_DEV даёт 0x0 → пусто (конфиг деплоя, не код); расширение скоупа param_json→params обосновано (иначе TD-17 не закрыт); значение адреса Proposal на тестнете не верифицировано (вне app-кода).
+
+---
+
+## S26 — 5.5 EventIndexer: добавить Paymaster (TD-18)
+
+**Задача:** EventIndexer не индексирует события Paymaster (Application.kt передавал 6 контрактов, Paymaster отсутствовал).
+
+**Кто:** coder (deepseek-v4-flash-free).
+
+**Что сделано:**
+- Root cause: `EventDefinitions.paymasterEvents` УЖЕ существовал (EventIndexer.kt L318-323) с корректными сигнатурами — Paymaster просто не был подключён в список контрактов Application.kt. Фикс = 1 строка: `add(IndexedContract(config.paymasterAddress, EventDefinitions.paymasterEvents))` (Application.kt L234).
+- Сигнатуры сверены с contracts/src/MDAOPaymaster.sol: GasPaid(address,address,uint256,uint256) L203, PaymentFailed(address,address,uint256,uint8) L219, PriceUpdated(address,uint256,uint256) L216 — все совпадают (IERC20→address, enum→uint8).
+- UserOperationEvent НЕ добавлен: его эмитит EntryPoint, не paymaster (grep 797-строчного контракта подтвердил — все события свои). Индексация под адресом paymaster никогда бы не сматчила лог.
+- config.paymasterAddress обязателен (AppConfig.kt L118, non-null) → `?.let` не нужен.
+
+**Верификация (независимо, Coordinator):**
+- git diff: 1 строка, Application.kt L234 ✓
+- grep: paymasterEvents EventIndexer.kt L319 ✓, paymasterAddress AppConfig.kt L118 (required) ✓
+- ./gradlew compileKotlin (backend) → BUILD SUCCESSFUL (2 прогона у coder'а, 1 у Coordinator'а)
+
+**Self-challenge:** список из 3 «key events» не покрывает все ~21 событие контракта (SenderBlocked, WithdrawalExecuted и т.д.) — pre-existing скоуп, осознанно не расширялся (YAGNI, добавить когда попросит продукт).
+
+**Файлы:** backend/src/main/kotlin/com/mdaopay/paymaster/Application.kt (1 строка).
+
+**Коммит:** (следующий в цепочке S26)
