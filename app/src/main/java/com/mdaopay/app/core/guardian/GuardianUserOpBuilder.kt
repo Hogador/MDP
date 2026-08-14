@@ -375,6 +375,27 @@ class GuardianUserOpBuilder @Inject constructor(
             }
         }
 
+        /**
+         * S19/4.3b: builds the 160-byte WebAuthn proof in the SRM _verifyWebAuthn format:
+         * messageHash(32) || r(32) || s(32) || pubKeyX(32) || pubKeyY(32).
+         *
+         * messageHash = SHA-256(authenticatorData || SHA-256(clientDataJSON)) — mirrors
+         * SocialRecoveryModule.sol L648-664. Signature must be raw 64-byte r||s (ES256);
+         * DER-encoded signatures fail closed (return null).
+         */
+        fun buildWebAuthnProof(assertion: WebAuthnAssertion, keyData: GuardianKeyData): ByteArray? {
+            if (assertion.signature.size != 64) return null
+            fun sha256(data: ByteArray) = java.security.MessageDigest.getInstance("SHA-256").digest(data)
+            fun String.hexToBytes() = ByteArray(length / 2) { substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+            val clientDataHash = sha256(assertion.clientDataJSON)
+            val messageHash = sha256(assertion.authenticatorData + clientDataHash)
+            return messageHash +
+                assertion.signature.copyOfRange(0, 32) +
+                assertion.signature.copyOfRange(32, 64) +
+                keyData.pubKeyXHex.hexToBytes() +
+                keyData.pubKeyYHex.hexToBytes()
+        }
+
         private fun parseCoseKeyFromAuthData(authData: ByteArray): Pair<ByteArray, ByteArray>? {
         var offset = 0
         if (authData.size < 37) return null

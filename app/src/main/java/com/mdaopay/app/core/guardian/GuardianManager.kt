@@ -65,6 +65,7 @@ class GuardianManager @Inject constructor(
             val inviteResult = relayClient.getInvite(inviteId)
             val invite = inviteResult.getOrElse { return inviteResult.map { } }
 
+            // Establish guardian's passkey — P-256 X/Y from WebAuthn registration attestation
             val passkeyResult = passkeyManager.createRecoveryPasskey(userId)
             val passkeyData = passkeyResult.getOrElse { return passkeyResult.map { } }
 
@@ -72,6 +73,20 @@ class GuardianManager @Inject constructor(
             val keyData = GuardianUserOpBuilder.extractP256PublicKey(passkeyData.registrationJson)
             val pubKeyX = keyData?.pubKeyXHex ?: ""
             val pubKeyY = keyData?.pubKeyYHex ?: ""
+
+            // S19/4.3b: guardian creates a real WebAuthn assertion (P-256) — replaces PRF "signature"
+            val authResult = passkeyManager.authenticateWithPasskey(passkeyManager.generateEvalInput())
+            val authData = authResult.getOrElse { return authResult.map { } }
+            val assertion = GuardianUserOpBuilder.extractWebAuthnAssertion(authData.authenticationJson)
+                ?: return Result.failure(
+                    IllegalStateException("Failed to extract WebAuthn assertion from authentication response")
+                )
+
+            // S19/4.3b: collect 160-byte WebAuthn proof (hash + r + s + x + y) — SRM _verifyWebAuthn format
+            val proof = keyData?.let { GuardianUserOpBuilder.buildWebAuthnProof(assertion, it) }
+            if (proof == null || proof.size != 160) {
+                return Result.failure(IllegalStateException("Failed to build 160-byte WebAuthn proof"))
+            }
 
             val identityHash = hashIdentity(userId)
 
@@ -86,18 +101,9 @@ class GuardianManager @Inject constructor(
 
             guardianStorage.addGuardian(guardianInfo)
 
-            // Extract signature from PRF output for relay's acceptInvite
-            val prfOutput = passkeyData.prfOutput
-            val signatureR = if (prfOutput.size >= 64) {
-                prfOutput.copyOfRange(0, 32).joinToString("") { "%02x".format(it) }
-            } else {
-                "" // ponytail: fallback — relay will reject, but avoid crash
-            }
-            val signatureS = if (prfOutput.size >= 64) {
-                prfOutput.copyOfRange(32, 64).joinToString("") { "%02x".format(it) }
-            } else {
-                ""
-            }
+            // S19/4.3b: sign accept request for relay with the real assertion signature (r, s)
+            val signatureR = assertion.signature.copyOfRange(0, 32).joinToString("") { "%02x".format(it) }
+            val signatureS = assertion.signature.copyOfRange(32, 64).joinToString("") { "%02x".format(it) }
 
             // Relay flow (off-chain coordination)
             relayClient.acceptInvite(inviteId, signatureR, signatureS, identityHash)

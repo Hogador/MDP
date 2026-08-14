@@ -93,6 +93,50 @@ class GuardianUserOpBuilderTest {
     }
 
     @Test
+    fun `buildWebAuthnProof produces 160 bytes in SRM format`() {
+        // S19/4.3b: 160 bytes = messageHash(32) + r(32) + s(32) + x(32) + y(32),
+        // mirroring SocialRecoveryModule._verifyWebAuthn (L648-680):
+        //   clientDataHash = SHA-256(clientDataJSON)
+        //   messageHash     = SHA-256(authenticatorData || clientDataHash)
+        val authenticatorData = ByteArray(37) { it.toByte() }
+        val clientDataJSON = "{\"type\":\"webauthn.get\",\"origin\":\"android:apk-key-hash:test\"}".encodeToByteArray()
+        val signature = ByteArray(64) { (it + 1).toByte() }
+        val assertion = GuardianUserOpBuilder.WebAuthnAssertion(authenticatorData, clientDataJSON, signature)
+        val keyData = GuardianKeyData(pubKeyXHex = "aa".repeat(32), pubKeyYHex = "bb".repeat(32))
+
+        val proof = GuardianUserOpBuilder.buildWebAuthnProof(assertion, keyData)
+
+        assertNotNull("Should build 160-byte proof from valid assertion", proof)
+        assertEquals(160, proof!!.size)
+
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val clientDataHash = md.digest(clientDataJSON)
+        val expectedMessageHash = md.digest(authenticatorData + clientDataHash)
+
+        assertArrayEquals("hash(32)", expectedMessageHash, proof.copyOfRange(0, 32))
+        assertArrayEquals("r(32)", signature.copyOfRange(0, 32), proof.copyOfRange(32, 64))
+        assertArrayEquals("s(32)", signature.copyOfRange(32, 64), proof.copyOfRange(64, 96))
+        assertArrayEquals("x(32)", ByteArray(32) { 0xAA.toByte() }, proof.copyOfRange(96, 128))
+        assertArrayEquals("y(32)", ByteArray(32) { 0xBB.toByte() }, proof.copyOfRange(128, 160))
+    }
+
+    @Test
+    fun `buildWebAuthnProof returns null for non-64-byte signature`() {
+        // DER-encoded or truncated signatures are not raw ES256 r||s — fail closed
+        val assertion = GuardianUserOpBuilder.WebAuthnAssertion(
+            authenticatorData = ByteArray(37),
+            clientDataJSON = ByteArray(10),
+            signature = ByteArray(32)
+        )
+        assertNull(
+            GuardianUserOpBuilder.buildWebAuthnProof(
+                assertion,
+                GuardianKeyData(pubKeyXHex = "aa".repeat(32), pubKeyYHex = "bb".repeat(32))
+            )
+        )
+    }
+
+    @Test
     fun `extractP256PublicKey parses real CBOR attestation`() {
         // Build a realistic CBOR attestationObject:
         // {
