@@ -194,7 +194,8 @@ PAYMASTER_PRIVATE_KEY=0x...    # testnet paymaster key
 SWAP_PRIVATE_KEY=0x...         # swap key (отдельный от paymaster!)
 JWT_SECRET=<base64 256-bit key>
 TRUSTED_SIGNER=0x...
-RELAY_SECRET=<минимум 32 символа>
+RELAY_JWT_SECRET=<32+ символов, JWT-подпись>
+RELAY_HMAC_SECRET=<64+ символов, HMAC-подпись запросов>
 DATABASE_URL=jdbc:postgresql://localhost:5432/mdaopay?user=mdaopay&password=...
 ```
 

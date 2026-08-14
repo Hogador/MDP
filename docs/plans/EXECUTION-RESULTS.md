@@ -218,3 +218,18 @@
 
 ## S13.5 — Coordinator: отклонение TD-09 (base64 → hex) зафиксировано
 План строка 275 исправлен: `.header("X-Signature", sig.joinToString("") { "%02x".format(it) }) // hex lowercase 64 chars — relay hmacSha256 (auth.ts L60-72)`. Причина: факт кода перевешивает букву плана (тот же паттерн, что S9: таблица nicknames вместо users).
+
+## S14 — 3.3 Split секретов relay (RELAY_SECRET → JWT/HMAC) + TRUSTED_SIGNER
+
+**Задача:** Blocker #8 (утечка): один RELAY_SECRET на две роли → разделить; TRUSTED_SIGNER в docker run.
+
+**Инцидент:** 1-й запуск coder завис (Task cancelled пользователем). Агент успел сделать 95%: split в deploy-testnet.sh (два AWS-секрета, openssl rand -hex 32, разные значения), docker run -e RELAY_JWT_SECRET/RELAY_HMAC_SECRET, wrangler secret put RELAY_HMAC_SECRET, docs/.env.example. Недоделка: TRUSTED_SIGNER не был в docker run (backend AppConfig.kt L141 требует → контейнер упал бы при старте). По указанию пользователя («перезапусти кодера с контекстом») coder доделал 1 строку: `-e "TRUSTED_SIGNER=$TRUSTED_SIGNER" \` (L585).
+
+**Верификация (независимая, Coordinator):**
+- bash -n SYNTAX OK; grep RELAY_SECRET$ в deploy-testnet.sh = 0 (split полный); 19 вхождений RELAY_JWT/HMAC.
+- Факты кода: backend AppConfig.kt L80-87 требует RELAY_JWT_SECRET ≥32 + RELAY_HMAC_SECRET ≥64, и они ДОЛЖНЫ отличаться (скрипт генерит независимые rand -hex 32 — ок); relay/index.ts L102/L109 использует только RELAY_HMAC_SECRET (wrangler secret put корректен); JWT_SECRET (base64 256-bit) — отдельный backend-секрет, не тронут.
+- TRUSTED_SIGNER: валидируется L66-80 (0x+40 hex), export L213, docker run L585 — порядок верный; AppConfig L141/L195 формат совпадает.
+
+**Self-challenge (coder, доделка):** env-передача приватных адресов — уже существующий паттерн блока; --env-file .env.testnet.public не подходит (публичный файл, приватный адрес не должен там быть); допущения проверены grep'ом.
+
+**Коммит:** d96831f → следующий (S14.5 в этом блоке).

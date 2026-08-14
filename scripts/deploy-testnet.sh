@@ -138,19 +138,35 @@ else
     log_info "JWT_SECRET loaded from AWS Secrets Manager (existing)"
 fi
 
-RELAY_SECRET=$(aws secretsmanager get-secret-value \
-    --secret-id mdaopay/testnet/relay-secret \
+# C-3: split — one secret per role (JWT signing vs HMAC request signing)
+RELAY_JWT_SECRET=$(aws secretsmanager get-secret-value \
+    --secret-id mdaopay/testnet/relay-jwt-secret \
     --query SecretString --output text 2>/dev/null || echo "")
 
-if [ -z "$RELAY_SECRET" ]; then
-    RELAY_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+if [ -z "$RELAY_JWT_SECRET" ]; then
+    RELAY_JWT_SECRET=$(openssl rand -hex 32)
     aws secretsmanager create-secret \
-        --name mdaopay/testnet/relay-secret \
-        --secret-string "$RELAY_SECRET" \
+        --name mdaopay/testnet/relay-jwt-secret \
+        --secret-string "$RELAY_JWT_SECRET" \
         >/dev/null
-    log_info "RELAY_SECRET stored in AWS Secrets Manager"
+    log_info "RELAY_JWT_SECRET stored in AWS Secrets Manager"
 else
-    log_info "RELAY_SECRET loaded from AWS Secrets Manager (existing)"
+    log_info "RELAY_JWT_SECRET loaded from AWS Secrets Manager (existing)"
+fi
+
+RELAY_HMAC_SECRET=$(aws secretsmanager get-secret-value \
+    --secret-id mdaopay/testnet/relay-hmac-secret \
+    --query SecretString --output text 2>/dev/null || echo "")
+
+if [ -z "$RELAY_HMAC_SECRET" ]; then
+    RELAY_HMAC_SECRET=$(openssl rand -hex 32)
+    aws secretsmanager create-secret \
+        --name mdaopay/testnet/relay-hmac-secret \
+        --secret-string "$RELAY_HMAC_SECRET" \
+        >/dev/null
+    log_info "RELAY_HMAC_SECRET stored in AWS Secrets Manager"
+else
+    log_info "RELAY_HMAC_SECRET loaded from AWS Secrets Manager (existing)"
 fi
 
 INSURANCE_AUDITOR=$(aws secretsmanager get-secret-value \
@@ -564,7 +580,9 @@ docker run -d \
     --network mdaopay-testnet \
     --env-file .env.testnet.public \
     -e "JWT_SECRET=$JWT_SECRET" \
-    -e "RELAY_SECRET=$RELAY_SECRET" \
+    -e "RELAY_JWT_SECRET=$RELAY_JWT_SECRET" \
+    -e "RELAY_HMAC_SECRET=$RELAY_HMAC_SECRET" \
+    -e "TRUSTED_SIGNER=$TRUSTED_SIGNER" \
     -e "PAYMASTER_PRIVATE_KEY=$TESTNET_PAYMASTER_KEY" \
     -e "SWAP_PRIVATE_KEY=$TESTNET_SWAP_KEY" \
     -e "METRICS_TOKEN=$METRICS_TOKEN" \
@@ -608,15 +626,15 @@ wrangler deploy --env testnet
 
 log_info "Setting Cloudflare Workers secrets..."
 
-echo "$RELAY_SECRET" | wrangler secret put RELAY_SECRET --env testnet
+echo "$RELAY_HMAC_SECRET" | wrangler secret put RELAY_HMAC_SECRET --env testnet
 if [ -n "$FCM_SERVER_KEY" ]; then
     echo "$FCM_SERVER_KEY" | wrangler secret put FCM_SERVER_KEY --env testnet
 fi
 
 log_info "Verifying relay secrets..."
-wrangler secret list --env testnet | grep -q "RELAY_SECRET" \
-    || { log_error "RELAY_SECRET not set in Cloudflare Workers"; exit 1; }
-log_info "RELAY_SECRET set in Cloudflare Workers"
+wrangler secret list --env testnet | grep -q "RELAY_HMAC_SECRET" \
+    || { log_error "RELAY_HMAC_SECRET not set in Cloudflare Workers"; exit 1; }
+log_info "RELAY_HMAC_SECRET set in Cloudflare Workers"
 
 if [ -n "$FCM_SERVER_KEY" ]; then
     wrangler secret list --env testnet | grep -q "FCM_SERVER_KEY" \
@@ -774,5 +792,5 @@ echo "Full deployment summary: $DEPLOY_SUMMARY"
 echo ""
 
 unset BSC_TESTNET_DEPLOYER_KEY TESTNET_PAYMASTER_KEY TESTNET_SWAP_KEY \
-      JWT_SECRET RELAY_SECRET FCM_SERVER_KEY METRICS_TOKEN \
+      JWT_SECRET RELAY_JWT_SECRET RELAY_HMAC_SECRET FCM_SERVER_KEY METRICS_TOKEN \
       REDIS_PASSWORD POSTGRES_PASSWORD
