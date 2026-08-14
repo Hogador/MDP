@@ -174,9 +174,8 @@ INSURANCE_AUDITOR=$(aws secretsmanager get-secret-value \
     --query SecretString --output text 2>/dev/null || echo "")
 
 if [ -z "$INSURANCE_AUDITOR" ]; then
-    log_warn "INSURANCE_AUDITOR not set in Secrets Manager — using deployer as placeholder (TESTNET ONLY)"
-    INSURANCE_AUDITOR="$DEPLOYER_ADDR"
-    log_warn "For mainnet: set real auditor address via 'aws secretsmanager create-secret ...'"
+    log_error "INSURANCE_AUDITOR not set in Secrets Manager — aborting (fail-closed)"
+    exit 1
 fi
 export INSURANCE_AUDITOR_ADDRESS="$INSURANCE_AUDITOR"
 log_info "InsuranceFund auditor: $INSURANCE_AUDITOR"

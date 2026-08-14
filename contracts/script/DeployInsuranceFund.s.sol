@@ -8,9 +8,12 @@ contract DeployInsuranceFund is Script {
     function run() external {
         address deployer = vm.rememberKey(vm.envUint("DEPLOYER_PRIVATE_KEY"));
 
+        address insuranceAuditor = vm.envAddress("INSURANCE_AUDITOR_ADDRESS");
+        require(insuranceAuditor != address(0), "INSURANCE_AUDITOR_ADDRESS not set");
+        require(insuranceAuditor != deployer, "Auditor cannot be deployer");
         vm.startBroadcast(deployer);
         address[] memory auditors = new address[](1);
-        auditors[0] = vm.envOr("INSURANCE_AUDITOR_ADDRESS", address(0));
+        auditors[0] = insuranceAuditor;
         InsuranceFund fund = new InsuranceFund(auditors, 1);
         vm.stopBroadcast();
 
