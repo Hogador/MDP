@@ -49,7 +49,6 @@ data class SwapExecuteRequest(
     val tokenOut: String = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     val amountIn: String,
     val minAmountOut: String,
-    val recipient: String,
     val deadlineSec: Long = 600,
 )
 
@@ -91,7 +90,7 @@ class SwapService(
         }
     }
 
-    suspend fun executeSwap(request: SwapExecuteRequest): Result<TransactionReceipt> {
+    suspend fun executeSwap(request: SwapExecuteRequest, recipient: String): Result<TransactionReceipt> {
         return try {
             val path = listOf(request.tokenIn, request.tokenOut)
             val amountIn = Numeric.toBigInt(request.amountIn)
@@ -107,7 +106,7 @@ class SwapService(
                     Uint256(amountIn),
                     Uint256(minAmountOut),
                     DynamicArray(Address::class.java, path.map { Address(it) }),
-                    Address(request.recipient),
+                    Address(recipient),
                     Uint256(deadline),
                 ),
                 emptyList(),

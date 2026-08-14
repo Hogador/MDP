@@ -302,10 +302,7 @@ fun main() {
             bearer("auth-jwt") {
                 realm = "MDAOPay"
                 authenticate { tokenCredential ->
-                    val userId = authService?.validateAccessToken(tokenCredential.token)
-                    if (userId != null) {
-                        UserIdPrincipal(userId)
-                    } else null
+                    authService?.validateAccessToken(tokenCredential.token)
                 }
             }
         }

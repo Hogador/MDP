@@ -1,5 +1,6 @@
 package com.mdaopay.paymaster
 
+import io.ktor.server.auth.Principal
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
@@ -21,6 +22,12 @@ data class TokenPair(
     val refreshToken: String,
     val expiresIn: Long,
 )
+
+/** Authenticated principal: DB user id + wallet address from the access token's `wallet` claim. */
+data class WalletPrincipal(
+    val userId: String,
+    val wallet: String?,
+) : Principal
 
 data class SiweMessage(
     val domain: String,
@@ -330,12 +337,15 @@ class AuthService(
         return Result.success(issueTokens(stored.first))
     }
 
-    fun validateAccessToken(token: String): String? {
+    fun validateAccessToken(token: String): WalletPrincipal? {
         val payload = decodeToken(token) ?: return null
         if (payload["type"]?.jsonPrimitive?.content != "access") return null
         val exp = payload["exp"]?.jsonPrimitive?.longOrNull ?: return null
         if (Instant.now().epochSecond > exp) return null
-        return payload["sub"]?.jsonPrimitive?.content
+        return WalletPrincipal(
+            userId = payload["sub"]?.jsonPrimitive?.content ?: return null,
+            wallet = payload["wallet"]?.jsonPrimitive?.content,
+        )
     }
 
     fun getUser(userId: String): AuthUser? = repo.findById(userId)

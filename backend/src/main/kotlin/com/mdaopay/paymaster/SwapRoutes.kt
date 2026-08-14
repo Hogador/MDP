@@ -2,6 +2,7 @@ package com.mdaopay.paymaster
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.principal
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -52,7 +53,14 @@ fun Route.swapRoutes(swapService: SwapService, swapIpRateLimiter: RedisRateLimit
         }
         try {
             val req = call.receive<SwapExecuteRequest>()
-            val result = swapService.executeSwap(req)
+            // Trust boundary: recipient is the authenticated user's wallet, never a body field.
+            val wallet = call.principal<WalletPrincipal>()?.wallet
+            if (wallet.isNullOrBlank()) {
+                call.response.status(HttpStatusCode.Forbidden)
+                call.respond(mapOf("error" to "No wallet on account"))
+                return@post
+            }
+            val result = swapService.executeSwap(req, wallet)
             result.fold(
                 onSuccess = { receipt ->
                     call.respond(mapOf(
