@@ -353,3 +353,22 @@
 - medium: relay/src/index.ts L191 — это НАШ известный дизайн-разрыв (claim 6), подтверждён как существующий.
 
 **Коммит:** (журнал; код фазы 4 в коммитах 75e0d6f, 34e18a7, 0af6ab1, 9628bdf, 8aa720e).
+
+---
+
+## S22 — 5.1 DEPLOY-TESTNET.md актуализировать (TD-14)
+
+**Задача:** убрать упоминания EntryPoint v0.7 → v0.6 (grep v0.7 → 0).
+
+**Что сделано (coder deepseek-v4-flash-free):**
+- docs/DEPLOY-TESTNET.md L272: `| EntryPoint (v0.7) | 0x5FF137D4... |` → `| EntryPoint (v0.6, canonical) | 0x5FF137D4... |`.
+- Адрес сверен с NetworkConfig.kt:18 (ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789, canonical v0.6) — совпадает.
+- PackedUserOperation / 0x100 / DeploySocialRecoveryModule.s.sol в документе НЕ упоминаются — править нечего.
+
+**Верификация (независимо, Coordinator):**
+- `grep -in "v0\.7\|PackedUserOperation" docs/DEPLOY-TESTNET.md` → 0 совпадений (exit=1).
+- grep EntryPoint → единственная строка 272 с v0.6.
+
+**Self-challenge (coder):** метка «canonical» — из комментария NetworkConfig.kt, не выдумана. Адрес не предполагался — проверен grep'ом.
+
+**Коммит:** S22.

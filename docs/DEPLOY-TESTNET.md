@@ -269,7 +269,7 @@ curl "http://localhost:8080/v1/events?event=Deposited&limit=5"
 | USDT (тестовый) | `0x337610d27c682E347C9cD60BD4b3b107C9d34dDD` |
 | WBNB | `0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd` |
 | PancakeSwap Router | `0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3` |
-| EntryPoint (v0.7) | `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` |
+| EntryPoint (v0.6, canonical) | `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` |
 
 ---
 
