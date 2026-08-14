@@ -15,9 +15,11 @@ object NetworkConfig {
     val ETHERSCAN_API_KEY: String get() = BuildConfig.ETHERSCAN_API_KEY
     const val ETHERSCAN_API_URL = "https://api.bscscan.com/api"
     const val EXPLORER_URL = "https://bscscan.com"
-    const val ENTRY_POINT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
-    const val SIMPLE_ACCOUNT_FACTORY = "0x9406Cc6185a346906296840746125a0E44976454"
-    const val SOCIAL_RECOVERY_MODULE = "0x0000000000000000000000000000000000000000" // Set by deploy script
+    const val ENTRY_POINT = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" // ponytail: canonical ERC-4337 v0.6, не наш контракт — в broadcast не появляется
+    const val SIMPLE_ACCOUNT_FACTORY = "0x9406Cc6185a346906296840746125a0E44976454" // ponytail: legacy сторонняя v0.6 SimpleAccountFactory (RecoveryUserOpBuilder/SendRepository) — в broadcast не появляется
+    // TD-11: адреса наших контрактов — из foundry broadcast Deploy.s.sol run-latest.json (таск generateDeploymentConfig)
+    val SOCIAL_RECOVERY_MODULE: String get() = DeploymentConfig.SOCIAL_RECOVERY_MODULE
+    val SMART_ACCOUNT_FACTORY: String get() = DeploymentConfig.SMART_ACCOUNT_FACTORY
     val PAYMASTER_CONTRACT: String get() = BuildConfig.PAYMASTER_CONTRACT
     val PROPOSAL_CONTRACT: String get() = BuildConfig.PROPOSAL_CONTRACT
 

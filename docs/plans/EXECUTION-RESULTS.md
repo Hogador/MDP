@@ -249,3 +249,21 @@
 - `addInterceptor(RelayHmacInterceptor())` — только в RelayClient.kt:32, других использований в app/src нет.
 - AppConfig.kt L80-87: RELAY_JWT_SECRET ≥32, RELAY_HMAC_SECRET ≥64, должны отличаться (нарушение = CRITICAL).
 - Коммит: f7030a0 (S14) — S15 без новых коммитов (reviewer read-only).
+
+---
+
+## S16 — 4.1 NetworkConfig из deployment JSON (TD-11)
+
+**Задача:** убрать хардкод адресов наших контрактов из NetworkConfig.kt; единый источник правды = foundry broadcast run-latest.json.
+
+**Что сделано (coder, deepseek-v4-flash-free):**
+1. app/build.gradle.kts (+56): таск `generateDeploymentConfig` — читает `../contracts/broadcast/Deploy.s.sol/${CHAIN_ID ?: 97}/run-latest.json`, парсит transactions с transactionType==CREATE через groovy.json.JsonSlurper, генерирует build/generated/source/deploymentConfig/java/.../DeploymentConfig.kt (object с SOCIAL_RECOVERY_MODULE + SMART_ACCOUNT_FACTORY). Условный inputs.file (JSON может отсутствовать → 0x0 + WARN, Gradle 9.4: .optional() для файлов не работает). sourceSets.main.java.srcDir + preBuild dependsOn.
+2. NetworkConfig.kt (+2/−1): SOCIAL_RECOVERY_MODULE и SMART_ACCOUNT_FACTORY — get() из DeploymentConfig; ENTRY_POINT и SIMPLE_ACCOUNT_FACTORY остались константами (canonical v0.6 / legacy сторонняя — не наш деплой, в broadcast не появляются; ponytail-комментарии).
+
+**Верификация (независимая, Coordinator):**
+- :app:generateDeploymentConfig + :app:compileDevDebugKotlin → BUILD SUCCESSFUL (EXIT=0).
+- chain 97 (JSON нет): 0x0 + WARN (fail-closed — isConfigured() вернёт false, «Contracts not deployed»).
+- Синтетический broadcast (временный): SocialRecoveryModule→0x1111..., MDAOSmartAccountFactory→0x2222..., CREATE2 исключён — таск парсит корректно. Удалён после проверки.
+- Diff: 56 строк gradle + 8 строк NetworkConfig (opencode.json — pre-existing, не наш).
+- Сгенерированный файл в build/ — не коммитится.
+- Известный футган (self-challenge): chainId из -PCHAIN_ID на конфигурации (flavor-переменная не читается на этапе таска); prod-сборка обязана передавать -PCHAIN_ID=56, иначе тихий 0x0 + WARN. Fail-closed, не использование чужого адреса.
