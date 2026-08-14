@@ -392,3 +392,24 @@
 - Переменные подтверждены в скрипте: RPC_URL (L47), BSC_TESTNET_DEPLOYER_KEY (L6), BSCSCAN_API_KEY (L9), log_* (L37-40)
 
 **Self-challenge coder:** dry-run с `--private-key`/`--slow` отличается от буквы спеки, но без private-key симуляция в headless упадёт (reuse существующих флагов). Риск: не-TTY без CONFIRM_DEPLOY продолжает деплой (обратная совместимость, CI должен задавать переменную явно).
+
+## S24 — 5.3 INSURANCE_AUDITOR проверка (read-only, security_auditor nemotron)
+
+**Задача:** Проверить fail-closed паттерн INSURANCE_AUDITOR (TD-16): Deploy.s.sol L76-78 уже fail-closed; проверить .env.example + DeployInsuranceFund.s.sol.
+
+**Результат: ISSUES_FOUND** (условия TD-16 НЕ выполнены):
+1. **High** DeployInsuranceFund.s.sol L13: `vm.envOr("INSURANCE_AUDITOR_ADDRESS", address(0))` — fallback на нулевой адрес; конструктор InsuranceFund.sol (L55-71) НЕ проверяет auditor != 0 → фонд залочен навсегда.
+2. **Medium** .env.example: переменная не документирована.
+3. **Low** deploy-testnet.sh L176-178: placeholder INSURANCE_AUDITOR=$DEPLOYER_ADDR — не тихий (revert require'ом L78), но грязный опыт (dry-run OK → broadcast revert).
+
+**Перепроверка Coordinator (независимо):** основной путь БЕЗОПАСЕН — deploy-testnet.sh вызывает только Deploy.s.sol (L227/252), который fail-closed (envAddress + require != 0 + require != deployer). DeployInsuranceFund.s.sol — standalone, не используется в основном деплое, но нарушает паттерн плана.
+
+## S24b — Фикс INSURANCE_AUDITOR fail-closed (coder deepseek-v4-flash-free)
+
+1. DeployInsuranceFund.s.sol: `envOr` → `vm.envAddress` + `require != address(0)` + `require != deployer` (deployer уже в scope, reuse).
+2. deploy-testnet.sh: placeholder → `log_error` + `exit 1` (fail-fast; log_error уже существовал L39). Бонус: закрывает и downstream-проверку AUDITOR_ONCHAIN != AUDITOR_ENV (L455).
+3. .env.example: документирован INSURANCE_AUDITOR_ADDRESS=0xYourMultisigOrEOA (комментарий "required, cannot be deployer"). **Нюанс: .env.example gitignored (gitignore:42 .env.*) — правка на диске, не попадёт в git. Это pre-existing состояние репо, НЕ наш scope.**
+
+**Верификация (независимо, Coordinator):** bash -n SYNTAX OK; grep: envAddress + 2 require на месте, log_error + exit 1 на месте; forge build — 0 errors (только pre-existing lint unsafe-typecast); .env.example grep INSURANCE_AUDITOR найден.
+
+**Коммит:** 5b96a65 (2 файла, +6/−4). .env.example в коммит не вошёл (gitignored).
