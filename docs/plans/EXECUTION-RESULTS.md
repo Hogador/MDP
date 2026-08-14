@@ -233,3 +233,19 @@
 **Self-challenge (coder, доделка):** env-передача приватных адресов — уже существующий паттерн блока; --env-file .env.testnet.public не подходит (публичный файл, приватный адрес не должен там быть); допущения проверены grep'ом.
 
 **Коммит:** d96831f → следующий (S14.5 в этом блоке).
+
+---
+
+## S15 — Reviewer: ревью фазы 3 (3.1–3.3) — HMAC-аутентификация relay
+
+**Задача:** ревью 4 изменений фазы 3: relay HMAC-формат, RelayHmacInterceptor, split секретов, TRUSTED_SIGNER.
+
+**Что сделано (reviewer, mistral-medium-2505):**
+- Verdict **OK**, score 100, findings 0.
+- Claims (все FACT): формат подписи hex совпадает с relay (RelayHmacInterceptor.kt:32 ↔ auth.ts hmacSha256); body не потребляется (Buffer().writeTo, L38-43); секреты разделены и значения различны (deploy-testnet.sh:141-170, AppConfig.kt:79-87); TRUSTED_SIGNER в docker run (deploy-testnet.sh:585), формат валиден (AppConfig.kt:34); non-relay трафик не подписывается (RelayClient.kt:30-31).
+
+**Верификация (независимая, Coordinator):**
+- Interceptor: `ts=(ms/1000)`, nonce=32 hex, sig=hex HMAC-SHA256("$ts.$nonce.$body") — совпадает с auth.ts (hex lowercase 64).
+- `addInterceptor(RelayHmacInterceptor())` — только в RelayClient.kt:32, других использований в app/src нет.
+- AppConfig.kt L80-87: RELAY_JWT_SECRET ≥32, RELAY_HMAC_SECRET ≥64, должны отличаться (нарушение = CRITICAL).
+- Коммит: f7030a0 (S14) — S15 без новых коммитов (reviewer read-only).
