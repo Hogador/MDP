@@ -143,3 +143,28 @@
 - **Верификация** (Coordinator, независимая): `./gradlew test --tests SwapRoutesAuthTest --rerun-tasks` → **BUILD SUCCESSFUL 27s, 5/5 PASS, 0 failures** (XML подтверждён). Это также подтверждает, что pre-existing поломка gradle (mainClassName), мешавшая S9, **более не блокирует** — сборка работает (видимо, обход был найден при S9/S10; точная причина не выяснена).
 - **Self-challenge**: (a) register/login (email+password, L306/L320) вызывают `issueTokens(user.id)` БЕЗ wallet → такие пользователи получат 403 на swap (fail-closed, безопасно, но функциональный нюанс: email-пользователи не смогут свопить, пока кошелёк не привязан — соответствует правилу «recipient никогда из тела»); (b) claim `wallet` не подписан отдельно — он часть JWT (HS256, тот же секрет), подмена требует секрета — риск низкий; (c) открытый вопрос: нужен ли явный UX для привязки кошелька к email-аккаунту — выходит за scope S10, зафиксировать в ISSUES.
 - **Статус**: ✅ завершено. Следующий шаг — S11 (reviewer: ревью фазы 2).
+
+## S11 — Reviewer: ревью фазы 2 (2.1, 2.2)
+
+**Задача:** независимая проверка изменений S9 (V7 unique nickname index) и S10 (SwapService recipient = JWT-кошелёк).
+
+**Что сделано:**
+- Reviewer (mistral-medium-2505, fallback от big-pickle) прочитал 13 файлов: V1–V7 миграции, AuthService.kt, Application.kt, SwapRoutes.kt, SwapService.kt, SwapRoutesAuthTest.kt.
+- **Verdict: OK, score 95.**
+- Findings: 2 × low (косметика): SwapRoutes.kt L58 — можно специфичнее 403-ответа; SwapService.kt L94 — recipient не валидируется на null/blank (но приходит из principal, где null уже отсечён 403).
+- Claims (все FACT, подтверждены кодом):
+  1. WalletPrincipal создаётся в AuthService.kt L359 из JWT-claim 'wallet'.
+  2. SwapRoutes.kt L57-63 корректно использует authenticated wallet как recipient.
+  3. SwapExecuteRequest НЕ содержит поле recipient (SwapService.kt L47-53).
+  4. Тест SwapRoutesAuthTest.kt L122-148 проверяет recipient = principal wallet.
+  5. register/login (email+password) НЕ включают wallet в токен — осознанный fail-closed (зафиксировано в S10).
+
+**Верификация:** reviewer прочитал все миграции V1-V7 (конфликтов индексов нет — DROP idx_nicknames_nickname_lower оправдан, тот же expression LOWER(nickname)), код swap-цепочки целиком. Противоречий с S9/S10 отчётами нет.
+
+**Self-challenge:**
+1. Что может быть неправильно: 2 low-findings не исправлены (косметика, не баги).
+2. Сильнейший аргумент против: recipient не валидируется внутри executeSwap — но входной путь единственный (principal, уже проверен на null/blank).
+3. Проще вариант: нет — это read-only ревью.
+4. Допущение без доказательств: что JWT-claim 'wallet' не может быть подделан — это гарантирует подпись JWT (вне scope ревью).
+
+**Коммит:** нет (read-only шаг). Журнал: этот блок.
