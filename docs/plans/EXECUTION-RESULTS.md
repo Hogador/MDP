@@ -168,3 +168,25 @@
 4. Допущение без доказательств: что JWT-claim 'wallet' не может быть подделан — это гарантирует подпись JWT (вне scope ревью).
 
 **Коммит:** нет (read-only шаг). Журнал: этот блок.
+
+## S12 — 3.1 Верификация HMAC-подписи relay (read-only)
+
+**Задача:** подтвердить фактами, что relay уже подписывает и проверяет HMAC, а баг — в app-клиенте.
+
+**Что сделано:** tester (deepseek-v4-flash-free) прочитал relay/src/auth.ts и relay/src/index.ts + app RelayClient.kt.
+
+**Verdict: CONFIRMED** — все 4 факта:
+1. FACT: relay подписывает запросы HMAC (формат `ts.nonce.body`) с заголовками X-Timestamp, X-Nonce, X-Signature — auth.ts L82-89.
+2. FACT: проверка через verifySignature(), алгоритм HmacSHA256, кодировка base64 — auth.ts L60-90.
+3. FACT: requireAuth() middleware требует подпись для всех POST — index.ts L100-112.
+4. OBSERVATION: Android-клиент НЕ шлёт X-Timestamp/X-Nonce/X-Signature — RelayClient.kt.
+
+**Вывод:** finding CRITICAL — все POST-запросы app к relay получают 401. Подтверждает план: нужен S13 (RelayHmacInterceptor в app).
+
+**Self-challenge:**
+1. Что может быть неправильно: кодировка base64 не уточнена (NO_WRAP/STANDARD) — S13 проверит.
+2. Сильнейший аргумент против: тест read-only, формата подписи не воспроизводил — но цитаты кода подтверждают.
+3. Проще вариант: нет.
+4. Допущение: что app вообще использует эти роуты (createInvite/registerPushToken) — да, RelayClient их вызывает.
+
+**Коммит:** нет (read-only шаг). Журнал: этот блок.
