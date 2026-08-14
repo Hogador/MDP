@@ -274,3 +274,24 @@
 - **Файлы:** app/build.gradle.kts, .github/workflows/ci.yml.
 - **Верификация (эмпирическая):** generateDeploymentConfig без -P → PASS; compileDevDebugKotlin -PBUNDLER_URL_DEV → PASS; без -P → FAIL «BUNDLER_URL_DEV is required for dev build...»; все 3 -P → PASS; generateStagingDebugBuildConfig без -P → FAIL «BUNDLER_URL_STAGING...»; generateProdDebugBuildConfig без -P → FAIL «BUNDLER_URL_PROD...». Release покрыты тем же matching-блоком.
 - **Self-challenge:** regex завязан на конвенцию имён AGP — новый flavor молча выпадет из guard (риск принят, YAGNI); release-таски не прогнаны (только debug), поведение идентично по matching-блоку.
+
+## S18 — 4.3a CreateInviteRequest: guardianPubKeyX/Y (TD-13)
+
+**Задача:** Добавить guardianPubKeyX/Y в CreateInviteRequest (app GuardianContracts.kt L62-68); relay уже верифицирует P-256 (index.ts L135, L191-198); НЕ PRF.
+
+**Кто:** coder (deepseek-v4-flash-free).
+
+**Что сделано:**
+1. GuardianContracts.kt: +guardianPubKeyX/Y: String (без дефолтов — компилятор заставляет обновить все call sites).
+2. GuardianManager.kt (inviteGuardian, единственный call site): создаёт реальный WebAuthn passkey (passkeyManager.createRecoveryPasskey), извлекает P-256 X/Y через GuardianUserOpBuilder.extractP256PublicKey (тот же паттерн, что в acceptInvite).
+3. Новый тест CreateInviteRequestTest.kt: пиннит wire-контракт (имена полей в JSON + 64-char hex без 0x).
+
+**Формат:** без 0x-префикса, 64 символа lowercase hex. relay/src/auth.ts L2-9 (hexToBytes) срезает опциональный 0x — оба формата принял бы; конвенция app и тесты relay — без префикса. types.ts L7-8 уже объявлял поля; index.ts L135 валидирует непустоту; L191-198 верифицирует accept-подпись через verifyP256Signature.
+
+**Верификация:** :app:testDevDebugUnitTest BUILD SUCCESSFUL ×2 (CreateInviteRequestTest 1/1, GuardianUserOpBuilderTest, RelayClientTest зелёные). Relay npm test 32/33 — единственный фейл pre-existing (auth.test.ts старый HMAC-формат без nonce, подтверждено на базовом коммите через git stash); relay не менялся.
+
+**Self-challenge coder'а:** passkey, созданный в inviteGuardian, — ключ owner'а, а relay верифицирует accept-подпись guardian'а → на accept возможен 401. Это pre-existing дизайн-разрыв (app создаёт ключ guardian'а только на accept); 4.3a чинит только DTO, сквозной флоу — зона 4.3b/4.3c.
+
+**Верификация Coordinator (независимо):** git diff подтверждён (5+/1− в GuardianContracts.kt, GuardianManager.kt 11+/1−); поля на месте, GuardianManager передаёт реальные pubKey из WebAuthn. opencode.json — pre-existing diff, не наш scope.
+
+**Статус:** DONE.

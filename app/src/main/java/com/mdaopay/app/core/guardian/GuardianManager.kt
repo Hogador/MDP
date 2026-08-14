@@ -33,12 +33,21 @@ class GuardianManager @Inject constructor(
 
             val shareBytes = share.toByteArray()
 
+            // TD-13/4.3a: real P-256 X/Y from WebAuthn registration attestation (not PRF, not invented)
+            val passkeyResult = passkeyManager.createRecoveryPasskey(guardianLabel)
+            val passkeyData = passkeyResult.getOrElse { return Result.failure(it) }
+            val keyData = GuardianUserOpBuilder.extractP256PublicKey(passkeyData.registrationJson)
+            val pubKeyX = keyData?.pubKeyXHex ?: ""
+            val pubKeyY = keyData?.pubKeyYHex ?: ""
+
             val request = CreateInviteRequest(
                 walletAddress = walletAddress,
                 guardianLabel = guardianLabel,
                 encryptedShare = shareBytes.joinToString("") { "%02x".format(it) },
                 shareIndex = shareIndex,
-                fcmToken = fcmToken
+                fcmToken = fcmToken,
+                guardianPubKeyX = pubKeyX,
+                guardianPubKeyY = pubKeyY
             )
 
             val result = relayClient.createInvite(request)

@@ -64,5 +64,8 @@ data class CreateInviteRequest(
     val guardianLabel: String,
     val encryptedShare: String,
     val shareIndex: Int,
-    val fcmToken: String
+    val fcmToken: String,
+    // TD-13/4.3a: real P-256 X/Y from WebAuthn registration attestation (hex, 64 chars, no 0x prefix)
+    val guardianPubKeyX: String,
+    val guardianPubKeyY: String
 )
