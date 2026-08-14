@@ -295,3 +295,23 @@
 **Верификация Coordinator (независимо):** git diff подтверждён (5+/1− в GuardianContracts.kt, GuardianManager.kt 11+/1−); поля на месте, GuardianManager передаёт реальные pubKey из WebAuthn. opencode.json — pre-existing diff, не наш scope.
 
 **Статус:** DONE.
+
+## S19 — 4.3b WebAuthn assertion (P-256, 160 байт)
+
+**Задача:** Сквозной recovery-флоу accept в Android-приложении: guardian создаёт WebAuthn assertion (P-256), app собирает 160 байт (hash+r+s+x+y) как в SRM _verifyWebAuthn L629-676, подписывает accept для relay.
+
+**Кто:** coder (deepseek-v4-flash-free).
+
+**Что сделано:**
+1. GuardianUserOpBuilder.kt: +buildWebAuthnProof — собирает 160 байт messageHash(32)||r(32)||s(32)||x(32)||y(32), зеркалит SRM L648-680 (messageHash = SHA-256(authenticatorData || SHA-256(clientDataJSON))). Fail-closed на не-64-байтной подписи.
+2. GuardianManager.acceptInvite: guardian создаёт реальный assertion (authenticateWithPasskey + extractWebAuthnAssertion) вместо PRF-«подписи» (была L90-100, удалена); собирает и валидирует 160-байтный proof; accept подписан реальными r/s.
+
+**Критичное обнаружение (дизайн-разрыв, pre-existing, НЕ чинилось — relay read-only):**
+- До S19 accept подписывал PRF output — verifyP256Signature всегда false.
+- После S19: guardian подписывает своим passkey — НО relay верифицирует против invite.guardianPubKeyX/Y (ключ, созданный на устройстве owner'а в inviteGuardian, S18 gap) → 401.
+- Вторая независимая причина: relay подписывает/верифицирует над СТРОКОЙ `accept:${inviteId}:${walletAddress}` (index.ts L192), а WebAuthn assertion подписывает SHA-256(authenticatorData || SHA-256(clientDataJSON)) — другой message. passkey private key non-exportable → app физически не может подписать `accept:...` ключом из invite.
+- Вывод: relay accept-эндпоинт неудовлетворим passkey-подписью (ключ + message). Это флажок для S20 (e2e: проверить on-chain recovery через SRM _verifyWebAuthn, а не relay accept) и для ISSUES (relay accept требует пересмотра: либо подпись WebAuthn-флоу, либо ключ guardian'а с invite-time).
+
+**Верификация (независимо, Coordinator):** :app:testDevDebugUnitTest --tests "com.mdaopay.app.core.guardian.*" BUILD SUCCESSFUL (8 тестов, 2 новых) — с -PBUNDLER_URL_DEV=http://bundler.local:4337 (иначе S17 fail-fast валит generateDevDebugBuildConfig). grep подтвердил: authenticateWithPasskey L78, buildWebAuthnProof L386, relay `accept:` L192.
+
+**Статус:** DONE. Коммит 9628bdf. Зафиксировано в ISSUES-кандидатах: relay accept-флоу несовместим с passkey-подписью.
