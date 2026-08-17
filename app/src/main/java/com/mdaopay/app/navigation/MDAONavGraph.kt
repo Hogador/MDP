@@ -206,6 +206,8 @@ fun MDAONavGraph(
 
         // ─── Settings ─────────────────────────────────
         composable(Routes.SETTINGS) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val comingSoon = { label: String -> { android.widget.Toast.makeText(context, "$label — скоро", android.widget.Toast.LENGTH_SHORT).show() } }
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onBackupClick = { navController.navigate(Routes.BACKUP) },
@@ -214,7 +216,16 @@ fun MDAONavGraph(
                     navController.navigate(Routes.TUTORIAL) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onProfileClick = comingSoon("Профиль"),
+                onSecurityClick = comingSoon("Безопасность"),
+                onAppearanceClick = comingSoon("Тема"),
+                onNotificationsClick = comingSoon("Уведомления"),
+                onLanguageClick = comingSoon("Язык"),
+                onNetworksClick = comingSoon("Сети"),
+                onWalletsTokensClick = comingSoon("Кошельки и токены"),
+                onHelpClick = comingSoon("Помощь"),
+                onAboutClick = comingSoon("О приложении")
             )
         }
 
