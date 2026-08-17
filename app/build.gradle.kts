@@ -233,6 +233,12 @@ android {
             excludes += "META-INF/FastDoubleParser-LGPL"
         }
     }
+
+    // ponytail: suppress WorkManager lint — app uses Configuration.Provider (on-demand init),
+    // the auto-merged WorkManagerInitializer is not needed. No provider in manifest = no crash.
+    lint {
+        disable += "RemoveWorkManagerInitializer"
+    }
 }
 
 // Web3j 4.14 скомпилирован под Java 21, а окружение — Java 17.

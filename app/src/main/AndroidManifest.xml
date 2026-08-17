@@ -64,18 +64,6 @@
             android:screenOrientation="portrait"
             tools:node="replace" />
 
-        <!-- ponytail: WorkManager on-demand init — remove auto-merged default initializer -->
-        <provider
-            android:name="androidx.start.InitializationProvider"
-            android:authorities="${applicationId}.androidx-start"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.start"
-                tools:node="remove" />
-        </provider>
-
     </application>
 
 </manifest>
