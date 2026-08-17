@@ -16,3 +16,8 @@
 
 # Play Integrity API
 -keep class com.google.android.play.core.integrity.** { *; }
+
+# ponytail: R8 dontwarn — transitive deps reference unavailable classes at runtime
+-dontwarn groovy.lang.**
+-dontwarn reactor.blockhound.integration.**
+-dontwarn org.identityconnectors.common.script.groovy.**
