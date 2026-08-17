@@ -348,8 +348,6 @@ class AuthService(
         )
     }
 
-    fun getUser(userId: String): AuthUser? = repo.findById(userId)
-
     private fun issueTokens(
         userId: String,
         wallet: String? = null,

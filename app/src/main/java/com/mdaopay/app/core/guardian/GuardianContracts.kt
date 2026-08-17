@@ -28,28 +28,6 @@ data class GuardianInvite(
 enum class InviteStatus { PENDING, ACCEPTED, DECLINED, EXPIRED }
 
 @Serializable
-data class PendingRecovery(
-    val walletAddress: String,
-    val newPasskeyPubKey: String,
-    val startedAt: Long,
-    val deadline: Long,
-    val approvals: Int,
-    val threshold: Int,
-    val vetoed: Boolean,
-    val executed: Boolean,
-    val nonce: Int
-)
-
-@Serializable
-data class RecoveryApproval(
-    val walletAddress: String,
-    val guardianIdentityHash: String,
-    val signatureR: String,
-    val signatureS: String,
-    val nonce: Int
-)
-
-@Serializable
 data class GuardianInviteResponse(
     val inviteId: String,
     val guardianLabel: String,

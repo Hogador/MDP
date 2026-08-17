@@ -3,6 +3,7 @@ package com.mdaopay.app.feature.connect.domain
 import java.math.BigInteger
 
 object PermissionMapper {
+    // ponytail: dead code candidate, kept — only caller (feature/connect UI) removed; covered by PermissionMapperTest
 
     enum class Capability {
         PROFILE_READ,

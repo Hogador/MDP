@@ -35,6 +35,7 @@ object ModalAnim {
     )
 }
 
+// ponytail: dead code candidate, kept — SharedElementAnim has no callers (BottomSheetAnim/ModalAnim in this file are live)
 object SharedElementAnim {
     val sharedEnterSpec = spring<Float>(
         dampingRatio = Spring.DampingRatioMediumBouncy,

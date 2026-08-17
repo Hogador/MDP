@@ -124,34 +124,9 @@ class RelayClient @Inject constructor(
         return post("/guardian/invite/$inviteId/accept", body)
     }
 
-    suspend fun getPendingRecoveries(walletAddress: String): Result<List<PendingRecovery>> {
-        return get("/recovery/pending/$walletAddress")
-    }
-
-    suspend fun submitApproval(approval: RecoveryApproval): Result<Unit> {
-        return post("/recovery/approve", json.encodeToString(approval))
-    }
-
-    suspend fun submitVeto(walletAddress: String, guardianIdentityHash: String, signatureR: String, signatureS: String, nonce: Long): Result<Unit> {
-        val body = json.encodeToString(mapOf(
-            "walletAddress" to walletAddress,
-            "guardianIdentityHash" to guardianIdentityHash,
-            "signatureR" to signatureR,
-            "signatureS" to signatureS,
-            "nonce" to nonce
-        ))
-        return post("/recovery/veto", body)
-    }
-
     suspend fun registerPushToken(walletAddress: String, fcmToken: String): Result<Unit> {
         return post("/push/register", json.encodeToString(
             mapOf("walletAddress" to walletAddress, "fcmToken" to fcmToken)
-        ))
-    }
-
-    suspend fun notifyRecoveryInitiated(walletAddress: String): Result<Unit> {
-        return post("/recovery/notify", json.encodeToString(
-            mapOf("walletAddress" to walletAddress)
         ))
     }
 

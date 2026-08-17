@@ -138,6 +138,7 @@ data class AppConfig(
             val etherscanApiKey = env["ETHERSCAN_API_KEY"]
             val jwtSecret = env["JWT_SECRET"] ?: error("JWT_SECRET is required")
 
+            // ponytail: trustedSigner is validated but never consumed by any service (audit E)
             val trustedSigner = env["TRUSTED_SIGNER"] ?: error("TRUSTED_SIGNER required")
             val isTestnet = env["IS_TESTNET"]?.toBooleanStrictOrNull()
                 ?: (expectedChainId !in listOf(1L, 56L))

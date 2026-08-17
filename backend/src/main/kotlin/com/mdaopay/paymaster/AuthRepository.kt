@@ -17,19 +17,6 @@ data class AuthUser(
 class AuthRepository(private val dataSource: DataSource) {
     private val log = LoggerFactory.getLogger(AuthRepository::class.java)
 
-    fun findById(id: String): AuthUser? {
-        val sql = "SELECT id, email, password_hash, password_salt, created_at FROM auth_users WHERE id = ?"
-        dataSource.connection.use { conn ->
-            conn.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, id)
-                stmt.executeQuery().use { rs ->
-                    if (rs.next()) return rowToUser(rs)
-                }
-            }
-        }
-        return null
-    }
-
     fun findByEmail(email: String): AuthUser? {
         val sql = "SELECT id, email, password_hash, password_salt, created_at FROM auth_users WHERE LOWER(email) = LOWER(?)"
         dataSource.connection.use { conn ->

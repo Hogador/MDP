@@ -467,3 +467,38 @@
 - **Root cause**: relay-инвайт сам регистрирует токен (index.ts L139) — раньше уходил "", теперь реальный.
 - **Верификация**: compileDevDebugKotlin PASS ×2; testDevDebugUnitTest BUILD SUCCESSFUL ×2 (1-й запуск — OOM gradle daemon, retry -Xmx2g ок); контракт payload RelayClient ↔ relay types.ts L60-64 совпадает. Coordinator: git diff подтверждён, компиляция + тесты перепрогнаны.
 - **Допущения**: onNewToken срабатывает при первом запуске; dev-флавор без Firebase → "" (инвайт не падает).
+
+## S28 — 5.7 Мёртвый код: удаление/пометка (TD-20)
+
+**Статус:** DONE
+**Агент:** coder (deepseek-v4-flash-free)
+**Дата:** 2026-08-16
+
+### Задача
+Найти и удалить/пометить мёртвый код по всему проекту (contracts, backend, app, relay) с grep-доказательствами.
+
+### Что сделано
+54 файла изменены: +11 строк, −7851 строка.
+
+**Удалены (ключевые):**
+- `FCLP256Verifier.sol` (345 строк) — 0 использований в проекте
+- `PaymasterSigner.kt` (root-level дубликат) — все импорты идут из signing/
+- 4 Settings-экрана + AssetsScreen + 8 UI-компонентов + 5 motion-компонентов (app) — 0 вызовов в main/test
+- WalletConnectManager + 4 связанных файла — 0 вызовов
+- Мёртвые методы: AuthService.getUser, AuthRepository.findById, WatchtowerService.watchWallet/pollBalances, GuardianManager.{pollPendingRecoveries,approveRecovery,vetoRecovery}, RelayClient.{getPendingRecoveries,submitApproval,submitVeto,notifyRecoveryInitiated}
+- relay: NONCE_KEY, Env.SOCIAL_RECOVERY_MODULE/RPC_URL
+
+**Помечены (ponytail: dead code candidate):**
+AppConfig.trustedSigner, PriceOracle.DexPrices.isValid, PermissionMapper, PaymasterClient.encodePaymasterAndData, TransitionAnimations.SharedElementAnim, GuardianUserOpBuilder.{approveRecovery,vetoRecovery}
+
+**Оставлены (живые):**
+RELAY_SECRET fallback (C-3 migration trap), SimpleJsonLayout (logback reflection), MoonPayProxy (wired), paymasterEvents (TD-18), RelayClient.registerPushToken (S27)
+
+### Верификация
+- contracts: forge build EXIT=0 (pre-existing lint warnings only)
+- backend: ./gradlew compileKotlin BUILD SUCCESSFUL
+- app: ./gradlew :app:compileDevDebugKotlin -PBUNDLER_URL_DEV=http://bundler.local:4337 BUILD SUCCESSFUL
+- relay: vitest 32/33 (1 pre-existing)
+
+### Self-challenge
+8 settings-экранов + AssetsScreen удалены как мёртвые — если планировалось их завести, это функциональная потеря. Всё обратимо через git.

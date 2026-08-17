@@ -18,8 +18,6 @@ function mockEnv() {
   return {
     RELAY_HMAC_SECRET: 'test-secret',
     FCM_SERVER_KEY: 'test-key',
-    SOCIAL_RECOVERY_MODULE: '0x0000000000000000000000000000000000000000',
-    RPC_URL: 'https://rpc.test',
     KV: {
       get: vi.fn(),
       put: vi.fn(),

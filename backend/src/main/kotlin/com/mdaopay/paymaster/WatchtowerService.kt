@@ -25,7 +25,6 @@ data class WatchtowerConfig(
     val recoveryModuleAddress: String,
     val webhookUrl: String? = null,
     val pollIntervalSec: Long = 60,
-    val balanceDropThreshold: Double = 0.5,
     val approvalThreshold: Int = 2,
 )
 
@@ -42,7 +41,6 @@ class WatchtowerService(
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val activeRecoveries = mutableMapOf<String, RecoveryEvent>()
-    private val watchedBalances = mutableMapOf<String, BigInteger>()
     private var lastPollBlock = BigInteger.ZERO
     private val httpClient = HttpClient(CIO) { expectSuccess = false }
 
@@ -77,7 +75,6 @@ class WatchtowerService(
                 try {
                     pollEvents()
                     pollActiveRecoveries()
-                    pollBalances()
                 } catch (e: Exception) {
                     watchLog.error("Watchtower poll error reason={}", LogSanitizer.sanitizeError(e))
                     if (watchLog.isDebugEnabled) watchLog.debug("Watchtower poll error details", e)
@@ -92,10 +89,6 @@ class WatchtowerService(
         scope.cancel()
         httpClient.close()
         watchLog.info("Watchtower stopped")
-    }
-
-    fun watchWallet(wallet: String) {
-        watchedBalances.putIfAbsent(wallet.lowercase(), BigInteger.ZERO)
     }
 
     private suspend fun pollEvents() {
@@ -209,30 +202,6 @@ class WatchtowerService(
             } catch (e: Exception) {
                 watchLog.warn("Failed to poll recovery wallet={} reason={}", LogSanitizer.sanitizeAddress(wallet), LogSanitizer.sanitizeError(e))
                 if (watchLog.isDebugEnabled) watchLog.debug("Failed to poll recovery details wallet={}", wallet, e)
-            }
-        }
-    }
-
-    private suspend fun pollBalances() {
-        for ((wallet, lastBalance) in watchedBalances.toMap()) {
-            try {
-                val balance = web3j.ethGetBalance(wallet, DefaultBlockParameterName.LATEST).send().balance
-                if (lastBalance > BigInteger.ZERO && balance < lastBalance) {
-                    val droppedFraction = 1.0 - balance.toDouble() / lastBalance.toDouble()
-                    if (droppedFraction >= config.balanceDropThreshold) {
-                        watchLog.warn("Large balance drop wallet={} ({}%)", LogSanitizer.sanitizeAddress(wallet), (droppedFraction * 100).toInt())
-                        notifyWebhook("balance_drop", mapOf(
-                            "wallet" to wallet,
-                            "previous" to lastBalance.toString(),
-                            "current" to balance.toString(),
-                            "dropPercent" to (droppedFraction * 100).toInt().toString(),
-                        ))
-                    }
-                }
-                watchedBalances[wallet] = balance
-            } catch (e: Exception) {
-                watchLog.warn("Balance poll failed reason={}", LogSanitizer.sanitizeError(e))
-                if (watchLog.isDebugEnabled) watchLog.debug("Balance poll failed details", e)
             }
         }
     }

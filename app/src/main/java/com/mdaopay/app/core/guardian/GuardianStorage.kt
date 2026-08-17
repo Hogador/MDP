@@ -25,7 +25,6 @@ class GuardianStorage @Inject constructor(
     private object Keys {
         val MY_GUARDIANS = stringPreferencesKey("my_guardians")
         val MY_INVITES = stringPreferencesKey("my_invites")
-        val PENDING_RECOVERIES = stringPreferencesKey("pending_recoveries")
         val IDENTITY_SALT = stringPreferencesKey("identity_salt")
     }
 
@@ -49,12 +48,6 @@ class GuardianStorage @Inject constructor(
     val myInvitesFlow: Flow<List<GuardianInvite>> = context.guardianStore.data.map { prefs ->
         prefs[Keys.MY_INVITES]?.let {
             json.decodeFromString<List<GuardianInvite>>(it)
-        } ?: emptyList()
-    }
-
-    val pendingRecoveriesFlow: Flow<List<PendingRecovery>> = context.guardianStore.data.map { prefs ->
-        prefs[Keys.PENDING_RECOVERIES]?.let {
-            json.decodeFromString<List<PendingRecovery>>(it)
         } ?: emptyList()
     }
 
@@ -91,14 +84,6 @@ class GuardianStorage @Inject constructor(
             val list = getMyInvites().toMutableList()
             list.replaceAll { if (it.inviteId == inviteId) it.copy(status = status) else it }
             prefs[Keys.MY_INVITES] = json.encodeToString(list)
-        }
-    }
-
-    suspend fun getPendingRecoveries(): List<PendingRecovery> = pendingRecoveriesFlow.first()
-
-    suspend fun setPendingRecoveries(recoveries: List<PendingRecovery>) {
-        context.guardianStore.edit { prefs ->
-            prefs[Keys.PENDING_RECOVERIES] = json.encodeToString(recoveries)
         }
     }
 }

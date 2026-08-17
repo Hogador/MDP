@@ -3,7 +3,6 @@ import { GuardianInvite, InviteStatus, PendingRecovery } from './types'
 const INVITE_KEY = (id: string) => `invite:${id}`
 const GUARDIAN_PUSH_KEY = (addr: string) => `push:${addr}`
 const RECOVERY_KEY = (addr: string) => `recovery:${addr}`
-const NONCE_KEY = (addr: string) => `nonce:${addr}`
 const GUARDIAN_HASH_KEY = (hash: string) => `guardian:${hash}`
 
 export async function createInvite(

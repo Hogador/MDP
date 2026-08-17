@@ -23,6 +23,7 @@ data class DexPrices(
     val mdaoUsd: Double,
     val usdtUsd: Double,
 ) {
+    // ponytail: dead code candidate, kept — used only by PriceOracleTest, no production caller
     fun isValid(): Boolean =
         bnbUsd in 100.0..10000.0 &&
         usdtUsd in 0.9..1.1 &&

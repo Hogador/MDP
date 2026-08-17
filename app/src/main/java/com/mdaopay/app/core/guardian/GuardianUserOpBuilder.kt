@@ -87,6 +87,7 @@ class GuardianUserOpBuilder @Inject constructor(
     /**
      * Sends approveRecovery(wallet, guardianIdentityHash, authenticatorData, clientDataJSON, p256Signature)
      * on-chain via UserOp. Extracts WebAuthn assertion data from the passkey authentication JSON.
+     * // ponytail: dead code candidate, kept — only caller was GuardianManager.approveRecovery (removed)
      */
     suspend fun approveRecovery(
         wallet: String,
@@ -118,6 +119,7 @@ class GuardianUserOpBuilder @Inject constructor(
     /**
      * Sends vetoRecovery(wallet, guardianIdentityHash, authenticatorData, clientDataJSON, p256Signature)
      * on-chain via UserOp.
+     * // ponytail: dead code candidate, kept — no callers (GuardianManager.vetoRecovery removed)
      */
     suspend fun vetoRecovery(
         wallet: String,

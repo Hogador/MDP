@@ -342,7 +342,5 @@ export default {
 interface Env {
   KV: KVNamespace
   FCM_SERVER_KEY: string
-  SOCIAL_RECOVERY_MODULE: string
-  RPC_URL: string
   RELAY_HMAC_SECRET: string
 }

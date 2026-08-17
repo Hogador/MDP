@@ -53,9 +53,6 @@ data class SignResponse(
     val token: String,
 )
 
-// ponytail: kept for backward compat with deprecated getQuote()
-data class Quote(val paymasterAndData: ByteArray)
-
 @Singleton
 // ponytail: no default — Hilt provides OkHttpClient from NetworkModule
 class PaymasterClient @Inject constructor(
@@ -160,61 +157,7 @@ class PaymasterClient @Inject constructor(
         }
     }
 
-    /**
-     * F-130: deprecated — use [signUserOp] instead.
-     * Old API sent {sender, token, maxTokenAmount} which doesn't match backend SignRequest.
-     * Kept for backward compatibility only.
-     */
-    @Deprecated(
-        "Use signUserOp() which sends full UserOp fields matching backend SignRequest",
-        ReplaceWith(
-            "signUserOp(sender, nonce, initCode, callData, verificationGasLimit, callGasLimit, preVerificationGas, maxPriorityFeePerGas, maxFeePerGas, mdaoMaxAmount, usdtMaxAmount)"
-        )
-    )
-    suspend fun getQuote(
-        sender: String,
-        token: String,
-        maxTokenAmount: BigInteger
-    ): Quote = withContext(Dispatchers.IO) {
-        val bodyJson = JSONObject().apply {
-            put("sender", sender)
-            put("token", token)
-            put("maxTokenAmount", Numeric.toHexStringWithPrefix(maxTokenAmount))
-        }
-
-        val request = Request.Builder()
-            .url("${BuildConfig.BACKEND_URL}/v1/sign")
-            .post(bodyJson.toString().toRequestBody(jsonMediaType))
-            .build()
-
-        try {
-            val response = okHttpClient.newCall(request).execute()
-            val body = response.body?.string()
-
-            when (response.code) {
-                429 -> throw PaymasterError.RateLimited
-                400 -> throw PaymasterError.InvalidRequest
-                in 500..599 -> throw PaymasterError.ServerError
-            }
-
-            if (!response.isSuccessful || body == null) {
-                throw PaymasterError.Unknown(Exception("HTTP ${response.code}: $body"))
-            }
-
-            val json = JSONObject(body)
-            val paymasterAndDataHex = json.getString("paymasterAndData")
-            Quote(paymasterAndData = Numeric.hexStringToByteArray(paymasterAndDataHex))
-        } catch (e: java.net.SocketTimeoutException) {
-            throw PaymasterError.NetworkTimeout
-        } catch (e: java.net.UnknownHostException) {
-            throw PaymasterError.NetworkTimeout
-        } catch (e: PaymasterError) {
-            throw e
-        } catch (e: Exception) {
-            throw PaymasterError.Unknown(e)
-        }
-    }
-
+    // ponytail: dead code candidate, kept — used only by PaymasterClientTest; prod uses signUserOp()
     fun encodePaymasterAndData(
         token: String,
         maxTokenAmount: BigInteger,
