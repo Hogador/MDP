@@ -91,8 +91,8 @@ export default {
         headers: SECURITY_HEADERS,
       })
 
-    const err = (msg: string, status = 400): Response =>
-      new Response(JSON.stringify({ success: false, error: msg } satisfies ApiResponse), {
+    const err = (msg: string, status = 400, reason?: string): Response =>
+      new Response(JSON.stringify({ success: false, error: msg, ...(reason ? { reason } : {}) } satisfies ApiResponse), {
         status,
         headers: SECURITY_HEADERS,
       })
@@ -187,6 +187,19 @@ export default {
         const invite = await getInvite(env.KV, inviteId)
         if (!invite) return err('Invite not found', 404)
         if (invite.status !== 'PENDING') return err('Invite already processed', 400)
+
+        // anti-replay: bind signature to specific inviteId
+        // ponytail: btoa is native in CF Workers and Node ≥16 — avoids Buffer dep, same base64url for ASCII
+        let clientData: { challenge?: string }
+        try {
+          clientData = JSON.parse(body.clientDataJSON)
+        } catch {
+          return err('Challenge mismatch', 403, 'challenge_mismatch')
+        }
+        const expectedChallenge = btoa(inviteId).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+        if (clientData.challenge !== expectedChallenge) {
+          return err('Challenge mismatch', 403, 'challenge_mismatch')
+        }
 
         const valid = await verifyWebAuthnSignature(
           hexToBytes(body.authenticatorData),

@@ -159,6 +159,36 @@ describe('WebAuthn accept flow', () => {
     expect(mockVerifyWebAuthn).toHaveBeenCalled()
   })
 
+  it('rejects POST /guardian/invite/:inviteId/accept with challenge bound to a different inviteId (anti-replay)', async () => {
+    mockVerifySignature.mockResolvedValue(true)
+    mockVerifyWebAuthn.mockResolvedValue(true) // signature itself is mathematically valid
+    const env = mockEnv()
+    env.KV.get.mockResolvedValue(JSON.stringify({
+      inviteId: webauthnFixture.inviteId,
+      walletAddress: webauthnFixture.walletAddress,
+      guardianLabel: 'test-guardian',
+      guardianPubKeyX: webauthnFixture.pubKeyX,
+      guardianPubKeyY: webauthnFixture.pubKeyY,
+      encryptedShare: '0xencrypted',
+      shareIndex: 1,
+      createdAt: Date.now(),
+      status: 'PENDING',
+    }))
+
+    // Same signature/clientDataJSON (challenge bound to fixture invite A),
+    // but replayed against a DIFFERENT inviteId (B)
+    const req = new Request('http://localhost/guardian/invite/00000000-0000-0000-0000-000000000001/accept', {
+      method: 'POST',
+      body: webAuthnBody(),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const res = await handler.fetch(req, env)
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.reason).toBe('challenge_mismatch')
+    expect(mockVerifyWebAuthn).not.toHaveBeenCalled()
+  })
+
   it('rejects POST /guardian/invite/:inviteId/accept with missing fields', async () => {
     mockVerifySignature.mockResolvedValue(true)
     const env = mockEnv()
@@ -253,7 +283,7 @@ describe('auth on invite endpoints', () => {
     mockVerifyWebAuthn.mockResolvedValue(false)
     const env = mockEnv()
     env.KV.get.mockResolvedValue(JSON.stringify({
-      inviteId: 'inv-001',
+      inviteId: webauthnFixture.inviteId,
       walletAddress: '0x123',
       guardianLabel: 'test',
       guardianPubKeyX: 'abc',
@@ -263,7 +293,7 @@ describe('auth on invite endpoints', () => {
       createdAt: Date.now(),
       status: 'PENDING',
     }))
-    const req = new Request('http://localhost/guardian/invite/inv-001/accept', {
+    const req = new Request(`http://localhost/guardian/invite/${webauthnFixture.inviteId}/accept`, {
       method: 'POST',
       body: webAuthnBody({ signatureR: 'bad_r' }),
       headers: { 'Content-Type': 'application/json' },
@@ -279,7 +309,7 @@ describe('auth on invite endpoints', () => {
     mockVerifyWebAuthn.mockResolvedValue(true)
     const env = mockEnv()
     env.KV.get.mockResolvedValue(JSON.stringify({
-      inviteId: 'inv-002',
+      inviteId: webauthnFixture.inviteId,
       walletAddress: '0x456',
       guardianLabel: 'test-guardian',
       guardianPubKeyX: 'abc123',
@@ -289,7 +319,7 @@ describe('auth on invite endpoints', () => {
       createdAt: Date.now(),
       status: 'PENDING',
     }))
-    const req = new Request('http://localhost/guardian/invite/inv-002/accept', {
+    const req = new Request(`http://localhost/guardian/invite/${webauthnFixture.inviteId}/accept`, {
       method: 'POST',
       body: webAuthnBody({ guardianIdentityHash: 'hash2' }),
       headers: { 'Content-Type': 'application/json' },
