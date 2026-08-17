@@ -1,0 +1,24 @@
+{
+  "description": "WebAuthn fixture for relay accept handler. Shared source of truth for T1a (relay coder) and T1b (app coder).",
+  "inviteId": "550e8400-e29b-41d4-a716-446655440000",
+  "walletAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD78",
+  "pubKeyX": "a9aa36181c698bba855de8b0578665daceb9fa393bbe25331253e497ed9424b7",
+  "pubKeyY": "54f38d7c0729af6b1d17ccc05570124781e6287a872a3852bd6171829c64115e",
+  "authenticatorData": "4a5b6c7d8e9fa0b1c2d3e4f5060708090a0b0c0d0e0f101112131415161718190500000001",
+  "challengeB64": "NTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAw",
+  "clientDataJSON": "{\"type\":\"webauthn.get\",\"challenge\":\"NTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAw\",\"origin\":\"https://app.mdaopay.com\",\"crossOrigin\":false}",
+  "clientDataHash": "644cc6f8fcfd57c5c3840529a756fa5817f9b8260449483d3afb40c7e4b4c796",
+  "signedDataLength": 69,
+  "messageHash": "fd073cd7051b017ddf3438b19cbcd7cf59a521667effa23008f130af8bb29ce7",
+  "signatureR": "16f02b2f39e668111cd14be10748ca4672192ec1cc2881de5cfebe60207a729a",
+  "signatureS": "0a714812bc41857fada899b3f046850c2a34bbd733717f5cb032d5a7be008821",
+  "verified": true,
+  "verificationSteps": {
+    "step1": "clientDataHash = SHA-256(clientDataJSON) → 644cc6f8...",
+    "step2": "signedData = authenticatorData(37 bytes) || clientDataHash(32 bytes) → 69 bytes",
+    "step3": "messageHash = SHA-256(signedData) → fd073cd7...",
+    "step4": "ECDSA_P256_verify(messageHash, signature, pubKey) → true"
+  },
+  "solidityReference": "contracts/src/SocialRecoveryModule.sol L637-664",
+  "criticalNote": "verifyP256Signature receives signedData (Uint8Array), NOT messageHash. The hash:SHA-256 in crypto.subtle.verify computes SHA-256(signedData) internally."
+}

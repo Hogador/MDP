@@ -115,11 +115,20 @@ class RelayClient @Inject constructor(
     }
 
     // ponytail: relay requires signature over invite acceptance + guardian identity
-    suspend fun acceptInvite(inviteId: String, signatureR: String, signatureS: String, guardianIdentityHash: String): Result<Unit> {
+    suspend fun acceptInvite(
+        inviteId: String,
+        signatureR: String,
+        signatureS: String,
+        guardianIdentityHash: String,
+        authenticatorData: String,
+        clientDataJSON: String
+    ): Result<Unit> {
         val body = json.encodeToString(mapOf(
             "signatureR" to signatureR,
             "signatureS" to signatureS,
-            "guardianIdentityHash" to guardianIdentityHash
+            "guardianIdentityHash" to guardianIdentityHash,
+            "authenticatorData" to authenticatorData,
+            "clientDataJSON" to clientDataJSON
         ))
         return post("/guardian/invite/$inviteId/accept", body)
     }

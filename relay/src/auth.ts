@@ -46,6 +46,50 @@ export async function verifyP256Signature(
   }
 }
 
+// WebAuthn assertion verification — matches SocialRecoveryModule._verifyWebAuthn()
+// Takes raw Uint8Array for authenticatorData and clientDataJSON (not string!)
+export async function verifyWebAuthnSignature(
+  authenticatorData: Uint8Array,
+  clientDataJSON: Uint8Array,
+  signatureR: string,
+  signatureS: string,
+  pubKeyX: string,
+  pubKeyY: string,
+): Promise<boolean> {
+  try {
+    const keyBytes = new Uint8Array(65)
+    keyBytes[0] = 0x04
+    keyBytes.set(hexToBytes(pubKeyX), 1)
+    keyBytes.set(hexToBytes(pubKeyY), 33)
+
+    const publicKey = await crypto.subtle.importKey(
+      'raw', keyBytes,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false, ['verify'],
+    )
+
+    const rawSig = new Uint8Array(64)
+    rawSig.set(hexToBytes(signatureR), 0)
+    rawSig.set(hexToBytes(signatureS), 32)
+
+    // Solidity L649: clientDataHash = SHA-256(clientDataJSON)
+    const clientDataHash = await crypto.subtle.digest('SHA-256', clientDataJSON)
+
+    // Solidity L654-659: signedData = authenticatorData || clientDataHash
+    const signedData = new Uint8Array(authenticatorData.length + 32)
+    signedData.set(authenticatorData, 0)
+    signedData.set(new Uint8Array(clientDataHash), authenticatorData.length)
+
+    // crypto.subtle.verify with hash:'SHA-256' computes SHA-256(signedData) internally
+    return await crypto.subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      publicKey, rawSig, signedData,
+    )
+  } catch {
+    return false
+  }
+}
+
 // ponytail: constant-time hex compare — no Node crypto dep, works in CF Workers
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false

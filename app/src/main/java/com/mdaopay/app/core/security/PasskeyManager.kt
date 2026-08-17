@@ -106,12 +106,12 @@ class PasskeyManager @Inject constructor(
         }
     }
 
-    suspend fun authenticateWithPasskey(evalInput: ByteArray): Result<PasskeyAuthResult> {
-        val challenge = ByteArray(32).also { secureRandom.nextBytes(it) }
+    suspend fun authenticateWithPasskey(evalInput: ByteArray, challenge: ByteArray? = null): Result<PasskeyAuthResult> {
+        val effectiveChallenge = challenge ?: ByteArray(32).also { secureRandom.nextBytes(it) }
 
         // Try with PRF first
         val prfResult = try {
-            val authJson = buildAuthJson(challenge, evalInput, withPrf = true)
+            val authJson = buildAuthJson(effectiveChallenge, evalInput, withPrf = true)
             val request = GetCredentialRequest(listOf(GetPublicKeyCredentialOption(authJson)))
             val response: GetCredentialResponse =
                 withContext(Dispatchers.Main) { credentialManager.getCredential(context, request) }
@@ -132,7 +132,7 @@ class PasskeyManager @Inject constructor(
 
         // Fallback: authenticate without PRF
         return try {
-            val authJson = buildAuthJson(challenge, evalInput, withPrf = false)
+            val authJson = buildAuthJson(effectiveChallenge, evalInput, withPrf = false)
             val request = GetCredentialRequest(listOf(GetPublicKeyCredentialOption(authJson)))
             val response: GetCredentialResponse =
                 withContext(Dispatchers.Main) { credentialManager.getCredential(context, request) }

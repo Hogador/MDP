@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { verifySignature, hmacSha256, verifyP256Signature } from '../auth'
+import { verifySignature, hmacSha256, verifyP256Signature, verifyWebAuthnSignature, hexToBytes } from '../auth'
+import webauthnFixture from './fixtures/webauthn-accept.json'
 
 const RELAY_HMAC_SECRET = 'test-secret-key-for-testing'
 
@@ -64,6 +65,54 @@ describe('verifyP256Signature', () => {
 
   it('returns false for invalid hex', async () => {
     expect(await verifyP256Signature('test', 'xyz', 'abc', 'dead', 'beef')).toBe(false)
+  })
+})
+
+describe('verifyWebAuthnSignature', () => {
+  const authData = () => hexToBytes(webauthnFixture.authenticatorData)
+  const clientData = () => new TextEncoder().encode(webauthnFixture.clientDataJSON)
+
+  // Fixture signed against Solidity SocialRecoveryModule._verifyWebAuthn() L637-664
+  it('verifies fixture signature (clientDataHash || authenticatorData)', async () => {
+    expect(await verifyWebAuthnSignature(
+      authData(), clientData(),
+      webauthnFixture.signatureR, webauthnFixture.signatureS,
+      webauthnFixture.pubKeyX, webauthnFixture.pubKeyY,
+    )).toBe(true)
+  })
+
+  it('returns false for tampered clientDataJSON', async () => {
+    const tampered = new TextEncoder().encode(webauthnFixture.clientDataJSON.replace('crossOrigin', 'crossOriginBad'))
+    expect(await verifyWebAuthnSignature(
+      authData(), tampered,
+      webauthnFixture.signatureR, webauthnFixture.signatureS,
+      webauthnFixture.pubKeyX, webauthnFixture.pubKeyY,
+    )).toBe(false)
+  })
+
+  it('returns false for tampered authenticatorData', async () => {
+    const tampered = authData()
+    tampered[0] ^= 0x01
+    expect(await verifyWebAuthnSignature(
+      tampered, clientData(),
+      webauthnFixture.signatureR, webauthnFixture.signatureS,
+      webauthnFixture.pubKeyX, webauthnFixture.pubKeyY,
+    )).toBe(false)
+  })
+
+  it('returns false for tampered signature', async () => {
+    const rBytes = hexToBytes(webauthnFixture.signatureR)
+    rBytes[0] ^= 0x01
+    const tamperedR = Array.from(rBytes).map(b => b.toString(16).padStart(2, '0')).join('')
+    expect(await verifyWebAuthnSignature(
+      authData(), clientData(),
+      tamperedR, webauthnFixture.signatureS,
+      webauthnFixture.pubKeyX, webauthnFixture.pubKeyY,
+    )).toBe(false)
+  })
+
+  it('returns false for invalid hex inputs', async () => {
+    expect(await verifyWebAuthnSignature(authData(), clientData(), 'xyz', 'abc', 'dead', 'beef')).toBe(false)
   })
 })
 

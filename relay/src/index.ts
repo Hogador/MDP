@@ -12,7 +12,7 @@ import {
   getGuardian,
 } from './storage'
 import { sendPushNotification } from './fcm'
-import { verifySignature, verifyP256Signature } from './auth'
+import { verifySignature, verifyP256Signature, verifyWebAuthnSignature, hexToBytes } from './auth'
 import type {
   AcceptInviteRequest,
   ApiResponse,
@@ -180,7 +180,7 @@ export default {
         if (authError) return authError
         const inviteId = acceptMatch[1]
         const body: AcceptInviteRequest = JSON.parse(text)
-        if (!body.signatureR || !body.signatureS || !body.guardianIdentityHash) {
+        if (!body.signatureR || !body.signatureS || !body.guardianIdentityHash || !body.authenticatorData || !body.clientDataJSON) {
           return err('Missing signature fields')
         }
 
@@ -188,8 +188,9 @@ export default {
         if (!invite) return err('Invite not found', 404)
         if (invite.status !== 'PENDING') return err('Invite already processed', 400)
 
-        const valid = await verifyP256Signature(
-          `accept:${inviteId}:${invite.walletAddress}`,
+        const valid = await verifyWebAuthnSignature(
+          hexToBytes(body.authenticatorData),
+          new TextEncoder().encode(body.clientDataJSON),
           body.signatureR,
           body.signatureS,
           invite.guardianPubKeyX,

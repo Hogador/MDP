@@ -54,6 +54,8 @@ export interface AcceptInviteRequest {
   signatureR: string
   signatureS: string
   guardianIdentityHash: string
+  authenticatorData: string  // hex-encoded raw bytes from WebAuthn assertion
+  clientDataJSON: string     // raw JSON string (NOT base64, NOT hex)
 }
 
 export interface PushRegisterRequest {

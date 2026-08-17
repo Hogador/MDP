@@ -75,7 +75,10 @@ class GuardianManager @Inject constructor(
             val pubKeyY = keyData?.pubKeyYHex ?: ""
 
             // S19/4.3b: guardian creates a real WebAuthn assertion (P-256) — replaces PRF "signature"
-            val authResult = passkeyManager.authenticateWithPasskey(passkeyManager.generateEvalInput())
+            val authResult = passkeyManager.authenticateWithPasskey(
+                passkeyManager.generateEvalInput(),
+                challenge = inviteId.toByteArray(Charsets.UTF_8)
+            )
             val authData = authResult.getOrElse { return authResult.map { } }
             val assertion = GuardianUserOpBuilder.extractWebAuthnAssertion(authData.authenticationJson)
                 ?: return Result.failure(
@@ -106,7 +109,9 @@ class GuardianManager @Inject constructor(
             val signatureS = assertion.signature.copyOfRange(32, 64).joinToString("") { "%02x".format(it) }
 
             // Relay flow (off-chain coordination)
-            relayClient.acceptInvite(inviteId, signatureR, signatureS, identityHash)
+            val authenticatorDataHex = assertion.authenticatorData.joinToString("") { "%02x".format(it) }
+            val clientDataJSONStr = assertion.clientDataJSON.toString(Charsets.UTF_8)
+            relayClient.acceptInvite(inviteId, signatureR, signatureS, identityHash, authenticatorDataHex, clientDataJSONStr)
 
             // On-chain flow: confirmGuardian — adds on-chain guard (F-101)
             guardianUserOpBuilder.acceptInviteAndRegister(invite, userId)

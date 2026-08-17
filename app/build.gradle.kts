@@ -59,6 +59,19 @@ val generateDeploymentConfig by tasks.registering {
     }
 }
 
+// ponytail: fail-fast for release deployments — release-сборка без CHAIN_ID или на локальную chain (31337) не собирается.
+// Проверка на configuration time: по имени таски (Release в имени => release-вариант), debug/staging не трогаем.
+val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+if (isReleaseBuild) {
+    val chainIdProp = project.findProperty("CHAIN_ID")?.toString()
+    require(!chainIdProp.isNullOrBlank()) {
+        "CHAIN_ID is required for release builds. Set via: ./gradlew assembleRelease -PCHAIN_ID=11155111"
+    }
+    require(chainIdProp.toLongOrNull() != 31337L) {
+        "Cannot deploy release to local chain: CHAIN_ID=31337. Set a real chain, e.g. -PCHAIN_ID=11155111"
+    }
+}
+
 android {
     sourceSets {
         getByName("main") {
