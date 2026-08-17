@@ -161,6 +161,30 @@ android {
         buildConfigField("String", "RELAY_HMAC_SECRET", "\"${project.findProperty("RELAY_HMAC_SECRET") ?: ""}\"")
     }
 
+    // ponytail: signing — testnet uses debug keystore, production via env vars
+    val ksFile = project.findProperty("KEYSTORE_FILE") as? String
+    val ksPass = project.findProperty("KEYSTORE_PASSWORD") as? String
+    val ksAlias = project.findProperty("KEY_ALIAS") as? String
+    val ksKeyPass = project.findProperty("KEY_PASSWORD") as? String
+
+    signingConfigs {
+        create("release") {
+            if (ksFile != null && ksPass != null && ksAlias != null && ksKeyPass != null) {
+                // Production: ./gradlew assembleRelease -PKEYSTORE_FILE=path.jks -PKEYSTORE_PASSWORD=... -PKEY_ALIAS=... -PKEY_PASSWORD=...
+                storeFile = file(ksFile)
+                storePassword = ksPass
+                keyAlias = ksAlias
+                keyPassword = ksKeyPass
+            } else {
+                // Testnet fallback: sign with debug keystore
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         debug {
             versionNameSuffix = "-debug"
@@ -173,6 +197,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
