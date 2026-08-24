@@ -159,12 +159,12 @@ class GuardianUserOpBuilder @Inject constructor(
         val nonce = getNonce(smartAccountAddress).getOrNull() ?: return null
         val deployed = isDeployed(smartAccountAddress)
 
-        // Inner: confirmGuardian(address wallet)
+        // Inner: confirmGuardian(address wallet) // ponytail:doc
         val innerCalldata = FunctionEncoder.encode(
             Function("confirmGuardian", listOf(Address(wallet)), emptyList())
         )
 
-        // Outer: execute(target, value, data)
+        // Outer: execute(target, value, data) // ponytail:doc
         val executeCalldata = FunctionEncoder.encode(
             Function(
                 "execute",
@@ -207,7 +207,7 @@ class GuardianUserOpBuilder @Inject constructor(
         val nonce = getNonce(smartAccountAddress).getOrNull() ?: return null
         val deployed = isDeployed(smartAccountAddress)
 
-        // Inner: approveRecovery(address, bytes32, bytes, bytes, bytes)
+        // Inner: approveRecovery(address, bytes32, bytes, bytes, bytes) // ponytail:doc
         val innerCalldata = FunctionEncoder.encode(
             Function(
                 "approveRecovery",
@@ -264,7 +264,7 @@ class GuardianUserOpBuilder @Inject constructor(
         val nonce = getNonce(smartAccountAddress).getOrNull() ?: return null
         val deployed = isDeployed(smartAccountAddress)
 
-        // Inner: vetoRecovery(address, bytes32, bytes, bytes, bytes)
+        // Inner: vetoRecovery(address, bytes32, bytes, bytes, bytes) // ponytail:doc
         val innerCalldata = FunctionEncoder.encode(
             Function(
                 "vetoRecovery",

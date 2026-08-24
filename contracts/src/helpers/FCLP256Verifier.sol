@@ -134,7 +134,7 @@ contract FCLP256Verifier {
 
         if (scalar_u == 0 && scalar_v == 0) return 0;
 
-        // H = G + Q
+        // H = G + Q  // ponytail:doc
         (HX, HY) = ecAff_add(GX, GY, QX, QY);
 
         int256 index = 255;

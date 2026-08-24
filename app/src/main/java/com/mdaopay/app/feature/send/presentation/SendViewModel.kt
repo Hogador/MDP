@@ -296,7 +296,7 @@ class SendViewModel @Inject constructor(
                 is com.mdaopay.app.core.common.Result.Success -> {
                     val sendResult = result.data
                     val txHash = sendResult.txHash
-                    // ponytail: usedFallback=true → gasless недоступен, оплата из BNB
+                    // ponytail: usedFallback=true → gasless недоступен, оплата из BNB // ponytail:doc
                     val exists = contactsStore.hasContact(recipientNickname)
                     if (!exists && recipientAddress.startsWith("0x")) {
                         contactsStore.addContact(

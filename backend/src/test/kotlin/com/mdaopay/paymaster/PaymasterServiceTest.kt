@@ -212,7 +212,7 @@ class PaymasterServiceTest {
         val pm = result.paymasterAndData.removePrefix("0x")
         val amountHex = pm.substring(80, 144) // pmAddr(20) + token(20) + amount(32)
         val amount = Numeric.toBigInt(amountHex)
-        // gasCostUsd = 3.244032e15 wei * 600 / 1e18 = 1.9464192 USD → * 1e6 = 1946419.2 → CEIL = 1946420 base units
+        // gasCostUsd = 3.244032e15 wei * 600 / 1e18 = 1.9464192 USD → * 1e6 = 1946419.2 → CEIL = 1946420 base units // ponytail:doc
         assertEquals(BigInteger.valueOf(1_946_420), amount, "6-dec USDT amount must be in base units")
     }
 

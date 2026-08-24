@@ -25,7 +25,7 @@ class BinancePriceSource : PriceSource {
             val body = resp.bodyAsText()
             val root = json.parseToJsonElement(body).jsonObject
             val bnbUsdtPrice = root["price"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
-            // BNBUSDT = BNB price in USDT; assume 1 USDT ≈ 1 USD
+            // BNBUSDT = BNB price in USDT; assume 1 USDT ≈ 1 USD // ponytail:doc
             // MDAO not listed on Binance, so 0.0 (other sources fill it)
             DexPrices(bnbUsdtPrice, 0.0, 1.0)
         } catch (_: Exception) { null }

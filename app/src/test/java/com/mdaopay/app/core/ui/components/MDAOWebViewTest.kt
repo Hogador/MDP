@@ -85,10 +85,10 @@ class MDAOWebViewTest {
     @Test
     fun `webview security settings are applied`() {
         // F-038: These settings must be applied:
-        //   allowFileAccess = false
-        //   allowContentAccess = false
-        //   allowFileAccessFromFileURLs = false
-        //   allowUniversalAccessFromFileURLs = false
+        //   allowFileAccess = false // ponytail:doc
+        //   allowContentAccess = false // ponytail:doc
+        //   allowFileAccessFromFileURLs = false // ponytail:doc
+        //   allowUniversalAccessFromFileURLs = false // ponytail:doc
         // (verified via code review — tested in Android instrumentation)
 
         val securitySettings = mapOf(

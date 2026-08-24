@@ -28,9 +28,9 @@ class PasskeyManagerTest {
     fun `rp id is configurable per flavor`() {
         // Each flavor (dev/staging/prod) has its own PASSKEY_RP_ID with
         // project property override:
-        //   dev:     PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_DEV") ?: "mdaopay.app"
-        //   staging: PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_STAGING") ?: "mdaopay.app"
-        //   prod:    PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_PROD") ?: "mdaopay.app"
+        //   dev:     PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_DEV") ?: "mdaopay.app" // ponytail:doc
+        //   staging: PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_STAGING") ?: "mdaopay.app" // ponytail:doc
+        //   prod:    PASSKEY_RP_ID = project.findProperty("PASSKEY_RP_ID_PROD") ?: "mdaopay.app" // ponytail:doc
 
         val devDefault = "mdaopay.app"
         val stagingDefault = "mdaopay.app"

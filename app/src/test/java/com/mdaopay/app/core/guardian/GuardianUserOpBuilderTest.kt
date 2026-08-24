@@ -96,8 +96,8 @@ class GuardianUserOpBuilderTest {
     fun `buildWebAuthnProof produces 160 bytes in SRM format`() {
         // S19/4.3b: 160 bytes = messageHash(32) + r(32) + s(32) + x(32) + y(32),
         // mirroring SocialRecoveryModule._verifyWebAuthn (L648-680):
-        //   clientDataHash = SHA-256(clientDataJSON)
-        //   messageHash     = SHA-256(authenticatorData || clientDataHash)
+        //   clientDataHash = SHA-256(clientDataJSON) // ponytail:doc
+        //   messageHash     = SHA-256(authenticatorData || clientDataHash) // ponytail:doc
         val authenticatorData = ByteArray(37) { it.toByte() }
         val clientDataJSON = "{\"type\":\"webauthn.get\",\"origin\":\"android:apk-key-hash:test\"}".encodeToByteArray()
         val signature = ByteArray(64) { (it + 1).toByte() }

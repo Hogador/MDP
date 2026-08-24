@@ -37,9 +37,9 @@ contract SessionKeyModule is IRecoveryHook {
     }
 
     mapping(bytes32 => SessionKey) public sessionKeys;
-    // owner => key count (for future enumeration if needed)
+    // owner => key count (for future enumeration if needed)  // ponytail:doc
     mapping(address => uint256) public keyCount;
-    // owner => list of key IDs (for recovery invalidation)
+    // owner => list of key IDs (for recovery invalidation)  // ponytail:doc
     mapping(address => bytes32[]) private _ownerKeys;
 
     event SessionKeyCreated(

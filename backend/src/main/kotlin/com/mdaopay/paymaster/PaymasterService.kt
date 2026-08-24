@@ -293,7 +293,7 @@ class PaymasterService(
         chainId: Long,
         verifyingContract: String
     ): ByteArray {
-        // domainSeparator = keccak256(abi.encode(typeHash, nameHash, versionHash, chainId, verifyingContract))
+        // domainSeparator = keccak256(abi.encode(typeHash, nameHash, versionHash, chainId, verifyingContract)) // ponytail:doc
         val domainSeparator = Hash.sha3(
             EIP712_DOMAIN_TYPEHASH +
             MDAOPAY_NAME_HASH +
@@ -301,7 +301,7 @@ class PaymasterService(
             Numeric.toBytesPadded(BigInteger.valueOf(chainId), 32) +
             Numeric.toBytesPadded(Numeric.toBigInt(verifyingContract), 32)
         )
-        // structHash = keccak256(abi.encode(typeHash, sender, token, amount, gasPrice, deadline, nonce))
+        // structHash = keccak256(abi.encode(typeHash, sender, token, amount, gasPrice, deadline, nonce)) // ponytail:doc
         val structHash = Hash.sha3(
             QUOTE_TYPEHASH +
             Numeric.toBytesPadded(Numeric.toBigInt(sender), 32) +
@@ -311,7 +311,7 @@ class PaymasterService(
             Numeric.toBytesPadded(quoteDeadline, 32) +
             Numeric.toBytesPadded(nonce, 32)
         )
-        // abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        // abi.encodePacked("\x19\x01", domainSeparator, structHash) // ponytail:doc
         return Hash.sha3(byteArrayOf(0x19, 0x01) + domainSeparator + structHash)
     }
 

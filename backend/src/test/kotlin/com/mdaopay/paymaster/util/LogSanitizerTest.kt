@@ -114,7 +114,7 @@ class LogSanitizerTest {
     fun `test error id pattern logs safely`() {
         // This simulates the approved pattern:
         //   log.error("Operation failed reason={}", LogSanitizer.sanitizeError(e))
-        //   if (log.isDebugEnabled) log.debug("Operation failed details", e)
+        //   if (log.isDebugEnabled) log.debug("Operation failed details", e) // ponytail:doc
         val ex = SQLException("DROP TABLE users; -- leak", "42601", 123)
         val reason = LogSanitizer.sanitizeError(ex)
         // Safe: no SQL injection in log output

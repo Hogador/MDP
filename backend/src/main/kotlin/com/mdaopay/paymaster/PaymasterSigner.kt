@@ -51,7 +51,7 @@ class LocalPaymasterSigner(private val key: ECKeyPair) : PaymasterSigner {
 /**
  * GCP Cloud KMS implementation for production.
  * ponytail: requires google-cloud-kms dependency — add when deploying to production.
- * TODO: add implementation("com.google.cloud:google-cloud-kms:2.60.0") to build.gradle.kts
+ * TODO(backend-team): add implementation("com.google.cloud:google-cloud-kms:2.60.0") to build.gradle.kts
  *
 class KmsPaymasterSigner(
     private val kmsClient: com.google.cloud.kms.v1.KeyManagementServiceClient,

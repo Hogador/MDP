@@ -163,7 +163,7 @@ fun normalizeIpAddress(ip: String): String {
         }
     }
     
-    // IPv4: return as-is
+    // IPv4: return as-is // ponytail:doc
     return ip
 }
 

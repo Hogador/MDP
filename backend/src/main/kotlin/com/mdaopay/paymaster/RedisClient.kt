@@ -35,7 +35,8 @@ object Redis {
 
     // ponytail: simple reconnect — no exponential backoff, just reset and retry
     private fun reconnect() {
-        try { client?.shutdown() } catch (_: Exception) {}
+        // Ошибка shutdown старого соединения не влияет на reconnect — глотаем осознанно
+        try { client?.shutdown() } catch (_: Exception) { /* cleanup: non-actionable */ }
         client = null
         connection = null
         try {

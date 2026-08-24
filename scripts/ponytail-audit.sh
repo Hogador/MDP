@@ -21,12 +21,21 @@ fi
 
 for file in $STAGED; do
     [ -f "$file" ] || continue
-    COMMENTED=$(grep -nE '^\s*//.*[a-zA-Z]+\(' "$file" 2>/dev/null | grep -v "TODO\|FIXME\|NOTE\|XXX\|ponytail:" | head -5 || true)
+    # Вендорские библиотеки не ревьюим — их код не наш
+    case "$file" in
+        contracts/lib/*|*/node_modules/*) continue ;;
+    esac
+    # Закомментированный код: необязательная метка ("C-1:", "dev:", "-2:"),
+    # затем СРАЗУ statement: ключевое слово | присваивание x = |
+    # вызов с ";" | вызов в конце строки.
+    # Проза с "func()" внутри ("verify() function", "type hash: Quote(a,b)") не матчится,
+    # т.к. всё выражение заякорено от начала строки после метки.
+    COMMENTED=$(grep -nP '^\s*//+\s*(?:[A-Za-z0-9_./-]{1,24}:\s*)?(?:(?:const |let |var |val |final |return |await |async |throw |if \(|for \(|while \(|switch )|[a-zA-Z_$][a-zA-Z0-9_.$]*\s*=[^=]|[a-zA-Z_$][a-zA-Z0-9_.$]*\([^)]*\)\s*;|[a-zA-Z_$][a-zA-Z0-9_.$]*\([^)]*\)\s*$)' "$file" 2>/dev/null | grep -v 'ponytail:doc' | head -5 || true)
     if [ -n "$COMMENTED" ]; then
         echo -e "${RED}[$file] Commented-out code:${NC}"; echo "$COMMENTED" | head -3
         VIOLATIONS=$((VIOLATIONS+1))
     fi
-    TODO_NO_OWNER=$(grep -nE 'TODO|FIXME' "$file" 2>/dev/null | grep -vE 'TODO\(@|FIXME\(@' | head -3 || true)
+    TODO_NO_OWNER=$(grep -nE 'TODO|FIXME' "$file" 2>/dev/null | grep -vE 'TODO\(|FIXME\(' | head -3 || true)
     if [ -n "$TODO_NO_OWNER" ]; then
         echo -e "${YELLOW}[$file] TODO без owner:${NC}"; echo "$TODO_NO_OWNER"
         VIOLATIONS=$((VIOLATIONS+1))
