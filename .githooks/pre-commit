@@ -99,10 +99,18 @@ if [ "$HAS_LEAK" = true ]; then
   exit 1
 fi
 
-# Если дошли сюда — чисто
-exit 0
+# ── QUALITY GATE: ponytail-audit (пустые catch, TODO без owner, мёртвый код) ──
+# PONYTAIL_STAGED_ONLY=1: в режиме коммита проверяем только staged файлы.
+# Ручная проверка всего дерева: make quality
+if ! PONYTAIL_STAGED_ONLY=1 scripts/ponytail-audit.sh; then
+  echo ""
+  echo -e "${RED}Коммит заблокирован линтером качества (scripts/ponytail-audit.sh).${NC}"
+  echo -e "${RED}Исправь нарушения выше. Обход для экстренных случаев:${NC}"
+  echo -e "${RED}  git commit --no-verify${NC}"
+  exit 1
+fi
 
-# CHECK TESTS (v3.1)
+# ── CHECK TESTS (v3.1) — предупреждение без блокировки ──
 STAGED=$(git diff --cached --diff-filter=ACM --name-only 2>/dev/null || true)
 CODE=$(echo "$STAGED" | grep -E '\.(kt|ts|sol)$' | grep -vE 'test|\.t\.sol|\.test\.ts|__tests__' || true)
 TESTS=$(echo "$STAGED" | grep -E 'test|\.t\.sol|\.test\.ts|__tests__' || true)
@@ -110,3 +118,6 @@ TESTS=$(echo "$STAGED" | grep -E 'test|\.t\.sol|\.test\.ts|__tests__' || true)
 if [ -n "$CODE" ] && [ -z "$TESTS" ]; then
     echo "⚠️ WARNING: Code changes without tests. Consider adding regression tests."
 fi
+
+# Если дошли сюда — чисто
+exit 0

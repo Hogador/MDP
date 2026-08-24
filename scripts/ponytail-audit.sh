@@ -7,7 +7,17 @@ echo "🔍 Ponytail Audit"; echo "═══════════════�
 VIOLATIONS=0
 
 STAGED=$(git diff --cached --diff-filter=ACM --name-only 2>/dev/null | grep -E '\.(kt|ts|sol)$' || true)
-[ -z "$STAGED" ] && STAGED=$(find contracts/src backend/src relay/src app/src -type f \( -name "*.kt" -o -name "*.ts" -o -name "*.sol" \) 2>/dev/null)
+# PONYTAIL_STAGED_ONLY=1 (режим pre-commit): проверяем только staged файлы,
+# не откатываясь на скан всего дерева — иначе коммит доков упадёт из-за
+# нарушений в коде, который к коммиту вообще не относится.
+if [ -z "$STAGED" ] && [ "${PONYTAIL_STAGED_ONLY:-0}" != "1" ]; then
+    STAGED=$(find contracts/src backend/src relay/src app/src -type f \( -name "*.kt" -o -name "*.ts" -o -name "*.sol" \) 2>/dev/null)
+fi
+
+if [ -z "$STAGED" ]; then
+    echo "✅ Ponytail audit: нет .kt/.ts/.sol файлов для проверки"
+    exit 0
+fi
 
 for file in $STAGED; do
     [ -f "$file" ] || continue
