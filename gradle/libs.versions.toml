@@ -51,7 +51,7 @@ zxing = "3.5.3"
 zxingAndroid = "4.3.0"
 
 # Firebase
-firebaseBom = "32.7.2"
+firebaseBom = "34.18.0"
 
 # WorkManager
 work = "2.10.0"
