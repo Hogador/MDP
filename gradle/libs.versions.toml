@@ -18,7 +18,7 @@ navigationCompose = "2.8.5"
 
 # DI
 hilt = "2.55"
-hiltNavigation = "1.2.0"
+hiltNavigation = "1.4.0"
 
 # Network
 retrofit = "2.11.0"
